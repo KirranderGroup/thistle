@@ -205,7 +205,15 @@ Julia counterpart of the `tot_integral_k_ijkr` Fortran subroutine. The routine
 accumulates mixed-derivative prefactors (stored in `dx*`, `dy*`, `dz*`) against
 contracted density matrices `zcontr` and `zcontr2` before projecting them onto
 a radial Bessel series. All inputs are explicit; no COMMON blocks or global
-state are used.
+state are used. Like the Fortran driver, the implementation precomputes the
+`h_pre2` derivative grid on the simplex `ll + mm + nn ≤ LLmax` so the symmetry
+between the `zcontr` and `zcontr2` branches is preserved without recomputing
+Bessel coefficients in the innermost loop.
+
+Compared to the higher-level `Integrals` routines in the Fortran sources, this
+Julia entry point expects callers to supply the derivative tables (`dx*`,
+`dy*`, `dz*`) and group metadata directly. It is intentionally low-level and
+avoids any implicit COMMON state so it can be unit tested in isolation.
 
 The returned vector has the same length as `mu` and is computed via the
 spherical-Bessel expansion
@@ -276,6 +284,15 @@ function tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
 
     h_saved = zeros(Float64, LLmax + 1)
 
+    h_pre2 = zeros(Float64, LLmax + 1, LLmax + 1, LLmax + 1, LLmax + 1)
+    for ll in 0:LLmax
+        for mm in 0:(LLmax - ll)
+            for nn in 0:(LLmax - ll - mm)
+                @views h_pre2[:, ll + 1, mm + 1, nn + 1] .= bessel_deriv(ll, mm, nn, a, b, c)
+            end
+        end
+    end
+
     posI = 1
     for i in group_start[gi]:(group_start[gi] + group_count[gi] - 1)
         posJ = 1
@@ -306,8 +323,13 @@ function tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
                                                 mdnp = dz2[nnp + 1, n[k] + 1, n[r] + 1]
                                                 prod6 = mdnp * prod5
                                                 if abs(prod6) > cutoff2
-                                                    bd = bessel_deriv(ll + llp, mm + mmp, nn + nnp, a, b, c)
-                                                    h_saved .+= prod6 .* bd
+                                                    ordx = ll + llp
+                                                    ordy = mm + mmp
+                                                    ordz = nn + nnp
+                                                    if ordx + ordy + ordz > LLmax || ordx > LLmax || ordy > LLmax || ordz > LLmax
+                                                        continue
+                                                    end
+                                                    @views h_saved .+= prod6 .* h_pre2[:, ordx + 1, ordy + 1, ordz + 1]
                                                 end
                                             end
                                         end
