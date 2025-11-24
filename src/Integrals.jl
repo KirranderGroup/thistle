@@ -37,11 +37,6 @@ end
 Return the spherical Bessel functions `j_0(x) … j_order(x)` using a numerically
 stable recurrence. For small `x` the series
 
-````
-    j₀(x) ≈ 1 - x²/6 + x⁴/120
-    j₁(x) ≈ x/3 - x³/30 + x⁵/840
-    j_n(x) ≈ xⁿ / (2n+1)!!
-````
 
 is used to avoid catastrophic cancellation. Larger arguments fall back to the
 stable upward recurrence `j_{n+1}(x) = ((2n+1)/x) j_n(x) - j_{n-1}(x)` seeded
