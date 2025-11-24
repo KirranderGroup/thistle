@@ -203,9 +203,6 @@ state are used.
 The returned vector has the same length as `mu` and is computed via the
 spherical-Bessel expansion
 
-````
-F(μ) = Σ_{β} (μ/h)^β j_β(μh) h_saved[β]
-````
 
 where `h_saved` collects every valid derivative contribution exceeding
 `cutoff2`. Small `h` values remain safe because the Bessel evaluation falls
