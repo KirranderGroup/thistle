@@ -2,6 +2,60 @@ include("Types.jl")
 using .Types: DP, IK
 
 using Base: String, Integer, print_matrix
+
+"""
+    allocate_geometry_arrays(natoms)
+
+Constructs preallocated geometry containers sized for `natoms`. The function
+returns the `x`, `y`, and `z` position vectors along with the atom name vector,
+ensuring every array is a `Vector{Float64}` or `Vector{String}` with an
+explicit length so downstream code can write into the buffers without relying
+on dynamic growth.
+
+# Examples
+```julia
+x, y, z, atoms = allocate_geometry_arrays(2)
+x[1], y[1], z[1] = 0.0, 0.0, 0.0
+atoms[1] = "H"
+```
+"""
+function allocate_geometry_arrays(natoms::Integer)
+    x_pos = Array{Float64}(undef, natoms)
+    y_pos = Array{Float64}(undef, natoms)
+    z_pos = Array{Float64}(undef, natoms)
+    atomname = Vector{String}(undef, natoms)
+    return x_pos, y_pos, z_pos, atomname
+end
+
+"""
+    build_mo_matrix(mo_values, max_mo, basnum)
+
+Reshapes the flat molecular orbital coefficient vector `mo_values` into a
+`max_mo × basnum` matrix with an explicit `Array{Float64}` allocation. The
+function validates the total length to guard against silent reshape errors.
+
+# Examples
+```julia
+mo = build_mo_matrix(collect(1.0:6.0), 2, 3)
+# mo == [1.0 3.0 5.0; 2.0 4.0 6.0]
+```
+"""
+function build_mo_matrix(mo_values::AbstractVector{<:Real}, max_mo::Integer, basnum::Integer)
+    expected_len = max_mo * basnum
+    if length(mo_values) != expected_len
+        throw(ArgumentError("expected $(expected_len) MO coefficients, got $(length(mo_values))"))
+    end
+
+    return Array{Float64}(reshape(Float64.(mo_values), (max_mo, basnum)))
+end
+
+function counter(xs)
+    counts = Dict{eltype(xs), Int}()
+    for x in xs
+        counts[x] = get(counts, x, 0) + 1
+    end
+    return counts
+end
 using DataStructures
 
 """
@@ -111,6 +165,8 @@ function create_input(file)
     local CIvec,confs,c
 
 
+   statesx=Array{Int64}(undef,2)
+   statesx .= 0
    statesx=zeros(IK,2)
     open( "inputs/abinitio.dat") do f
 
@@ -132,6 +188,7 @@ function create_input(file)
 
                  println(natoms)
 
+                 x_pos, y_pos, z_pos, atomname = allocate_geometry_arrays(natoms)
                  x_pos=zeros(DP,natoms)
                  y_pos=zeros(DP,natoms)
                  z_pos=zeros(DP,natoms)
@@ -142,8 +199,10 @@ function create_input(file)
                  for i=1:natoms
                      s=readline(f)
                      s=split(s,' ')
-                     push!(atomname,s[1])
+                     atomname[i]=s[1]
 
+                     coords = parse.(Float64, s[2:4])
+                     x_pos[i], y_pos[i], z_pos[i] = coords
                      x_pos[i]=parse(DP,s[2])
                      y_pos[i]=parse(DP,s[3])
                      z_pos[i]=parse(DP,s[4])
@@ -456,7 +515,7 @@ open( "molpro.mld") do f
             
             s=readline(f)
             
-            while ! eof(f) & ! contains(s, "[")
+            while !eof(f) && !contains(s, "[")
                 s=readline(f)
                 if contains(s,"Sym") 
                    
@@ -468,6 +527,8 @@ open( "molpro.mld") do f
                 elseif contains(s,"Ene")
                 
                             
+                    push!(MOenergies,parse(Float64,match(r"\d*\.?\d*$",s,1).match)) 
+                elseif !contains(s, "Spin") && !isempty(s)
                     push!(MOenergies,parse(DP,match(r"\d*\.?\d*$",s,1).match))
                 elseif ! contains(s, "Spin") & ! isempty(s)
                    
@@ -499,6 +560,7 @@ maxMO= maximum(MOnum)
 
                     elseif contains(s, "Occ")
 
+MO=build_mo_matrix(MO, maxMO, basnum)
                         push!(occs, parse(Float64, match(r"\d*\.?\d*$", s, 1).match))
                     elseif contains(s, "Ene")
 
@@ -545,6 +607,17 @@ maxMO= maximum(MOnum)
                     println("program the bloody function for the symmetries")
                 end
 
+#Now construct the density matrix for the states considered, if I==J => Elastic, if I/=J => Inelastic
+confs=[]
+CIvec=zeros(0)
+c=1
+open("molpro.pun") do f 
+    s=readline(f)
+    while !eof(f) && !contains(s,"---")
+        s=readline(f)
+        if startswith(s," ")
+            s1=split(strip(s)," ")
+            s1=[s for s in s1 if !isempty(s)]
                 if c == 1
                     CIvec = [parse(Float64, i) for i in s1[2:end]]'
                 else
