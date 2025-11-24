@@ -1,5 +1,8 @@
+include("Types.jl")
+using .Types: DP, IK
+
 using Base: String, Integer, print_matrix
-using DataStructures 
+using DataStructures
 
 
 function create_input(file)
@@ -16,7 +19,7 @@ function create_input(file)
     local CIvec,confs,c
 
 
-   statesx=zeros(Int64,2)
+   statesx=zeros(IK,2)
     open( "inputs/abinitio.dat") do f
 
        
@@ -33,13 +36,13 @@ function create_input(file)
 
                  s=readline(f)
 
-                 natoms=parse(Int64,s)
+                 natoms=parse(IK,s)
 
                  println(natoms)
 
-                 x_pos=zeros(Float64,natoms)
-                 y_pos=zeros(Float64,natoms)
-                 z_pos=zeros(Float64,natoms)
+                 x_pos=zeros(DP,natoms)
+                 y_pos=zeros(DP,natoms)
+                 z_pos=zeros(DP,natoms)
                  atomname=String[]
 
            
@@ -49,9 +52,9 @@ function create_input(file)
                      s=split(s,' ')
                      push!(atomname,s[1])
 
-                     x_pos[i]=parse(Float64,s[2])
-                     y_pos[i]=parse(Float64,s[3])
-                     z_pos[i]=parse(Float64,s[4])
+                     x_pos[i]=parse(DP,s[2])
+                     y_pos[i]=parse(DP,s[3])
+                     z_pos[i]=parse(DP,s[4])
                  end
 
             elseif contains(s,"METHOD")
@@ -63,7 +66,7 @@ function create_input(file)
             
                 s=readline(f)
                
-                sym1=parse(Int64,s)
+                sym1=parse(IK,s)
                         
             elseif contains(s,"SYM")
                 s=readline(f)
@@ -81,12 +84,12 @@ function create_input(file)
 
             elseif contains(s,"OCC")
                 s=readline(f)
-                occ=parse(Int64,s)
+                occ=parse(IK,s)
                
 
             elseif contains(s,"CLOSED")
                 s=readline(f)
-                closed=parse(Int64,s)
+                closed=parse(IK,s)
 
             
 
@@ -103,7 +106,7 @@ function create_input(file)
             
             elseif contains(s,"NEL")
                 s=readline(f)
-                nel=parse(Int64,s)
+                nel=parse(IK,s)
             
            
             
@@ -124,8 +127,8 @@ function create_input(file)
             elseif contains(s,"XSCATSTATES")
                 s=readline(f)
                 s1=split(strip(s))
-                statesx[1]=parse(Int64,s1[1])
-                statesx[2]=parse(Int64,s1[2])
+                statesx[1]=parse(IK,s1[1])
+                statesx[2]=parse(IK,s1[2])
                 
             end
         end
@@ -192,19 +195,19 @@ while !isfile("molpro.pun")
 end 
 
 c=0
-realnum=Int64[]
+realnum=IK[]
 typ=String[]
-ga=Float64[]
-ci=Float64[]
-atoms=Int64[]
-MOnum=Int64[]
-MO=Float64[]
-syms=Float64[]
-occs=Float64[]
-MOenergies=Float64[]
-lang=Float64[]
-mang=Float64[]
-nang=Float64[]
+ga=DP[]
+ci=DP[]
+atoms=IK[]
+MOnum=IK[]
+MO=DP[]
+syms=DP[]
+occs=DP[]
+MOenergies=DP[]
+lang=DP[]
+mang=DP[]
+nang=DP[]
 cc=0
 
 open( "molpro.mld") do f
@@ -226,7 +229,7 @@ open( "molpro.mld") do f
                       
                     elseif occursin(r"[a-z]+",s1[1])
                         type=s1[1]
-                        ncont=parse(Int64,s1[2])
+                        ncont=parse(IK,s1[2])
                   
 
                         if type=="s"
@@ -238,9 +241,9 @@ open( "molpro.mld") do f
                                 s1=split(strip(s)," ") 
                                 s1=[s for s in s1 if !isempty(s)]                       
                                 push!(typ,type)
-                                push!(ga,parse(Float64,replace(s1[1],"D" => "E")))
-                                push!(ci,parse(Float64,replace(s1[2],"D" => "E")))
-                                push!(atoms,parse(Int64,at))
+                                push!(ga,parse(DP,replace(s1[1],"D" => "E")))
+                                push!(ci,parse(DP,replace(s1[2],"D" => "E")))
+                                push!(atoms,parse(IK,at))
                                 push!(lang,0); push!(mang,0); push!(nang,0);
                             end
                             cc+=1
@@ -252,19 +255,19 @@ open( "molpro.mld") do f
                                 s1=split(strip(s)," ") 
                                 s1=[s for s in s1 if !isempty(s)] 
                                 push!(realnum,cc+1)      
-                                push!(ga,parse(Float64,replace(s1[1],"D" => "E")))
-                                push!(ci,parse(Float64,replace(s1[2],"D" => "E")))
-                                push!(atoms,parse(Int64,at))
+                                push!(ga,parse(DP,replace(s1[1],"D" => "E")))
+                                push!(ci,parse(DP,replace(s1[2],"D" => "E")))
+                                push!(atoms,parse(IK,at))
                                 push!(lang,1); push!(mang,0); push!(nang,0);
                                 push!(realnum,cc+2)
-                                push!(ga,parse(Float64,replace(s1[1],"D" => "E")))
-                                push!(ci,parse(Float64,replace(s1[2],"D" => "E")))
-                                push!(atoms,parse(Int64,at))
+                                push!(ga,parse(DP,replace(s1[1],"D" => "E")))
+                                push!(ci,parse(DP,replace(s1[2],"D" => "E")))
+                                push!(atoms,parse(IK,at))
                                 push!(lang,0); push!(mang,1); push!(nang,0);
                                 push!(realnum,cc+3)
-                                push!(ga,parse(Float64,replace(s1[1],"D" => "E")))
-                                push!(ci,parse(Float64,replace(s1[2],"D" => "E")))
-                                push!(atoms,parse(Int64,at))
+                                push!(ga,parse(DP,replace(s1[1],"D" => "E")))
+                                push!(ci,parse(DP,replace(s1[2],"D" => "E")))
+                                push!(atoms,parse(IK,at))
                                 push!(lang,0); push!(mang,0); push!(nang,1);
                             end
                             cc+=3
@@ -286,21 +289,21 @@ open( "molpro.mld") do f
                 s=readline(f)
                 if contains(s,"Sym") 
                    
-                    push!(syms,parse(Float64,match(r"\d*\.?\d*$",s,1).match))
+                    push!(syms,parse(DP,match(r"\d*\.?\d*$",s,1).match))
                
                 elseif contains(s,"Occ")
                             
-                    push!(occs,parse(Float64,match(r"\d*\.?\d*$",s,1).match))
+                    push!(occs,parse(DP,match(r"\d*\.?\d*$",s,1).match))
                 elseif contains(s,"Ene")
                 
                             
-                    push!(MOenergies,parse(Float64,match(r"\d*\.?\d*$",s,1).match)) 
+                    push!(MOenergies,parse(DP,match(r"\d*\.?\d*$",s,1).match))
                 elseif ! contains(s, "Spin") & ! isempty(s)
                    
                                
-                    push!(MO,parse(Float64,match(r"\d*\.?\d*$",s,1).match))
-                   
-                    push!(MOnum,parse(Int64,match(r"(?<!\.)\b[0-9]+\b(?!\.)",s).match)) 
+                    push!(MO,parse(DP,match(r"\d*\.?\d*$",s,1).match))
+
+                    push!(MOnum,parse(IK,match(r"(?<!\.)\b[0-9]+\b(?!\.)",s).match))
                 end
 
             end
@@ -366,9 +369,9 @@ open("molpro.pun") do f
             end
             
             if c ==1
-                CIvec=[parse(Float64,i) for i in s1[2:end]]'
+                CIvec=[parse(DP,i) for i in s1[2:end]]'
             else
-                CIvec=[CIvec ;[parse(Float64,i) for i in s1[2:end]]']
+                CIvec=[CIvec ;[parse(DP,i) for i in s1[2:end]]']
             end
             println(CIvec)
             c+=1
