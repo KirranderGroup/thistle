@@ -1,3 +1,6 @@
+include("Types.jl")
+using .Types: DP, IK
+
 using Base: String, Integer, print_matrix
 using DataStructures
 
@@ -105,6 +108,63 @@ function create_input(file)
                 if isequal(s, "ON")
                     s = readline(f)
                     symm = s
+    local CIvec,confs,c
+
+
+   statesx=zeros(IK,2)
+    open( "inputs/abinitio.dat") do f
+
+       
+
+        while ! eof(f)
+
+            s=readline(f)
+    
+            
+           
+            if contains(s,"GEOMETRY") 
+                 s=readline(f)
+                 units=s
+
+                 s=readline(f)
+
+                 natoms=parse(IK,s)
+
+                 println(natoms)
+
+                 x_pos=zeros(DP,natoms)
+                 y_pos=zeros(DP,natoms)
+                 z_pos=zeros(DP,natoms)
+                 atomname=String[]
+
+           
+            
+                 for i=1:natoms
+                     s=readline(f)
+                     s=split(s,' ')
+                     push!(atomname,s[1])
+
+                     x_pos[i]=parse(DP,s[2])
+                     y_pos[i]=parse(DP,s[3])
+                     z_pos[i]=parse(DP,s[4])
+                 end
+
+            elseif contains(s,"METHOD")
+                s=readline(f)
+                method=s
+               
+
+            elseif contains(s,"STATESYM")
+            
+                s=readline(f)
+               
+                sym1=parse(IK,s)
+                        
+            elseif contains(s,"SYM")
+                s=readline(f)
+                if isequal(s,"ON")
+                    s=readline(f)
+                    symm=s
                 else
                     symm = "nosym"
                 end
@@ -113,6 +173,14 @@ function create_input(file)
                 s = readline(f)
 
                 basisdef = s
+            elseif contains(s,"OCC")
+                s=readline(f)
+                occ=parse(IK,s)
+               
+
+            elseif contains(s,"CLOSED")
+                s=readline(f)
+                closed=parse(IK,s)
 
             elseif contains(s, "OCC")
                 s = readline(f)
@@ -153,6 +221,34 @@ function create_input(file)
                 s1 = split(strip(s))
                 statesx .= parse.(Int64, s1[1:2])
 
+
+            
+            elseif contains(s,"NEL")
+                s=readline(f)
+                nel=parse(IK,s)
+            
+           
+            
+            elseif contains(s,"MULTIPLICITY")
+                s=readline(f)
+                if isequal(s,"Singlet")
+                    mult=0
+                elseif isequal("Doublet")
+                    mult=1
+                elseif isequal("Triplet")
+                    mult=2
+                end
+            
+            elseif contains(s,"NSTATES")
+                s=readline(f)
+                nstates=s
+            
+            elseif contains(s,"XSCATSTATES")
+                s=readline(f)
+                s1=split(strip(s))
+                statesx[1]=parse(IK,s1[1])
+                statesx[2]=parse(IK,s1[2])
+                
             end
         end
 
@@ -260,6 +356,93 @@ function create_input(file)
                                     push!(lang, 0); push!(mang, 0); push!(nang, 1)
                                 end
                                 cc += 3
+println(f,"put, molden, molpro.mld")
+close(f)
+
+run(`pwd`)
+run(`rm molpro.pun inputs/molpro.out molpro.mld`)
+
+run(`E:/Molpro/bin/molpro.exe -d inputs/ -s inputs/molpro.inp`)
+
+while !isfile("molpro.pun")
+    print("waiting")
+end 
+
+c=0
+realnum=IK[]
+typ=String[]
+ga=DP[]
+ci=DP[]
+atoms=IK[]
+MOnum=IK[]
+MO=DP[]
+syms=DP[]
+occs=DP[]
+MOenergies=DP[]
+lang=DP[]
+mang=DP[]
+nang=DP[]
+cc=0
+
+open( "molpro.mld") do f
+    s=readline(f)
+    while ! eof(f)
+
+        s=readline(f)
+
+        if contains(s,"[GTO]")
+
+            s=readline(f)
+            while ! contains(s,"[MO]")
+                if length(strip(s))!=0
+                    s1=split(strip(s)," ")
+                    s1=[s for s in s1 if !isempty(s)]
+                    
+                    if ! occursin(r"[a-z]+",s1[1]) && ! occursin(r"[.]+",s1[1])
+                        at=s1[1]
+                      
+                    elseif occursin(r"[a-z]+",s1[1])
+                        type=s1[1]
+                        ncont=parse(IK,s1[2])
+                  
+
+                        if type=="s"
+                            
+                         
+                            for ii=1:ncont 
+                                push!(realnum,cc+1)
+                                s=readline(f)
+                                s1=split(strip(s)," ") 
+                                s1=[s for s in s1 if !isempty(s)]                       
+                                push!(typ,type)
+                                push!(ga,parse(DP,replace(s1[1],"D" => "E")))
+                                push!(ci,parse(DP,replace(s1[2],"D" => "E")))
+                                push!(atoms,parse(IK,at))
+                                push!(lang,0); push!(mang,0); push!(nang,0);
+                            end
+                            cc+=1
+                        elseif type=="p"
+                            
+                            
+                            for ii=1:ncont
+                                s=readline(f)
+                                s1=split(strip(s)," ") 
+                                s1=[s for s in s1 if !isempty(s)] 
+                                push!(realnum,cc+1)      
+                                push!(ga,parse(DP,replace(s1[1],"D" => "E")))
+                                push!(ci,parse(DP,replace(s1[2],"D" => "E")))
+                                push!(atoms,parse(IK,at))
+                                push!(lang,1); push!(mang,0); push!(nang,0);
+                                push!(realnum,cc+2)
+                                push!(ga,parse(DP,replace(s1[1],"D" => "E")))
+                                push!(ci,parse(DP,replace(s1[2],"D" => "E")))
+                                push!(atoms,parse(IK,at))
+                                push!(lang,0); push!(mang,1); push!(nang,0);
+                                push!(realnum,cc+3)
+                                push!(ga,parse(DP,replace(s1[1],"D" => "E")))
+                                push!(ci,parse(DP,replace(s1[2],"D" => "E")))
+                                push!(atoms,parse(IK,at))
+                                push!(lang,0); push!(mang,0); push!(nang,1);
                             end
 
                         end
@@ -267,6 +450,42 @@ function create_input(file)
                     s = readline(f)
                 end
             end
+        end
+    
+        if contains(s, "[MO]")
+            
+            s=readline(f)
+            
+            while ! eof(f) & ! contains(s, "[")
+                s=readline(f)
+                if contains(s,"Sym") 
+                   
+                    push!(syms,parse(DP,match(r"\d*\.?\d*$",s,1).match))
+               
+                elseif contains(s,"Occ")
+                            
+                    push!(occs,parse(DP,match(r"\d*\.?\d*$",s,1).match))
+                elseif contains(s,"Ene")
+                
+                            
+                    push!(MOenergies,parse(DP,match(r"\d*\.?\d*$",s,1).match))
+                elseif ! contains(s, "Spin") & ! isempty(s)
+                   
+                               
+                    push!(MO,parse(DP,match(r"\d*\.?\d*$",s,1).match))
+
+                    push!(MOnum,parse(IK,match(r"(?<!\.)\b[0-9]+\b(?!\.)",s).match))
+                end
+
+            end
+        end        
+    end
+end
+close(f)
+
+
+
+maxMO= maximum(MOnum)
 
             if contains(s, "[MO]")
 
@@ -334,6 +553,18 @@ function create_input(file)
                 println(CIvec)
                 c += 1
 
+           
+            if contains(symm,"nosym")
+                push!(confs,s1[1])
+                println("uptohere")
+            else 
+                println("program the bloody function for the symmetries")
+            end
+            
+            if c ==1
+                CIvec=[parse(DP,i) for i in s1[2:end]]'
+            else
+                CIvec=[CIvec ;[parse(DP,i) for i in s1[2:end]]']
             end
         end
 
