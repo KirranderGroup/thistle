@@ -1,5 +1,58 @@
 using Base: String, Integer, print_matrix
-using DataStructures 
+
+"""
+    allocate_geometry_arrays(natoms)
+
+Constructs preallocated geometry containers sized for `natoms`. The function
+returns the `x`, `y`, and `z` position vectors along with the atom name vector,
+ensuring every array is a `Vector{Float64}` or `Vector{String}` with an
+explicit length so downstream code can write into the buffers without relying
+on dynamic growth.
+
+# Examples
+```julia
+x, y, z, atoms = allocate_geometry_arrays(2)
+x[1], y[1], z[1] = 0.0, 0.0, 0.0
+atoms[1] = "H"
+```
+"""
+function allocate_geometry_arrays(natoms::Integer)
+    x_pos = Array{Float64}(undef, natoms)
+    y_pos = Array{Float64}(undef, natoms)
+    z_pos = Array{Float64}(undef, natoms)
+    atomname = Vector{String}(undef, natoms)
+    return x_pos, y_pos, z_pos, atomname
+end
+
+"""
+    build_mo_matrix(mo_values, max_mo, basnum)
+
+Reshapes the flat molecular orbital coefficient vector `mo_values` into a
+`max_mo × basnum` matrix with an explicit `Array{Float64}` allocation. The
+function validates the total length to guard against silent reshape errors.
+
+# Examples
+```julia
+mo = build_mo_matrix(collect(1.0:6.0), 2, 3)
+# mo == [1.0 3.0 5.0; 2.0 4.0 6.0]
+```
+"""
+function build_mo_matrix(mo_values::AbstractVector{<:Real}, max_mo::Integer, basnum::Integer)
+    expected_len = max_mo * basnum
+    if length(mo_values) != expected_len
+        throw(ArgumentError("expected $(expected_len) MO coefficients, got $(length(mo_values))"))
+    end
+
+    return Array{Float64}(reshape(Float64.(mo_values), (max_mo, basnum)))
+end
+
+function counter(xs)
+    counts = Dict{eltype(xs), Int}()
+    for x in xs
+        counts[x] = get(counts, x, 0) + 1
+    end
+    return counts
+end
 
 
 function create_input(file)
@@ -16,7 +69,8 @@ function create_input(file)
     local CIvec,confs,c
 
 
-   statesx=zeros(Int64,2)
+   statesx=Array{Int64}(undef,2)
+   statesx .= 0
     open( "inputs/abinitio.dat") do f
 
        
@@ -37,21 +91,17 @@ function create_input(file)
 
                  println(natoms)
 
-                 x_pos=zeros(Float64,natoms)
-                 y_pos=zeros(Float64,natoms)
-                 z_pos=zeros(Float64,natoms)
-                 atomname=String[]
+                 x_pos, y_pos, z_pos, atomname = allocate_geometry_arrays(natoms)
 
            
             
                  for i=1:natoms
                      s=readline(f)
                      s=split(s,' ')
-                     push!(atomname,s[1])
+                     atomname[i]=s[1]
 
-                     x_pos[i]=parse(Float64,s[2])
-                     y_pos[i]=parse(Float64,s[3])
-                     z_pos[i]=parse(Float64,s[4])
+                     coords = parse.(Float64, s[2:4])
+                     x_pos[i], y_pos[i], z_pos[i] = coords
                  end
 
             elseif contains(s,"METHOD")
@@ -282,7 +332,7 @@ open( "molpro.mld") do f
             
             s=readline(f)
             
-            while ! eof(f) & ! contains(s, "[")
+            while !eof(f) && !contains(s, "[")
                 s=readline(f)
                 if contains(s,"Sym") 
                    
@@ -295,7 +345,7 @@ open( "molpro.mld") do f
                 
                             
                     push!(MOenergies,parse(Float64,match(r"\d*\.?\d*$",s,1).match)) 
-                elseif ! contains(s, "Spin") & ! isempty(s)
+                elseif !contains(s, "Spin") && !isempty(s)
                    
                                
                     push!(MO,parse(Float64,match(r"\d*\.?\d*$",s,1).match))
@@ -322,7 +372,7 @@ countsMO=counter(MOnum)
 basnum=countsMO[maxMO]
 #println(basnum)
 
-MO=reshape(MO,(maxMO,basnum))
+MO=build_mo_matrix(MO, maxMO, basnum)
 
 
 #Base.print_matrix(IOContext(stdout, :limit => true), MO)
@@ -351,7 +401,7 @@ CIvec=zeros(0)
 c=1
 open("molpro.pun") do f 
     s=readline(f)
-    while ! eof(f) & ! contains(s,"---")
+    while !eof(f) && !contains(s,"---")
         s=readline(f)
         if startswith(s," ")
             s1=split(strip(s)," ")
