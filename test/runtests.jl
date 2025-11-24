@@ -1,5 +1,7 @@
 using Test
 
+include(joinpath(@__DIR__, "..", "src", "Integrals.jl"))
+
 include(joinpath(@__DIR__, "..", "src", "molpro_input.jl"))
 
 @testset "Geometry allocation" begin
@@ -48,4 +50,45 @@ end
     mat = build_mo_matrix(coeffs, mo_numbers, real_indices)
     @test size(mat) == (2, 3)
     @test mat == [3.0 1.0 5.0; 4.0 2.0 6.0]
+end
+
+@testset "tot_integral_k_ijkr control flow" begin
+    mu = [0.1, 0.2]
+    l = m = n = fill(0, 2)
+    group_start = [1, 2]
+    group_count = [1, 1]
+    hx, hy, hz = 0.05, 0.02, 0.01
+    h = hypot(hx, hypot(hy, hz))
+    ones3 = ones(1, 1, 1)
+    zcontr = fill(0.5, 1, 1, 1, 1)
+    zcontr2 = fill(0.25, 1, 1, 1, 1)
+
+    res = tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
+                              hx, hy, hz, h,
+                              ones3, ones3, ones3, ones3, ones3, ones3,
+                              1, 1, 2, 2, zcontr, zcontr2;
+                              cutoff1=1e-14, cutoff2=1e-14)
+
+    expected_scale = zcontr[1] + zcontr2[1]
+    expected = map(mu) do μ
+        Integrals.spherical_besselj_series(0, μ * h)[1] * expected_scale
+    end
+    @test res ≈ expected
+
+    l = [0, 0]
+    m = [0, 1]
+    n = [0, 0]
+    group_start = fill(1, 4)
+    group_count = fill(2, 4)
+    wide = ones(3, 3, 3)
+    zcontr = ones(2, 2, 2, 2)
+    zcontr2 = ones(2, 2, 2, 2)
+
+    res = tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
+                              hx, hy, hz, h,
+                              wide, wide, wide, wide, wide, wide,
+                              1, 1, 1, 1, zcontr, zcontr2;
+                              cutoff1=1e-14, cutoff2=1e-14)
+
+    @test all(res .== 0.0)
 end
