@@ -236,6 +236,37 @@ function tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
                              hx, hy, hz, h, dx1, dy1, dz1, dx2, dy2, dz2,
                              gi::Integer, gj::Integer, gk::Integer, gr::Integer,
                              zcontr, zcontr2; cutoff1=1e-12, cutoff2=1e-12)
+    # --- Input validation ---
+    # Check group indices
+    for idx in (gi, gj, gk, gr)
+        if idx < 1 || idx > length(group_start)
+            throw(ArgumentError("Group index $idx out of bounds for group_start of length $(length(group_start))"))
+        end
+        if idx > length(group_count)
+            throw(ArgumentError("Group index $idx out of bounds for group_count of length $(length(group_count))"))
+        end
+    end
+    # Check l, m, n arrays are long enough for all group_start + group_count - 1
+    maxidx = maximum([group_start[gi] + group_count[gi] - 1,
+                      group_start[gj] + group_count[gj] - 1,
+                      group_start[gk] + group_count[gk] - 1,
+                      group_start[gr] + group_count[gr] - 1])
+    for arr in (l, m, n)
+        if maxidx > length(arr)
+            throw(ArgumentError("Basis index $maxidx out of bounds for array of length $(length(arr))"))
+        end
+    end
+    # Check derivative arrays have sufficient size
+    # (Assume they are at least 3D arrays; check size along each dimension >= max needed)
+    for (name, arr) in zip(("dx1", "dy1", "dz1", "dx2", "dy2", "dz2"), (dx1, dy1, dz1, dx2, dy2, dz2))
+        if ndims(arr) < 3
+            throw(ArgumentError("Array $name must have at least 3 dimensions, got $(ndims(arr))"))
+        end
+    end
+    # Check zcontr and zcontr2 have compatible shapes
+    if size(zcontr) != size(zcontr2)
+        throw(ArgumentError("zcontr and zcontr2 must have the same shape, got $(size(zcontr)) and $(size(zcontr2))"))
+    end
     LLmax = l[group_start[gi]] + m[group_start[gi]] + n[group_start[gi]] +
             l[group_start[gj]] + m[group_start[gj]] + n[group_start[gj]] +
             l[group_start[gk]] + m[group_start[gk]] + n[group_start[gk]] +
