@@ -53,7 +53,14 @@ function spherical_besselj_series(order::Integer, x::Float64)
             vals[2] = x / 3 - x2 * x / 30 + x2 * x2 * x / 840
         end
         for n in 2:order
-            vals[n + 1] = (ax == 0) ? (n == 0 ? 1.0 : 0.0) : x^n / doublefactorial(2n + 1)
+            # Use Taylor expansion up to x^5 for j_n(x) at small x
+            # j_n(x) ≈ x^n / (2n+1)!! * [1 - x^2/(2(2n+3)) + x^4/(2*4*(2n+3)*(2n+5))]
+            x_n = x^n
+            dfact = doublefactorial(2n + 1)
+            term1 = 1.0
+            term2 = - (x^2) / (2 * (2n + 3))
+            term3 = (x^4) / (2 * 4 * (2n + 3) * (2n + 5))
+            vals[n + 1] = x_n / dfact * (term1 + term2 + term3)
         end
         return vals
     end
