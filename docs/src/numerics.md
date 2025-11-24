@@ -30,3 +30,8 @@ the caller to provide derivative tables (`dx*`, `dy*`, `dz*`) and group metadata
 explicitly rather than consulting COMMON blocks. This keeps the symmetry
 between `zcontr` and `zcontr2` intact while remaining easy to exercise in unit
 tests.
+
+The Bessel contractions lean on `SpecialFunctions.sphericalbesselj` to avoid
+reimplementing the recurrence relations manually. `bessel_series_sum` and
+`bessel_sum` both preserve the original q-grid dimensionality while allowing you
+to reuse cached derivative prefactors across total and elastic calculations.

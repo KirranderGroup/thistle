@@ -8,5 +8,6 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Numerics" => "numerics.md",
+        "Kernel guides" => "kernels.md",
     ],
 )
