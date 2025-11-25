@@ -63,11 +63,11 @@ end
     zcontr = fill(0.5, 1, 1, 1, 1)
     zcontr2 = fill(0.25, 1, 1, 1, 1)
 
-    res = tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
-                              hx, hy, hz, h,
-                              ones3, ones3, ones3, ones3, ones3, ones3,
-                              1, 1, 2, 2, zcontr, zcontr2;
-                              cutoff1=1e-14, cutoff2=1e-14)
+    res = Integrals.tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
+                                        hx, hy, hz, h,
+                                        ones3, ones3, ones3, ones3, ones3, ones3,
+                                        1, 1, 2, 2, zcontr, zcontr2;
+                                        cutoff1=1e-14, cutoff2=1e-14)
 
     expected_scale = zcontr[1] + zcontr2[1]
     expected = map(mu) do μ
@@ -82,13 +82,44 @@ end
     group_count = fill(2, 4)
     wide = ones(3, 3, 3)
     zcontr = ones(2, 2, 2, 2)
-    zcontr2 = ones(2, 2, 2, 2)
+    zcontr2 = -ones(2, 2, 2, 2)
 
-    res = tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
-                              hx, hy, hz, h,
-                              wide, wide, wide, wide, wide, wide,
-                              1, 1, 1, 1, zcontr, zcontr2;
-                              cutoff1=1e-14, cutoff2=1e-14)
+    res = Integrals.tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
+                                        hx, hy, hz, h,
+                                        wide, wide, wide, wide, wide, wide,
+                                        1, 1, 1, 1, zcontr, zcontr2;
+                                        cutoff1=1e-14, cutoff2=1e-14)
 
     @test all(res .== 0.0)
+end
+
+@testset "form_factor unit scaling" begin
+    mu = [0.1, 0.3]  # Å⁻¹
+    l = m = n = fill(0, 2)
+    group_start = [1, 2]
+    group_count = [1, 1]
+
+    geom = Integrals.IntegralGeometry([0.0 1.0; 0.0 1.0], zeros(2, 2), zeros(2, 2))
+
+    bohr_to_ang = 0.529177210903
+    hx, hy, hz, h = Integrals.pairwise_offsets(geom, 1, 1, 2, 2)
+    scaled_h = bohr_to_ang * h
+
+    dx = dy = dz = ones(1, 1, 1)
+    zc = fill(0.25, 1, 1, 1, 1)
+
+    direct = Integrals.tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
+                                           bohr_to_ang * hx, bohr_to_ang * hy, bohr_to_ang * hz, scaled_h,
+                                           dx, dy, dz, dx, dy, dz,
+                                           1, 1, 2, 2, zc, zc;
+                                           cutoff1=1e-14, cutoff2=1e-14)
+
+    via_wrapper = Integrals.form_factor(mu, geom, l, m, n, group_start, group_count,
+                                        dx, dy, dz, dx, dy, dz,
+                                        1, 1, 2, 2, zc, zc;
+                                        unit_scale=bohr_to_ang,
+                                        cutoff1=1e-14, cutoff2=1e-14)
+
+    @test via_wrapper ≈ direct
+    @test all(via_wrapper .> 0)
 end
