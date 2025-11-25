@@ -269,6 +269,66 @@ end
 # -- Geometry helpers --------------------------------------------------------
 
 """
+    form_factor(mu, geom, l, m, n, group_start, group_count,
+                dx1, dy1, dz1, dx2, dy2, dz2,
+                gi, gj, gk, gr, zcontr, zcontr2;
+                unit_scale=1.0, kwargs...)
+
+Convenience wrapper that ties together [`pairwise_offsets`](@ref) and
+[`tot_integral_k_ijkr`](@ref) for a single quartet of centers.
+
+`unit_scale` enforces unit consistency between the geometry and the momentum
+grid `mu`. Set it to the conversion factor that brings the geometry units in
+line with the inverse units of `mu` (e.g., `0.529177210903` to convert Bohr
+distances to Ångström when `mu` is provided in Å⁻¹). The product `μ ⋅ h` fed to
+the Bessel expansion remains dimensionless regardless of the original units.
+
+# Examples
+
+```jldoctest
+julia> include("../src/Integrals.jl"); using .Integrals
+
+julia> geom = IntegralGeometry([0.0 1.0; 0.0 1.0], zeros(2, 2), zeros(2, 2));
+
+julia> l = m = n = fill(0, 2);
+
+julia> groups = (group_start = [1, 2], group_count = [1, 1]);
+
+julia> dx = dy = dz = ones(1, 1, 1);
+
+julia> zc = fill(0.25, 1, 1, 1, 1);
+
+julia> bohr_to_ang = 0.529177210903;  # convert a₀ offsets to Å for μ in Å⁻¹
+
+julia> ff = form_factor([0.1, 0.3], geom, l, m, n, groups.group_start,
+                        groups.group_count, dx, dy, dz, dx, dy, dz,
+                        1, 1, 2, 2, zc, zc; unit_scale=bohr_to_ang,
+                        cutoff1=1e-14, cutoff2=1e-14);
+
+julia> round.(ff; digits=8)
+2-element Vector{Float64}:
+ 0.49976668
+ 0.49790243
+```
+"""
+function form_factor(mu, geom::IntegralGeometry, l, m, n, group_start, group_count,
+                     dx1, dy1, dz1, dx2, dy2, dz2,
+                     gi::Integer, gj::Integer, gk::Integer, gr::Integer,
+                     zcontr, zcontr2; unit_scale::Real=1.0, kwargs...)
+    unit_scale <= 0 && throw(ArgumentError("unit_scale must be positive"))
+    hx, hy, hz, h = pairwise_offsets(geom, gi, gj, gk, gr)
+    scaled_hx = float(unit_scale) * hx
+    scaled_hy = float(unit_scale) * hy
+    scaled_hz = float(unit_scale) * hz
+    scaled_h = float(unit_scale) * h
+
+    return tot_integral_k_ijkr(mu, l, m, n, group_start, group_count,
+                               scaled_hx, scaled_hy, scaled_hz, scaled_h,
+                               dx1, dy1, dz1, dx2, dy2, dz2,
+                               gi, gj, gk, gr, zcontr, zcontr2; kwargs...)
+end
+
+"""
     pairwise_offsets(geom::IntegralGeometry, i, j, k, r)
 
 Return `hx`, `hy`, `hz`, and their Euclidean norm `h` for a quartet of centers

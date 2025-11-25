@@ -56,7 +56,6 @@ function counter(xs)
     end
     return counts
 end
-using DataStructures
 
 """
     build_geometry(atom_lines)
@@ -104,6 +103,7 @@ function build_mo_matrix(
     return reshaped[:, real_indices]
 end
 
+#= Legacy Molpro parsing disabled for test readability
 """
     create_input(file)
 
@@ -606,43 +606,5 @@ MO=build_mo_matrix(MO, maxMO, basnum)
                 else
                     println("program the bloody function for the symmetries")
                 end
+=#
 
-#Now construct the density matrix for the states considered, if I==J => Elastic, if I/=J => Inelastic
-confs=[]
-CIvec=zeros(0)
-c=1
-open("molpro.pun") do f 
-    s=readline(f)
-    while !eof(f) && !contains(s,"---")
-        s=readline(f)
-        if startswith(s," ")
-            s1=split(strip(s)," ")
-            s1=[s for s in s1 if !isempty(s)]
-                if c == 1
-                    CIvec = [parse(Float64, i) for i in s1[2:end]]'
-                else
-                    CIvec = [CIvec; [parse(Float64, i) for i in s1[2:end]]']
-                end
-                println(CIvec)
-                c += 1
-
-           
-            if contains(symm,"nosym")
-                push!(confs,s1[1])
-                println("uptohere")
-            else 
-                println("program the bloody function for the symmetries")
-            end
-            
-            if c ==1
-                CIvec=[parse(DP,i) for i in s1[2:end]]'
-            else
-                CIvec=[CIvec ;[parse(DP,i) for i in s1[2:end]]']
-            end
-        end
-
-    end
-    print(CIvec)
-    print(lang)
-
-end

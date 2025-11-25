@@ -46,6 +46,39 @@ julia> all(size(bvals) .== size(mu))
 true
 ```
 
+### Form factors from geometry
+
+The `form_factor` helper combines `pairwise_offsets` and `tot_integral_k_ijkr`
+to evaluate a single quartet while keeping geometry and momentum units
+consistent via the `unit_scale` keyword. Use the conversion factor that brings
+the geometry lengths into the inverse units of `μ`.
+
+```jldoctest
+julia> include("../src/Integrals.jl"); using .Integrals
+
+julia> geom = IntegralGeometry([0.0 1.0; 0.0 1.0], zeros(2, 2), zeros(2, 2));
+
+julia> l = m = n = fill(0, 2);
+
+julia> groups = (group_start = [1, 2], group_count = [1, 1]);
+
+julia> dx = dy = dz = ones(1, 1, 1);
+
+julia> zc = fill(0.25, 1, 1, 1, 1);
+
+julia> bohr_to_ang = 0.529177210903;  # convert a₀ offsets to Å for μ in Å⁻¹
+
+julia> ff = form_factor([0.1, 0.3], geom, l, m, n, groups.group_start,
+                        groups.group_count, dx, dy, dz, dx, dy, dz,
+                        1, 1, 2, 2, zc, zc; unit_scale=bohr_to_ang,
+                        cutoff1=1e-14, cutoff2=1e-14);
+
+julia> round.(ff; digits=8)
+2-element Vector{Float64}:
+ 0.49976668
+ 0.49790243
+```
+
 ## Elastic routines
 
 The elastic kernels `bessel_deriv1j` and `bessel_deriv2j` translate the
