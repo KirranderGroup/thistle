@@ -3,6 +3,7 @@ using Test
 include(joinpath(@__DIR__, "..", "src", "Integrals.jl"))
 
 include(joinpath(@__DIR__, "..", "src", "molpro_input.jl"))
+include(joinpath(@__DIR__, "..", "src", "CIUtils.jl"))
 
 @testset "Geometry allocation" begin
     x_pos, y_pos, z_pos, atomname = allocate_geometry_arrays(3)
@@ -122,4 +123,27 @@ end
 
     @test via_wrapper ≈ direct
     @test all(via_wrapper .> 0)
+end
+
+@testset "CI bookkeeping" begin
+    confs = [
+        1 0 1 0;
+        0 1 1 0;
+    ]
+
+    ep2, ndiff = CIUtils.maxcoincidence(confs)
+    @test ep2 == [1 1; 1 1]
+    @test ndiff == [0 2; 2 0]
+
+    civs = [0.8 0.1; 0.6 0.2]
+    onerdm = CIUtils.create_onerdm(confs, civs, ndiff, ep2)
+    @test size(onerdm) == (2, 2)
+    @test onerdm[1, 1] ≈ 1.96 atol=1e-12
+    @test onerdm[2, 2] ≈ 1.0 atol=1e-12
+    @test onerdm[1, 2] == 0.0
+
+    twordm = CIUtils.create_twordm(confs, civs, ndiff, ep2)
+    @test size(twordm) == (2, 2, 2, 2)
+    @test twordm[2, 1, 1, 2] ≈ 1.0 atol=1e-12
+    @test twordm[1, 1, 1, 1] == 0.0
 end
