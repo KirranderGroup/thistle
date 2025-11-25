@@ -1,6 +1,7 @@
 using Test
 
 include(joinpath(@__DIR__, "..", "src", "Integrals.jl"))
+include(joinpath(@__DIR__, "..", "src", "MainCalculation.jl"))
 
 include(joinpath(@__DIR__, "..", "src", "molpro_input.jl"))
 include(joinpath(@__DIR__, "..", "src", "CIUtils.jl"))
@@ -123,6 +124,36 @@ end
 
     @test via_wrapper ≈ direct
     @test all(via_wrapper .> 0)
+end
+
+@testset "total_scattering_calculation aggregation" begin
+    q = [0.1, 0.2]
+    l = m = n = fill(0, 2)
+    group = fill(1, 2)  # single symmetry block with two basis functions
+    geom = Integrals.IntegralGeometry([0.0 0.2; 0.2 0.0], zeros(2, 2), zeros(2, 2))
+    dd = ones(1, 1, 1)
+
+    # Use simple density tensors so every quartet contribution is identical
+    zcontr = fill(0.5, 2, 2, 2, 2)
+    zcontr2 = fill(0.25, 2, 2, 2, 2)
+
+    groups = MainCalculation.group_metadata(group)
+    manual = zeros(Float64, length(q))
+    for gi in 1:length(groups.group_start), gj in 1:length(groups.group_start),
+        gk in 1:length(groups.group_start), gr in 1:length(groups.group_start)
+        hx, hy, hz, h = Integrals.pairwise_offsets(geom, gi, gj, gk, gr)
+        h <= 0 && continue
+        manual .+= Integrals.tot_integral_k_ijkr(q, l, m, n, groups.group_start, groups.group_count,
+                                                 hx, hy, hz, h,
+                                                 dd, dd, dd, dd, dd, dd, gi, gj, gk, gr, zcontr, zcontr2;
+                                                 cutoff1=1e-14, cutoff2=1e-14)
+    end
+
+    threaded = MainCalculation.total_scattering_calculation(1, q, geom, l, m, n, group, dd, dd, dd;
+                                                             zcontr=zcontr, zcontr2=zcontr2,
+                                                             cutoff1=1e-14, cutoff2=1e-14)
+
+    @test threaded ≈ manual
 end
 
 @testset "CI bookkeeping" begin
