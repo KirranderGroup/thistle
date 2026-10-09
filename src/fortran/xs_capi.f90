@@ -3,7 +3,11 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 !-----------------------------------------------------------------------
-! PyXSCAT - C-compatible entry points (called from Python through ctypes)
+!> PyXSCAT - C-compatible entry points (called from Python through ctypes)
+!>
+!> One bind(C) wrapper per kernel; the ctypes signatures on the Python side are declared in
+!> python/pyxscat/_lib.py.  Scalars are passed by value, arrays by reference in Fortran order,
+!> optional arrays as NULL pointers; nthreads > 0 sets the OpenMP thread count for the call.
 !-----------------------------------------------------------------------
 module xs_capi
     use iso_c_binding
@@ -18,10 +22,12 @@ module xs_capi
     implicit none
 contains
 
-    ! Rotationally averaged two-electron scattering.
-    !   mode 1 : dm2 is an (ncontr)^4 array with 8-fold symmetry; da, db unused
-    !   mode 2 : dm2 is ignored (pass NULL); da, db are symmetric (ncontr, ncontr)
-    ! ierr = 0 on success (see xs_kernel_j0 for the codes).
+    !> Rotationally averaged two-electron scattering.
+    !>
+    !>      mode 1 : dm2 is an (ncontr)^4 array with 8-fold symmetry; da, db unused
+    !>      mode 2 : dm2 is ignored (pass NULL); da, db are symmetric (ncontr, ncontr)
+    !>
+    !> ierr = 0 on success (see xs_kernel_j0 for the codes).
     subroutine pyxscat_two_electron_j0(nprim, ncontr, nq, x, y, z, ga, l, m, n, group, contr, coeff, q, &
             mode, dm2, da, db, wc, wx, nkc, fac, fbc, nkx, fax, fbx, dgemm_ptr, &
             cutoffcentre, cutoffz, cutoffmd, screen_tol, lorder, nthreads, &
@@ -71,7 +77,7 @@ contains
         if (nthreads > 0) call omp_set_num_threads(nt_old)
     end subroutine pyxscat_two_electron_j0
 
-    ! Hermite coefficients for one Cartesian direction (exposed for unit tests).
+    !> Hermite coefficients for one Cartesian direction (exposed for unit tests).
     subroutine pyxscat_hermite_table(ng, maxl, lg, xg, ag, dd) bind(C, name='pyxscat_hermite_table')
         integer(c_int), value, intent(in) :: ng, maxl
         integer(c_int), intent(in) :: lg(ng)
@@ -80,7 +86,7 @@ contains
         call hermite_table(ng, maxl, lg, xg, ag, dd)
     end subroutine pyxscat_hermite_table
 
-    ! Fourier transforms of basis-function products, F(q, mu, nu), at fixed scattering vectors.
+    !> Fourier transforms of basis-function products, F(q, mu, nu), at fixed scattering vectors.
     subroutine pyxscat_pair_transform(nprim, nao, nq, x, y, z, ga, l, m, n, group, contr, coeff, qv, &
             screen, nthreads, f, ierr) bind(C, name='pyxscat_pair_transform')
         integer(c_int), value, intent(in) :: nprim, nao, nq, nthreads
@@ -96,7 +102,7 @@ contains
         if (nthreads > 0) call omp_set_num_threads(nt_old)
     end subroutine pyxscat_pair_transform
 
-    ! Electron-nucleus term of electron scattering (rotational average, l = 0 or 2).
+    !> Electron-nucleus term of electron scattering (rotational average, l = 0 or 2).
     subroutine pyxscat_electron_nucleus(nprim, nao, nq, x, y, z, ga, l, m, n, group, contr, coeff, q, &
             natom, zat, rat, dm, lorder, screen, nthreads, res, ierr) bind(C, name='pyxscat_electron_nucleus')
         integer(c_int), value, intent(in) :: nprim, nao, nq, natom, lorder, nthreads
@@ -114,7 +120,7 @@ contains
         if (nthreads > 0) call omp_set_num_threads(nt_old)
     end subroutine pyxscat_electron_nucleus
 
-    ! Elastic (and coherent mixed) scattering by density-weighted pairs (l = 0 or 2).
+    !> Elastic (and coherent mixed) scattering by density-weighted pairs (l = 0 or 2).
     subroutine pyxscat_elastic_pairs(nprim, nao, nq, x, y, z, ga, l, m, n, group, contr, coeff, q, &
             da, db, lorder, screen, nthreads, res, stats, ierr) bind(C, name='pyxscat_elastic_pairs')
         integer(c_int), value, intent(in) :: nprim, nao, nq, lorder, nthreads
@@ -132,7 +138,7 @@ contains
         if (nthreads > 0) call omp_set_num_threads(nt_old)
     end subroutine pyxscat_elastic_pairs
 
-    ! sum_b coef(b+1) j_b(q h) (q/h)^b for a list of q (exposed for unit tests).
+    !> sum_b coef(b+1) j_b(q h) (q/h)^b for a list of q (exposed for unit tests).
     subroutine pyxscat_radial_series(nq, q, h, order, coef, res) bind(C, name='pyxscat_radial_series')
         integer(c_int), value, intent(in) :: nq, order
         real(c_double), intent(in) :: q(nq), coef(order + 1)
@@ -141,8 +147,8 @@ contains
         call radial_series(int(nq, kind=4), q, h, int(order, kind=4), coef, res)
     end subroutine pyxscat_radial_series
 
-    ! Spin-summed 1- and 2-RDMs of a determinant expansion by the bitwise determinant-pair
-    ! algorithm (one 64-bit word per spin).  d1, d2 are C-ordered [p,q] and [p,q,r,s].
+    !> Spin-summed 1- and 2-RDMs of a determinant expansion by the bitwise determinant-pair
+    !> algorithm (one 64-bit word per spin).  d1, d2 are C-ordered [p,q] and [p,q,r,s].
     subroutine pyxscat_rdm12_bitwise(ndet, norb, nw, wa, wb, c, nthreads, d1, d2, ierr) &
             bind(C, name='pyxscat_rdm12_bitwise')
         integer(c_int), value, intent(in) :: ndet, norb, nw, nthreads
@@ -157,6 +163,8 @@ contains
         ierr = e
     end subroutine pyxscat_rdm12_bitwise
 
+    !> rdm12_bitwise restricted to candidate pairs: determinants sorted into ng groups with the
+    !> neighbour lists nb (see xs_rdm); dm2 elements with all four orbitals >= nint are skipped.
     subroutine pyxscat_rdm12_bitwise_groups(ndet, norb, nw, wa, wb, c, nint, ng, gstart, grp, nnb, nbstart, nb, &
                                             nthreads, d1, d2, ierr) bind(C, name='pyxscat_rdm12_bitwise_groups')
         integer(c_int), value, intent(in) :: ndet, norb, nw, nint, ng, nnb, nthreads
@@ -173,7 +181,7 @@ contains
         ierr = e
     end subroutine pyxscat_rdm12_bitwise_groups
 
-    ! Compiler and options the library was built with (for bug reports): copied into buf.
+    !> Compiler and options the library was built with (for bug reports): copied into buf.
     subroutine pyxscat_build_info(buf, n) bind(C, name='pyxscat_build_info')
         integer(c_int), value, intent(in) :: n
         character(kind=c_char), intent(out) :: buf(n)
@@ -186,6 +194,7 @@ contains
         end do
     end subroutine pyxscat_build_info
 
+    !> Number of OpenMP threads the library uses when nthreads <= 0 is passed (omp_get_max_threads).
     integer(c_int) function pyxscat_max_threads() bind(C, name='pyxscat_max_threads')
         pyxscat_max_threads = omp_get_max_threads()
     end function pyxscat_max_threads

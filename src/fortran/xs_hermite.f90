@@ -3,23 +3,24 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 !-----------------------------------------------------------------------
-! PyXSCAT - Hermite (McMurchie-Davidson) expansion coefficients
-!
-! For a pair of primitive shells A (centre xa, exponent a) and B (xb, b)
-! the product of two 1D Cartesian Gaussians is expanded in Hermite
-! Gaussians centred at P = (a xa + b xb)/(a + b):
-!
-!   (x-xa)^i (x-xb)^j exp(-a(x-xa)^2 - b(x-xb)^2)
-!        = K_ab  sum_t E(t; i, j) Lambda_t(x - P)
-!
-! The Gaussian prefactor K_ab is NOT included here (it is carried by the
-! pair prefactor of the kernel), so E(0; 0, 0) = 1.
-!
-! Two-term recurrences, valid for any angular momentum:
-!   E(t; i+1, j) = E(t-1; i, j)/(2p) + (P-xa) E(t; i, j) + (t+1) E(t+1; i, j)
-!   E(t; i, j+1) = E(t-1; i, j)/(2p) + (P-xb) E(t; i, j) + (t+1) E(t+1; i, j)
-!
-! This replaces the explicit tables of the original code (limited to g).
+!> PyXSCAT - Hermite (McMurchie-Davidson) expansion coefficients
+!>
+!> For a pair of primitive shells A (centre xa, exponent a) and B (xb, b)
+!> the product of two 1D Cartesian Gaussians is expanded in Hermite
+!> Gaussians centred at P = (a xa + b xb)/(a + b):
+!>
+!>      (x-xa)^i (x-xb)^j exp(-a(x-xa)^2 - b(x-xb)^2)
+!>           = K_ab  sum_t E(t; i, j) Lambda_t(x - P)
+!>
+!> The Gaussian prefactor K_ab is NOT included here (it is carried by the
+!> pair prefactor of the kernel), so E(0; 0, 0) = 1.
+!>
+!> Two-term recurrences, valid for any angular momentum:
+!>
+!>      E(t; i+1, j) = E(t-1; i, j)/(2p) + (P-xa) E(t; i, j) + (t+1) E(t+1; i, j)
+!>      E(t; i, j+1) = E(t-1; i, j)/(2p) + (P-xb) E(t; i, j) + (t+1) E(t+1; i, j)
+!>
+!> This replaces the explicit tables of the original code (limited to g).
 !-----------------------------------------------------------------------
 module xs_hermite
     implicit none
@@ -27,9 +28,9 @@ module xs_hermite
     integer, parameter, private :: ikind = selected_int_kind(8)
 contains
 
-    ! dd(t+1, i+1, j+1, gb, ga): coefficients for the shell pair (ga, gb),
-    ! i <= lg(ga), j <= lg(gb).  The index order (.., gb, ga) is the one the
-    ! kernel expects.
+    !> dd(t+1, i+1, j+1, gb, ga): coefficients for the shell pair (ga, gb),
+    !> i <= lg(ga), j <= lg(gb).  The index order (.., gb, ga) is the one the
+    !> kernel expects.
     subroutine hermite_table(ng, maxl, lg, xg, ag, dd)
         integer(kind=ikind), intent(in) :: ng, maxl
         integer(kind=ikind), intent(in) :: lg(ng)

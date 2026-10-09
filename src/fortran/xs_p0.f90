@@ -2,8 +2,8 @@
 ! SPDX-License-Identifier: Apache-2.0
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
-!This module contains the P0 cases for every legendre decomposition term
-!j0,j1, and j2 and the table constructor
+!> Closed forms of the rotational averages `<qx^L qy^M qz^N>` (the h = 0 limits of the quartet
+!> kernel) for the Legendre terms j0, j1 and j2, and the constructors of the P0 tables.
 
 Module p0_cases
 
@@ -12,6 +12,7 @@ implicit none
 
 contains
 
+    !> Fills P0(:, L+1, M+1, N+1) = `<qx^L qy^M qz^N>` (j0 case) for all L, M, N <= lmax4 with L+M+N <= 16.
     SUBROUTINE set_P0(P0, lmax4, q)
 
         ! P0    (Nq,4lmax+1,4lmax+1,4lmax+1) will store the values of <qx^L*qy^M*qz^N>
@@ -44,6 +45,7 @@ contains
 
     END SUBROUTINE set_P0
 
+    !> The same table for the j2 P2 term, scaled by sqrt(5/pi).
     SUBROUTINE set_P0_j2(P0, lmax4, q)
 
         ! P0    (Nq,4lmax+1,4lmax+1,4lmax+1) will store the values of <qx^L*qy^M*qz^N>
@@ -78,6 +80,7 @@ contains
         P0=P0*sqrt(5.0_dp/dacos(-1.0_dp))
     END SUBROUTINE set_P0_j2
 
+    !> The same table for the j1 term, scaled by sqrt(3/pi).
     SUBROUTINE set_P0_j1(P0, lmax4, q)
 
         ! P0    (Nq,4lmax+1,4lmax+1,4lmax+1) will store the values of <qx^L*qy^M*qz^N>
@@ -112,6 +115,7 @@ contains
         P0=P0*sqrt(3.0_dp/dacos(-1.0_dp))
     END SUBROUTINE set_P0_j1
 
+    !> One entry (L, M, N) of the j0 table at every q: the closed-form cases.
     SUBROUTINE P_LMN(P0, L, M, N, q)
 
         ! the three values of the angular momentum
@@ -484,6 +488,7 @@ contains
 
     END SUBROUTINE P_LMN
 
+    !> One entry (L, M, N) of the j1 table at every q.
     SUBROUTINE P_LMN_j1(P0, L, M, N, q)
 
         ! the three values of the angular momentumS
@@ -840,6 +845,7 @@ contains
         !P0=P0*sqrt(5.0_dp/pi)
     END SUBROUTINE P_LMN_j1
 
+    !> One entry (L, M, N) of the j2 table at every q.
     SUBROUTINE P_LMN_j2(P0, L, M, N, q)
 
         ! the three values of the angular momentumS
@@ -1645,6 +1651,7 @@ contains
 
     END SUBROUTINE P_LMN_j2
 
+    !> Sorts the integer array a in ascending order (bubble sort, early exit when already sorted).
     SUBROUTINE Bubble_Sort(a)
 
         implicit none

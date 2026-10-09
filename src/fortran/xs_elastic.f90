@@ -3,31 +3,31 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 !-----------------------------------------------------------------------
-! PyXSCAT - rotationally averaged elastic scattering by density-weighted pairs
-!
-!   I(q) = sum_{mu nu la si} A_mu,nu B_la,si < chi_mu chi_nu | K_l(q r12) | chi_la chi_si >
-!
-! with K_0 = j0 (isotropic) or K_2 = j2 P2 (second Legendre moment about z).  A = B = D gives
-! the elastic scattering <|F(q)|^2>; A /= B the coherent mixed (transition) terms (symmetrised).
-!
-! The pair density of the elastic term is a product, D (x) D, so the density can be folded into
-! each primitive-shell pair BEFORE the pairs are combined: every pair becomes one Hermite charge
-! distribution W(tuv) at its centre P,
-!
-!   rho_P(r) = (pi/p)^{3/2} K_ab sum_tuv W(tuv) Lambda_tuv(r - P),
-!
-! and the elastic term is a sum over pairs of pairs,
-!
-!   I(q) = sum_{P,Q} pref_P pref_Q exp(-q^2/4p - q^2/4p') sum_m S_m(P - Q) f_m(q, |P - Q|),
-!   S_m  = sum_{TUV} U(TUV) sum_{ijk: T+U+V-i-j-k = m} a(T,i) a(U,j) a(V,k) hx^(T-2i) hy^(U-2j) hz^(V-2k),
-!   U(TUV) = sum_{tuv + t'u'v' = TUV} W_P(tuv) W_Q(t'u'v') (-1)^(t'+u'+v'),
-!   f_m  = (-q^2)^m j_m(qh)/(qh)^m.
-!
-! Compared with the quartet kernel (which must loop over every Cartesian component of the four
-! functions because a general 2RDM does not factorise), the work per pair of pairs is one
-! convolution of two Hermite tables and one radial sum.  The radial functions j_m(x)/x^m are
-! evaluated stably at every x, so coincident and nearly coincident pair centres need no
-! special treatment and lose no digits.
+!> PyXSCAT - rotationally averaged elastic scattering by density-weighted pairs
+!>
+!>      I(q) = sum_{mu nu la si} A_mu,nu B_la,si < chi_mu chi_nu | K_l(q r12) | chi_la chi_si >
+!>
+!> with K_0 = j0 (isotropic) or K_2 = j2 P2 (second Legendre moment about z).  A = B = D gives
+!> the elastic scattering <|F(q)|^2>; A /= B the coherent mixed (transition) terms (symmetrised).
+!>
+!> The pair density of the elastic term is a product, D (x) D, so the density can be folded into
+!> each primitive-shell pair BEFORE the pairs are combined: every pair becomes one Hermite charge
+!> distribution W(tuv) at its centre P,
+!>
+!>      rho_P(r) = (pi/p)^{3/2} K_ab sum_tuv W(tuv) Lambda_tuv(r - P),
+!>
+!> and the elastic term is a sum over pairs of pairs,
+!>
+!>      I(q) = sum_{P,Q} pref_P pref_Q exp(-q^2/4p - q^2/4p') sum_m S_m(P - Q) f_m(q, |P - Q|),
+!>      S_m  = sum_{TUV} U(TUV) sum_{ijk: T+U+V-i-j-k = m} a(T,i) a(U,j) a(V,k) hx^(T-2i) hy^(U-2j) hz^(V-2k),
+!>      U(TUV) = sum_{tuv + t'u'v' = TUV} W_P(tuv) W_Q(t'u'v') (-1)^(t'+u'+v'),
+!>      f_m  = (-q^2)^m j_m(qh)/(qh)^m.
+!>
+!> Compared with the quartet kernel (which must loop over every Cartesian component of the four
+!> functions because a general 2RDM does not factorise), the work per pair of pairs is one
+!> convolution of two Hermite tables and one radial sum.  The radial functions j_m(x)/x^m are
+!> evaluated stably at every x, so coincident and nearly coincident pair centres need no
+!> special treatment and lose no digits.
 !-----------------------------------------------------------------------
 module xs_elastic
     use xs_pairft, only: hermite_pair
@@ -38,6 +38,10 @@ module xs_elastic
     integer, parameter, private :: ikind = selected_int_kind(8)
 contains
 
+    !> I(q) at every q for the one-particle matrices da, db (elastic for da = db, coherent mixed
+    !> otherwise), K_0 for lorder = 0 and K_2 for lorder = 2, by the pair-of-pairs algorithm of the
+    !> module description.  Pairs whose bound is below screen are dropped; npairs_out returns the
+    !> number of significant pairs and of pairs of pairs evaluated; ierr = 0 on success.
     subroutine elastic_pairs(nprim, nao, nq, x, y, z, ga, l, m, n, group, contr, coeff, q, &
             da, db, lorder, screen, res, npairs_out, ierr)
         integer(kind=ikind), intent(in) :: nprim, nao, nq, lorder
@@ -311,12 +315,13 @@ contains
 
     contains
 
-        ! number of (t,u,v) with t+u+v <= kk (they are packed first by order)
+        !> number of (t,u,v) with t+u+v <= kk (they are packed first by order)
         pure integer(kind=ikind) function ncum(kk)
             integer(kind=ikind), intent(in) :: kk
             ncum = (kk + 1) * (kk + 2) * (kk + 3) / 6       ! 0 for kk = -1
         end function ncum
 
+        !> out(T, i) = a(T, i) hc^(T-2i), the per-direction table of one pair of pairs
         pure subroutine powers(lt, hc, ar, out)
             integer(kind=ikind), intent(in) :: lt
             real(kind=dp), intent(in) :: hc, ar(0:lt, 0:lt/2)
@@ -335,10 +340,10 @@ contains
             end do
         end subroutine powers
 
-        ! s(m) = sum_TUV U(TUV) sum_ijk ax(T',i) ay(U,j) az(V',k), m = T'+U+V'-i-j-k, with the z order
-        ! shifted by dz (0, or 2 for d^2/dz^2)
-        ! (the private work arrays of the OpenMP region are passed explicitly: a contained
-        ! procedure would otherwise see the host's shared copies)
+        !> s(m) = sum_TUV U(TUV) sum_ijk ax(T',i) ay(U,j) az(V',k), m = T'+U+V'-i-j-k, with the z order
+        !> shifted by dz (0, or 2 for d^2/dz^2)
+        !> (the private work arrays of the OpenMP region are passed explicitly: a contained
+        !> procedure would otherwise see the host's shared copies)
         subroutine radial_sum(kk, uin, dz, bx, by, bz, lt, s)
             integer(kind=ikind), intent(in) :: kk, lt
             integer, intent(in) :: dz

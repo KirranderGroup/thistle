@@ -3,24 +3,26 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 !-----------------------------------------------------------------------
-! PyXSCAT - spin-summed 1- and 2-RDMs of a determinant expansion, bitwise
-!
-! The determinant-pair ("bitwise") algorithm of the earlier code (twordm_jeremy.f90):
-! every pair (I, J) is screened with popcnt(ieor(.)) and only pairs differing by at
-! most two spin-orbitals contribute, through the Slater-Condon rules.  Cost ~ N_det^2
-! for the screening (a few machine instructions per pair, OpenMP over I) plus the
-! coupled pairs; independent of the size of the full CI space.
-!
-! Any number of orbitals: each spin string is nw = ceil(norb / 64) 64-bit words
-! (orbital k in word k/64, bit mod(k, 64)).  The RDMs are accumulated in thread-private
-! copies when nthreads x 8 norb^4 bytes is small (< 2 GB), otherwise straight into the
-! shared arrays with atomic updates (norb = 300: a 6.5 GB dm2, one copy).
-!
-! Conventions (as pyxscat.ci): determinant = alpha creators (ascending) then beta
-! creators (ascending) on the vacuum;
-!   dm1[p,q]     = sum_sigma <a+_{p sigma} a_{q sigma}>
-!   dm2[p,q,r,s] = sum_{sigma tau} <a+_{p sigma} a+_{r tau} a_{s tau} a_{q sigma}>
-! (C order on the Python side: here d1(q,p) and d2(s,r,q,p)).
+!> PyXSCAT - spin-summed 1- and 2-RDMs of a determinant expansion, bitwise
+!>
+!> The determinant-pair ("bitwise") algorithm of the earlier code (twordm_jeremy.f90):
+!> every pair (I, J) is screened with popcnt(ieor(.)) and only pairs differing by at
+!> most two spin-orbitals contribute, through the Slater-Condon rules.  Cost ~ N_det^2
+!> for the screening (a few machine instructions per pair, OpenMP over I) plus the
+!> coupled pairs; independent of the size of the full CI space.
+!>
+!> Any number of orbitals: each spin string is nw = ceil(norb / 64) 64-bit words
+!> (orbital k in word k/64, bit mod(k, 64)).  The RDMs are accumulated in thread-private
+!> copies when nthreads x 8 norb^4 bytes is small (< 2 GB), otherwise straight into the
+!> shared arrays with atomic updates (norb = 300: a 6.5 GB dm2, one copy).
+!>
+!> Conventions (as pyxscat.ci): determinant = alpha creators (ascending) then beta
+!> creators (ascending) on the vacuum;
+!>
+!>      dm1[p,q]     = sum_sigma <a+_{p sigma} a_{q sigma}>
+!>      dm2[p,q,r,s] = sum_{sigma tau} <a+_{p sigma} a+_{r tau} a_{s tau} a_{q sigma}>
+!>
+!> (C order on the Python side: here d1(q,p) and d2(s,r,q,p)).
 !-----------------------------------------------------------------------
 module xs_rdm
     use iso_fortran_env, only: int64, real64
@@ -39,7 +41,7 @@ module xs_rdm
 
 contains
 
-    ! number of set bits of w(1:nw) below spin-orbital k (0-based)
+    !> number of set bits of w(1:nw) below spin-orbital k (0-based)
     pure integer function count_below(w, nw, k)
         integer, intent(in) :: nw, k
         integer(i8), intent(in) :: w(nw)
@@ -50,7 +52,7 @@ contains
         if (iw > 1) count_below = count_below + sum(popcnt(w(1:iw-1)))
     end function count_below
 
-    ! sign (-1)^(number of occupied spin-orbitals before (k, spin)) in alpha-first order
+    !> sign (-1)^(number of occupied spin-orbitals before (k, spin)) in alpha-first order
     pure integer function before(wa, wb, nw, k, spin)
         integer, intent(in) :: nw, k, spin
         integer(i8), intent(in) :: wa(nw), wb(nw)
@@ -63,7 +65,7 @@ contains
         before = 1 - 2 * modulo(n, 2)
     end function before
 
-    ! apply a_k (create = .false.) or a+_k (create = .true.) to (wa, wb); returns the sign
+    !> apply a_k (create = .false.) or a+_k (create = .true.) to (wa, wb); returns the sign
     integer function apply_op(wa, wb, nw, k, spin, create)
         integer, intent(in) :: nw, k, spin
         integer(i8), intent(inout) :: wa(nw), wb(nw)
@@ -87,7 +89,7 @@ contains
         end if
     end function apply_op
 
-    ! the set spin-orbitals of the alpha and beta strings, as (orbital, spin) lists
+    !> the set spin-orbitals of the alpha and beta strings, as (orbital, spin) lists
     subroutine bits(wa, wb, nw, orb, spn, n)
         integer, intent(in) :: nw
         integer(i8), intent(in) :: wa(nw), wb(nw)
@@ -115,7 +117,7 @@ contains
         end do
     end subroutine bits
 
-    ! first set bit of w(1:nw) (-1 if none)
+    !> first set bit of w(1:nw) (-1 if none)
     pure integer function first_bit(w, nw)
         integer, intent(in) :: nw
         integer(i8), intent(in) :: w(nw)
@@ -129,6 +131,9 @@ contains
         end do
     end function first_bit
 
+    !> Spin-summed d1 and d2 of the expansion with coefficients c over the determinants
+    !> (wa(:, I), wb(:, I)), by the pair loop over all (I, J) on nthreads OpenMP threads.
+    !> ierr = 1 when a determinant has more than maxocc occupied spin-orbitals.
     subroutine rdm12_bitwise(ndet, norb, nw, wa, wb, c, d1, d2, nthreads, ierr)
         integer, intent(in) :: ndet, norb, nw, nthreads
         integer(i8), intent(in) :: wa(nw, ndet), wb(nw, ndet)
@@ -210,7 +215,7 @@ contains
         end do
         !$omp end parallel do
     contains
-        ! (p,q,r,s) strictly before its partner (q,p,s,r) in lexicographic order
+        !> (p,q,r,s) strictly before its partner (q,p,s,r) in lexicographic order
         pure logical function lower(p, q, r, s)
             integer, intent(in) :: p, q, r, s
             if (p /= q) then
@@ -221,12 +226,12 @@ contains
         end function lower
     end subroutine rdm12_bitwise
 
-    ! The same pair loop restricted to candidate pairs: determinants are sorted into groups
-    ! (contiguous, gstart(g):gstart(g+1)-1), and for group g only the groups
-    ! nb(nbstart(g):nbstart(g+1)-1), all >= g, are paired with it (g itself first when it
-    ! is to be included).  Elements of dm2 with all four orbitals >= nint are not accumulated
-    ! (they are formed elsewhere); nint < 0 keeps them.  The (I, J) / (J, I) symmetrisation
-    ! is applied as in rdm12_bitwise, so pairs must be listed once (g <= g').
+    !> The same pair loop restricted to candidate pairs: determinants are sorted into groups
+    !> (contiguous, gstart(g):gstart(g+1)-1), and for group g only the groups
+    !> nb(nbstart(g):nbstart(g+1)-1), all >= g, are paired with it (g itself first when it
+    !> is to be included).  Elements of dm2 with all four orbitals >= nint are not accumulated
+    !> (they are formed elsewhere); nint < 0 keeps them.  The (I, J) / (J, I) symmetrisation
+    !> is applied as in rdm12_bitwise, so pairs must be listed once (g <= g').
     subroutine rdm12_bitwise_groups(ndet, norb, nw, wa, wb, c, nint, ng, gstart, grp, nnb, nbstart, nb, &
                                     d1, d2, nthreads, ierr)
         integer, intent(in) :: ndet, norb, nw, nint, ng, nnb, nthreads
@@ -315,6 +320,7 @@ contains
         end do
         !$omp end parallel do
     contains
+        !> (p,q,r,s) strictly before its partner (q,p,s,r) in lexicographic order
         pure logical function lower2(p, q, r, s)
             integer, intent(in) :: p, q, r, s
             if (p /= q) then
@@ -325,8 +331,8 @@ contains
         end function lower2
     end subroutine rdm12_bitwise_groups
 
-    ! <I| ... |I>: dm1[k,k] += w; dm2[u,u,v,v] += w over ordered pairs u /= v of occupied
-    ! spin-orbitals, dm2[u,v,v,u] -= w when u and v have the same spin
+    !> Diagonal pair `<I| ... |I>`: dm1[k,k] += w; dm2[u,u,v,v] += w over ordered pairs u /= v of occupied
+    !> spin-orbitals, dm2[u,v,v,u] -= w when u and v have the same spin
     subroutine diagonal(wa, wb, nw, w, acc)
         integer, intent(in) :: nw
         integer(i8), intent(in) :: wa(nw), wb(nw)
@@ -344,7 +350,7 @@ contains
         end do
     end subroutine diagonal
 
-    ! I = Phi a+_x a_h J (one spin-orbital differs); w = c_I c_J
+    !> I = Phi a+_x a_h J (one spin-orbital differs); w = c_I c_J
     subroutine single(ia, ib, ja, jb, nw, w, acc)
         integer, intent(in) :: nw
         integer(i8), intent(in) :: ia(nw), ib(nw), ja(nw), jb(nw)
@@ -379,7 +385,7 @@ contains
         end do
     end subroutine single
 
-    ! I = Phi a+_p1 a+_p2 a_h2 a_h1 J (two spin-orbitals differ); w = c_I c_J
+    !> I = Phi a+_p1 a+_p2 a_h2 a_h1 J (two spin-orbitals differ); w = c_I c_J
     subroutine double(ia, ib, ja, jb, nw, w, acc)
         integer, intent(in) :: nw
         integer(i8), intent(in) :: ia(nw), ib(nw), ja(nw), jb(nw)
@@ -408,7 +414,7 @@ contains
         end if
     end subroutine double
 
-    ! dm1[p,q] (0-based, C order) += v
+    !> dm1[p,q] (0-based, C order) += v
     subroutine add1(acc, p, q, v)
         type(accum), intent(inout) :: acc
         integer, intent(in) :: p, q
@@ -421,7 +427,7 @@ contains
         end if
     end subroutine add1
 
-    ! dm2[p,q,r,s] (0-based orbitals, C order) += v
+    !> dm2[p,q,r,s] (0-based orbitals, C order) += v
     subroutine add2(acc, p, q, r, s, v)
         type(accum), intent(inout) :: acc
         integer, intent(in) :: p, q, r, s

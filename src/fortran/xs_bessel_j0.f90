@@ -3,49 +3,56 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 ! =========================================================================
-! Bessels_j0_opt.f90
-!
-! Optimised version of the Bessel module for X-ray scattering.
-!
-! Changes vs original:
-!
-! MATH:
-!   1. dphrec_opt: backward recurrence starts from order+15 instead of
-!      hardcoded 100. For order=4 this is 5x less work. For order=8
-!      still 4x less. Numerically identical (Miller's algorithm is
-!      stable regardless of starting point, provided sufficient buffer).
-!
-!   2. bessels0rr: final summation restructured as DGEMV when order>=4,
-!      with invpmu^beta scaling pre-absorbed. Eliminates the explicit
-!      beta loop with element-wise operations.
-!
-!   3. Pmu=0 guard: if any q-point gives |Pmu|<1e-15, use the
-!      Taylor expansion j_0(x)=1, j_l(x)~x^l/(2l+1)!! instead of
-!      dividing by zero.
-!
-! CODING:
-!   4. rrdj0: early exit when lmax=0 (s-shell quartets, very common).
-!      Avoids filling the full 20x20 matrix.
-!
-!   5. BesselDeriv: screening on products C1, C2 moved to reduce
-!      multiplications (already present in original, kept here).
-!
-!   6. allbessels array right-sized to (order+16, nq) instead of
-!      (100, nq), reducing stack usage from 160KB to ~25KB typical.
-!
-!   7. bessels0rr_dim: new variant that takes h_saved as dim-length
-!      vector (matching the caller's usage) to avoid assumed-shape
-!      overhead.
-!
-! Link with: -lblas (for DGEMV)
+!> Bessels_j0_opt.f90
+!>
+!> Optimised version of the Bessel module for X-ray scattering.
+!>
+!> Changes vs original:
+!>
+!> MATH:
+!>
+!>      1. dphrec_opt: backward recurrence starts from order+15 instead of
+!>         hardcoded 100. For order=4 this is 5x less work. For order=8
+!>         still 4x less. Numerically identical (Miller's algorithm is
+!>         stable regardless of starting point, provided sufficient buffer).
+!>
+!>      2. bessels0rr: final summation restructured as DGEMV when order>=4,
+!>         with invpmu^beta scaling pre-absorbed. Eliminates the explicit
+!>         beta loop with element-wise operations.
+!>
+!>      3. Pmu=0 guard: if any q-point gives |Pmu|<1e-15, use the
+!>         Taylor expansion j_0(x)=1, j_l(x)~x^l/(2l+1)!! instead of
+!>         dividing by zero.
+!>
+!> CODING:
+!>
+!>      4. rrdj0: early exit when lmax=0 (s-shell quartets, very common).
+!>         Avoids filling the full 20x20 matrix.
+!>
+!>      5. BesselDeriv: screening on products C1, C2 moved to reduce
+!>         multiplications (already present in original, kept here).
+!>
+!>      6. allbessels array right-sized to (order+16, nq) instead of
+!>         (100, nq), reducing stack usage from 160KB to ~25KB typical.
+!>
+!>      7. bessels0rr_dim: new variant that takes h_saved as dim-length
+!>         vector (matching the caller's usage) to avoid assumed-shape
+!>         overhead.
+!>
+!> Link with: -lblas (for DGEMV)
 ! =========================================================================
 
 module Bessels_j0
     implicit none
-    ! largest derivative order + 1 of the j0 expansions: 4 l_max + 2 (j2) + 1 = 23 for h functions
+    !> largest derivative order + 1 of the j0 expansions: 4 l_max + 2 (j2) + 1 = 23 for h functions
     integer, parameter :: BDIM_MAX = 32
 contains
 
+    !> Radial sum of the quartet kernel for one pair distance H and every q in mu:
+    !>
+    !>      h_sum(q) = sum_b h_saved(b+1) j_b(H q) (q/H)^b,
+    !>
+    !> with closed forms for order <= 3 and Miller's backward recurrence (dphrec_opt) above.
     subroutine bessels0rr(h_sum, order, mu, H, h_saved)
         INTEGER, PARAMETER :: dp = SELECTED_REAL_KIND(15)
         INTEGER, PARAMETER :: ikind = SELECTED_INT_KIND(8)
@@ -166,17 +173,17 @@ contains
 
 
     ! ==================================================================
-    ! Right-sized backward recurrence for spherical Bessel functions
-    !
-    ! Miller's algorithm: start backward recurrence from l = leps1,
-    ! normalise against known values of cos(x) and the Wronskian.
-    !
-    ! The caller must ensure leps1 >= max(|x|) + buffer for all
-    ! x values in the array. A buffer of ~20 + 5*|x|^(1/3) gives
-    ! double-precision accuracy.
-    !
-    ! leps1: starting order for backward recurrence  
-    ! lmax1: number of Bessel functions to return (j_0 ... j_{lmax1-1})
+    !> Right-sized backward recurrence for spherical Bessel functions
+    !>
+    !> Miller's algorithm: start backward recurrence from l = leps1,
+    !> normalise against known values of cos(x) and the Wronskian.
+    !>
+    !> The caller must ensure leps1 >= max(|x|) + buffer for all
+    !> x values in the array. A buffer of ~20 + 5*|x|^(1/3) gives
+    !> double-precision accuracy.
+    !>
+    !> `leps1` is the starting order of the backward recurrence and `lmax1` the number of Bessel
+    !> functions returned (j_0 ... j_{lmax1-1}).
     ! ==================================================================
     subroutine dphrec_opt(x, rbes, leps1, lmax1, nq)
         implicit none
@@ -224,9 +231,9 @@ contains
 
 
     ! ==================================================================
-    ! rrdj0: expansion coefficients for one Cartesian coordinate
-    !
-    ! OPT: early return for lmax=0 (s-shell, very common)
+    !> Expansion coefficients for one Cartesian coordinate.
+    !>
+    !> Early return for lmax = 0 (s-shell, very common).
     ! ==================================================================
     subroutine rrdj0(lmax, x, a)
         integer, parameter :: dp = selected_real_kind(15)
@@ -260,10 +267,10 @@ contains
 
 
     ! ==================================================================
-    ! BesselDeriv: combine three coordinate expansions
-    !
-    ! Unchanged from original (already well-screened).
-    ! The screening on C1, C2 avoids unnecessary inner iterations.
+    !> Combines the three coordinate expansions.
+    !>
+    !> Unchanged from original (already well-screened).
+    !> The screening on C1, C2 avoids unnecessary inner iterations.
     ! ==================================================================
     subroutine BesselDeriv(BD, LL, MM, NN, a, b, c, LLmax)
         INTEGER, PARAMETER :: dp = SELECTED_REAL_KIND(15)
@@ -303,10 +310,10 @@ contains
 
 
     ! ==================================================================
-    ! BesselSum: forward recurrence variant (kept for compatibility)
-    !
-    ! WARNING: forward recurrence for j_l(x) is numerically unstable
-    ! for l > x. Use bessels0rr (backward recurrence) for production.
+    !> Forward recurrence variant of bessels0rr (kept for compatibility).
+    !>
+    !> **Warning:** forward recurrence for j_l(x) is numerically unstable
+    !> for l > x. Use bessels0rr (backward recurrence) for production.
     ! ==================================================================
     subroutine BesselSum(h_sum, mu, H, LLmax, h_saved)
         INTEGER, PARAMETER :: dp = SELECTED_REAL_KIND(15)

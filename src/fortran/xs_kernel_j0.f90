@@ -3,38 +3,39 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 !-----------------------------------------------------------------------
-! PyXSCAT - rotationally averaged (j0) two-electron scattering kernel
-!
-!   I2(q) = sum_{ijkr} Z(ij,kr) < chi_i chi_j | j0(q r12) | chi_k chi_r >
-!
-! chi are contracted Cartesian Gaussians and Z is a pair density in that
-! basis.  The routine knows nothing about how Z was obtained: it is
-! supplied by a "density provider"
-!
-!   mode 1 : explicit four-index array Z (8-fold symmetric)
-!   mode 2 : built on the fly from two symmetric one-particle matrices
-!   mode 3 : a sum of products of one-particle matrices (factored densities, e.g. CCSD):
-!              Z(a,b,c,d) = sum_k Ac_k(a,b) Bc_k(c,d)  [Coulomb pairing, Ac/Bc symmetric]
-!                         + sum_k Ax_k(a,c) Bx_k(b,d)  [exchange pairing, any matrices],
-!            symmetrised over the 8 index permutations inside the kernel
-!              Z(ij,kr) = wc/2 [A_ij B_kr + B_ij A_kr]
-!                       + wx   [A_ik A_jr + A_ir A_jk]
-!            wc = 1, wx = 0     -> elastic (A = B = D) or coherent mixed
-!            wc = 0, wx = -1/4  -> closed-shell exchange
-!            wc = 1, wx = -1/4  -> closed-shell mean field (Hartree-Fock)
-!
-! Algorithm: canonical loop over contracted-shell quartets with primitive
-! quartets inside, shell-pair screening, thread-local buffers.  It is the
-! "one loop" kernel of Moreno Carrascosa and co-workers, taking its input
-! in memory instead of from files.
-!
-! Basis description (all arrays over primitive Cartesian functions):
-!   x, y, z, ga   centre and exponent
-!   l, m, n       Cartesian powers
-!   group         primitive shell (same centre, exponent and l+m+n);
-!                 numbered 1..ng, members contiguous
-!   contr         index of the contracted function the primitive belongs to
-!   coeff         contraction coefficient times normalisation
+!> PyXSCAT - rotationally averaged (j0) two-electron scattering kernel
+!>
+!>      I2(q) = sum_{ijkr} Z(ij,kr) < chi_i chi_j | j0(q r12) | chi_k chi_r >
+!>
+!> chi are contracted Cartesian Gaussians and Z is a pair density in that
+!> basis.  The routine knows nothing about how Z was obtained: it is
+!> supplied by a "density provider"
+!>
+!>      mode 1 : explicit four-index array Z (8-fold symmetric)
+!>      mode 2 : built on the fly from two symmetric one-particle matrices
+!>      mode 3 : a sum of products of one-particle matrices (factored densities, e.g. CCSD):
+!>                 Z(a,b,c,d) = sum_k Ac_k(a,b) Bc_k(c,d)  [Coulomb pairing, Ac/Bc symmetric]
+!>                            + sum_k Ax_k(a,c) Bx_k(b,d)  [exchange pairing, any matrices],
+!>               symmetrised over the 8 index permutations inside the kernel
+!>                 Z(ij,kr) = wc/2 [A_ij B_kr + B_ij A_kr]
+!>                          + wx   [A_ik A_jr + A_ir A_jk]
+!>               wc = 1, wx = 0     -> elastic (A = B = D) or coherent mixed
+!>               wc = 0, wx = -1/4  -> closed-shell exchange
+!>               wc = 1, wx = -1/4  -> closed-shell mean field (Hartree-Fock)
+!>
+!> Algorithm: canonical loop over contracted-shell quartets with primitive
+!> quartets inside, shell-pair screening, thread-local buffers.  It is the
+!> "one loop" kernel of Moreno Carrascosa and co-workers, taking its input
+!> in memory instead of from files.
+!>
+!> Basis description (all arrays over primitive Cartesian functions):
+!>
+!>      x, y, z, ga   centre and exponent
+!>      l, m, n       Cartesian powers
+!>      group         primitive shell (same centre, exponent and l+m+n);
+!>                    numbered 1..ng, members contiguous
+!>      contr         index of the contracted function the primitive belongs to
+!>      coeff         contraction coefficient times normalisation
 !-----------------------------------------------------------------------
 module xs_kernel_j0
     use Bessels_j0
@@ -49,7 +50,7 @@ module xs_kernel_j0
     integer(kind=ikind), parameter, private :: bdim = BDIM_MAX   ! from the Bessel module (h functions)
 
     abstract interface
-        ! BLAS dgemm in its Fortran calling convention (everything by reference)
+        !> BLAS dgemm in its Fortran calling convention (everything by reference)
         subroutine dgemm_iface(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc) bind(C)
             import :: c_char, c_int, c_double
             character(kind=c_char), intent(in) :: transa, transb
@@ -62,6 +63,11 @@ module xs_kernel_j0
 
 contains
 
+    !> The two-electron term I2(q) at every q of qin (lorder = 0), or its j2 P2 moment (lorder = 2),
+    !> for the density provider selected by mode (see the module description).  tsi receives the
+    !> result, stats the screening counts (shell quartets total/kept, primitive quartets total/kept);
+    !> ierr = 0 on success, 1-8 for an inconsistent input (sizes, modes, l beyond the Bessel tables,
+    !> non-contiguous groups).
     subroutine two_electron_j0(nprim, ncontr, nq, x, y, z, ga, l, m, n, group, contr, coeff, qin, &
             mode, zbig, da, db, wc, wx, nkc, ac, bc, nkx, ax, bx, dgemm_ptr, &
             cutoffcentre, cutoffz, cutoffmd, screen_tol, lorder, tsi, stats, ierr)
@@ -467,13 +473,15 @@ contains
     end subroutine two_electron_j0
 
     ! ---------------------------------------------------------------------------------
-    ! Exchange-paired factored terms, Z(a,b,c,d) = sum_k Ax_k(I_a, K_c) Bx_k(J_b, L_d), symmetrised
-    ! over the 8 index permutations the canonical quartet loop assumes:
-    !   1/8 [A(I,K)B(J,L) + A(J,K)B(I,L) + A(I,L)B(J,K) + A(J,L)B(I,K) + the same with A, B transposed].
-    ! The shell quartets are the canonical ones (si <= sj, sk <= sr, (si,sj) >= (sk,sr)), visited
-    ! with sk outside and a batch of si next, so that every factor block carries either batch
-    ! indices (gathered once per batch or per sr) or inner indices (gathered once per sj and
-    ! shared by the batch); each image is one matrix product over k (BLAS dgemm when given).
+    !> Exchange-paired factored terms, Z(a,b,c,d) = sum_k Ax_k(I_a, K_c) Bx_k(J_b, L_d), symmetrised
+    !> over the 8 index permutations the canonical quartet loop assumes:
+    !>
+    !>      1/8 [A(I,K)B(J,L) + A(J,K)B(I,L) + A(I,L)B(J,K) + A(J,L)B(I,K) + the same with A, B transposed].
+    !>
+    !> The shell quartets are the canonical ones (si <= sj, sk <= sr, (si,sj) >= (sk,sr)), visited
+    !> with sk outside and a batch of si next, so that every factor block carries either batch
+    !> indices (gathered once per batch or per sr) or inner indices (gathered once per sj and
+    !> shared by the batch); each image is one matrix product over k (BLAS dgemm when given).
     ! ---------------------------------------------------------------------------------
     subroutine exchange_pass(nq, q, nkx, ncontr, ax, bx, dgemm, nshell, shell_start, shell_end, gstart, gcount, contr, &
             coeff, max_gc, n4, lorder, l, m, n, p0matrix, ddx, ddy, ddz, px, py, pz, e12, e12s, e12max, cmaxg, ng, &
@@ -694,9 +702,8 @@ contains
         deallocate(tsk, ts0, ts1)
     end subroutine exchange_pass
 
-    ! z(1:ncol, 1:n) = a(1:nk, 1:ncol)^T b(1:nk, 1:n)
+    !> idx = permutation that orders key descending (iterative merge sort, stable)
     subroutine sort_desc(n, key, idx)
-        ! idx = permutation that orders key descending (iterative merge sort, stable)
         integer(kind=ikind), intent(in) :: n
         real(kind=dp), intent(in) :: key(n)
         integer(kind=ikind), intent(out) :: idx(n)
@@ -734,6 +741,7 @@ contains
         deallocate(tmp)
     end subroutine sort_desc
 
+    !> z(1:ncol, 1:n) = a(1:nk, 1:ncol)^T b(1:nk, 1:n), by BLAS dgemm when a pointer was given, else matmul
     subroutine gemm_tn(dgemm, nk, ncol, n, a, b, z)
         procedure(dgemm_iface), pointer, intent(in) :: dgemm
         integer(kind=ikind), intent(in) :: nk, ncol, n
@@ -751,9 +759,11 @@ contains
 
 
 
-    ! Pair-density block of a shell quartet from the Coulomb-paired factored terms,
-    !   sum_k 1/2 [Ac_k(I,J) Bc_k(K,L) + Bc_k(I,J) Ac_k(K,L)]     (Ac, Bc symmetric),
-    ! which has the full 8-fold index symmetry of the canonical loop.
+    !> Pair-density block of a shell quartet from the Coulomb-paired factored terms,
+    !>
+    !>      sum_k 1/2 [Ac_k(I,J) Bc_k(K,L) + Bc_k(I,J) Ac_k(K,L)]     (Ac, Bc symmetric),
+    !>
+    !> which has the full 8-fold index symmetry of the canonical loop.
     subroutine coulomb_block(nkc, ncontr, ac, bc, posI, posJ, posK, posR, spi, spj, spk, spr, zc)
         integer(kind=ikind), intent(in) :: nkc, ncontr, spi, spj, spk, spr
         real(kind=dp), intent(in) :: ac(nkc, ncontr, ncontr), bc(nkc, ncontr, ncontr)
@@ -787,7 +797,7 @@ contains
     end subroutine coulomb_block
 
     ! =========================================================================
-    ! Pair centres coincide (h < cutoffcentre): tabulated limits
+    !> Pair centres coincide (h < cutoffcentre): tabulated limits
     ! =========================================================================
     subroutine quartet_coincident(nq, q, lorder, l, m, n, gs, gc, p0mat, dx1, dy1, dz1, dx2, dy2, dz2, gi, gj, gk, gr, &
             zcontr, coeff1, coeff2, coeff3, coeff4, cutoff1, cutoff2, f)
@@ -876,7 +886,7 @@ contains
     end subroutine quartet_coincident
 
     ! =========================================================================
-    ! Distinct pair centres: derivatives of j0(q h) through the Bessel module
+    !> Distinct pair centres: derivatives of j0(q h) through the Bessel module
     ! =========================================================================
     subroutine quartet_distant(mu, lorder, l, m, n, gs, gc, hx, hy, hz, h, dx1, dy1, dz1, dx2, dy2, dz2, gi, gj, gk, gr, &
             zcontr, coeff1, coeff2, coeff3, coeff4, cutoff1, cutoff2, hpre, f)
@@ -988,10 +998,12 @@ contains
     end subroutine quartet_distant
 
     ! =========================================================================
-    ! j2(q r) P2(cos theta) from j0 by the solid-harmonic (Hobson) theorem:
-    !   (3 d^2/dz^2 - Laplacian) j0(q r) = 2 q^2 j2(q r) P2(cos theta),  Laplacian j0 = -q^2 j0
-    !   => j2 P2 = (3 d^2/dz^2 j0 + q^2 j0) / (2 q^2)
-    ! f holds the j0 integral, fzz the same with two extra z derivatives.
+    !> j2(q r) P2(cos theta) from j0 by the solid-harmonic (Hobson) theorem:
+    !>
+    !>      (3 d^2/dz^2 - Laplacian) j0(q r) = 2 q^2 j2(q r) P2(cos theta),  Laplacian j0 = -q^2 j0
+    !>      => j2 P2 = (3 d^2/dz^2 j0 + q^2 j0) / (2 q^2)
+    !>
+    !> f holds the j0 integral, fzz the same with two extra z derivatives.
     ! =========================================================================
     subroutine combine_j2(q, f, fzz)
         real(kind=dp), intent(in) :: q(:), fzz(:)
@@ -1004,9 +1016,10 @@ contains
     end subroutine combine_j2
 
     ! =========================================================================
-    ! Limits of the derivatives of j0(q h) at h = 0, any order:
-    !   d^L/dx^L d^M/dy^M d^N/dz^N j0(q|h|) at 0 = <(i q n_x)^L (i q n_y)^M (i q n_z)^N>_n
-    !   = (-1)^(S/2) q^S (L-1)!! (M-1)!! (N-1)!! / (S+1)!!   (L, M, N even; S = L+M+N), else 0
+    !> Limits of the derivatives of j0(q h) at h = 0, any order:
+    !>
+    !>      d^L/dx^L d^M/dy^M d^N/dz^N j0(q|h|) at 0 = <(i q n_x)^L (i q n_y)^M (i q n_z)^N>_n
+    !>      = (-1)^(S/2) q^S (L-1)!! (M-1)!! (N-1)!! / (S+1)!!   (L, M, N even; S = L+M+N), else 0
     ! =========================================================================
     subroutine p0_limits(p0, smax, q)
         real(kind=dp), intent(out) :: p0(:, :, :, :)
@@ -1027,6 +1040,7 @@ contains
         end do
     end subroutine p0_limits
 
+    !> Double factorial n!! as a real (1 for n <= 1).
     pure real(kind=dp) function dfact(n)
         integer(kind=ikind), intent(in) :: n
         integer(kind=ikind) :: k

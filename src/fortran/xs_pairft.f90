@@ -3,24 +3,26 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 !-----------------------------------------------------------------------
-! PyXSCAT - Fourier transforms of basis-function products at fixed q
-!
-!   F(q, mu, nu) = int chi_mu(r) chi_nu(r) exp(+i q.r) dr
-!
-! for an arbitrary list of scattering vectors (no orientational average).
-! Everything that depends on the molecular orientation (aligned or
-! oriented molecules, detector images) follows from these by contraction
-! with density matrices, because the plane wave factorises:
-!
-!   elastic      F(q)  = sum D_mu,nu F_mu,nu(q)
-!   two-electron I2(q) = sum Gamma_{mu nu, la si} F_mu,nu(q) F_la,si(q)^*
-!
-! Each primitive pair is expanded in Hermite Gaussians at the pair centre P;
-! the transform of a Hermite Gaussian is analytic:
-!   int Lambda_tuv(r-P) exp(iq.r) = (pi/p)^{3/2} exp(-q^2/4p) exp(iq.P)
-!                                   (i qx)^t (i qy)^u (i qz)^v
-! so there is no Bessel expansion and no special treatment of coincident
-! centres.
+!> PyXSCAT - Fourier transforms of basis-function products at fixed q
+!>
+!>      F(q, mu, nu) = int chi_mu(r) chi_nu(r) exp(+i q.r) dr
+!>
+!> for an arbitrary list of scattering vectors (no orientational average).
+!> Everything that depends on the molecular orientation (aligned or
+!> oriented molecules, detector images) follows from these by contraction
+!> with density matrices, because the plane wave factorises:
+!>
+!>      elastic      F(q)  = sum D_mu,nu F_mu,nu(q)
+!>      two-electron I2(q) = sum Gamma_{mu nu, la si} F_mu,nu(q) F_la,si(q)^*
+!>
+!> Each primitive pair is expanded in Hermite Gaussians at the pair centre P;
+!> the transform of a Hermite Gaussian is analytic:
+!>
+!>      int Lambda_tuv(r-P) exp(iq.r) = (pi/p)^{3/2} exp(-q^2/4p) exp(iq.P)
+!>                                      (i qx)^t (i qy)^u (i qz)^v
+!>
+!> so there is no Bessel expansion and no special treatment of coincident
+!> centres.
 !-----------------------------------------------------------------------
 module xs_pairft
     use iso_fortran_env, only: int64
@@ -29,8 +31,8 @@ module xs_pairft
     integer, parameter, private :: ikind = selected_int_kind(8)
 contains
 
-    ! Hermite coefficients E(t; i, j) for one primitive pair and one direction (Gaussian
-    ! prefactor excluded, E(0;0,0) = 1).
+    !> Hermite coefficients E(t; i, j) for one primitive pair and one direction (Gaussian
+    !> prefactor excluded, E(0;0,0) = 1).
     pure subroutine hermite_pair(la, lb, pa, pb, p, e)
         integer(kind=ikind), intent(in) :: la, lb
         real(kind=dp), intent(in) :: pa, pb, p
@@ -57,6 +59,9 @@ contains
         e = w(0:la+lb+1, :, :)
     end subroutine hermite_pair
 
+    !> F(q, mu, nu) for every scattering vector qv(:, iq) and every pair of contracted functions,
+    !> into the complex array f(nq, nao, nao).  Primitive-shell pairs whose Gaussian prefactor
+    !> (times the largest coefficients) is below screen are skipped; ierr = 0 on success.
     subroutine pair_transform(nprim, nao, nq, x, y, z, ga, l, m, n, group, contr, coeff, qv, &
             screen, f, ierr)
         integer(kind=ikind), intent(in) :: nprim, nao, nq

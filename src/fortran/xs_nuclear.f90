@@ -3,33 +3,33 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 !-----------------------------------------------------------------------
-! PyXSCAT - electron-nucleus term of electron scattering
-!
-! In the first Born approximation a fast electron is scattered by the full
-! charge distribution, nuclei and electrons:
-!
-!   dsigma/dOmega = 4 / (a0^2 q^4) < | sum_A Z_A exp(iq.R_A) - F(q) |^2 >  + inelastic
-!
-! which, rotationally averaged, needs one quantity beyond X-ray scattering,
-! the electron-nucleus cross term
-!
-!   I_ne(q) = sum_A Z_A sum_mu,nu D_mu,nu int chi_mu chi_nu K_l(q, r - R_A) dr
-!
-! with K_0 = j0(q|h|) (isotropic signal) or K_2 = j2(q|h|) P2(cos theta_h)
-! (second Legendre moment about z, aligned molecules).
-!
-! Each primitive pair is expanded in Hermite Gaussians at the pair centre P:
-!
-!   int Lambda_tuv(r - P) j0(q|r - A|) dr = (pi/p)^{3/2} exp(-q^2/4p) d^{t+u+v}/dh^tuv j0(q|h|),
-!   h = P - A,
-!
-! and the Cartesian derivatives of the radial function j0(q|h|) follow from
-! the McMurchie-Davidson recursion with the auxiliary functions
-!
-!   f_n(h) = (1/h d/dh)^n j0(q h) = (-q^2)^n j_n(qh) / (qh)^n.
-!
-! j2 P2 follows from Hobson's theorem: j2(qh) P2(cos theta) = [3 d^2/dhz^2 + q^2] j0(qh) / (2 q^2).
-! Nothing is singular when a nucleus sits on a pair centre (h = 0).
+!> PyXSCAT - electron-nucleus term of electron scattering
+!>
+!> In the first Born approximation a fast electron is scattered by the full
+!> charge distribution, nuclei and electrons:
+!>
+!>      dsigma/dOmega = 4 / (a0^2 q^4) < | sum_A Z_A exp(iq.R_A) - F(q) |^2 >  + inelastic
+!>
+!> which, rotationally averaged, needs one quantity beyond X-ray scattering,
+!> the electron-nucleus cross term
+!>
+!>      I_ne(q) = sum_A Z_A sum_mu,nu D_mu,nu int chi_mu chi_nu K_l(q, r - R_A) dr
+!>
+!> with K_0 = j0(q|h|) (isotropic signal) or K_2 = j2(q|h|) P2(cos theta_h)
+!> (second Legendre moment about z, aligned molecules).
+!>
+!> Each primitive pair is expanded in Hermite Gaussians at the pair centre P:
+!>
+!>      int Lambda_tuv(r - P) j0(q|r - A|) dr = (pi/p)^{3/2} exp(-q^2/4p) d^{t+u+v}/dh^tuv j0(q|h|),
+!>      h = P - A,
+!>
+!> and the Cartesian derivatives of the radial function j0(q|h|) follow from
+!> the McMurchie-Davidson recursion with the auxiliary functions
+!>
+!>      f_n(h) = (1/h d/dh)^n j0(q h) = (-q^2)^n j_n(qh) / (qh)^n.
+!>
+!> j2 P2 follows from Hobson's theorem: j2(qh) P2(cos theta) = [3 d^2/dhz^2 + q^2] j0(qh) / (2 q^2).
+!> Nothing is singular when a nucleus sits on a pair centre (h = 0).
 !-----------------------------------------------------------------------
 module xs_nuclear
     use xs_pairft, only: hermite_pair
@@ -39,8 +39,8 @@ module xs_nuclear
     integer, parameter, private :: ikind = selected_int_kind(8)
 contains
 
-    ! Hermite derivatives R(k) = d^{t+u+v}/dh_x^t dh_y^u dh_z^v j0(q|h|) for t+u+v <= lmax,
-    ! packed by idx(t,u,v).
+    !> Hermite derivatives R(k) = d^{t+u+v}/dh_x^t dh_y^u dh_z^v j0(q|h|) for t+u+v <= lmax,
+    !> packed by idx(t,u,v).
     pure subroutine j0_derivatives(q, hx, hy, hz, lmax, ldim, idx, ntuv, r)
         real(kind=dp), intent(in) :: q, hx, hy, hz
         integer(kind=ikind), intent(in) :: lmax, ldim, ntuv
@@ -77,7 +77,7 @@ contains
         end do
     end subroutine j0_derivatives
 
-    ! I_ne(q) = sum_A zat(A) sum_mu,nu dm(mu,nu) int chi_mu chi_nu K_lorder(q, r - R_A) dr
+    !> I_ne(q) = sum_A zat(A) sum_mu,nu dm(mu,nu) int chi_mu chi_nu K_lorder(q, r - R_A) dr
     subroutine electron_nucleus(nprim, nao, nq, x, y, z, ga, l, m, n, group, contr, coeff, q, &
             natom, zat, rat, dm, lorder, screen, res, ierr)
         integer(kind=ikind), intent(in) :: nprim, nao, nq, natom, lorder

@@ -3,15 +3,17 @@
 ! Copyright 2026 Andres Moreno Carrascosa
 ! Authors: A. Moreno Carrascosa, M. Simmermacher, P. Y. Wang, E. Moen Liane, J. Cooper, N. Zotev, T. Northey, A. Kirrander
 !-----------------------------------------------------------------------
-! PyXSCAT - radial functions shared by the one- and two-centre j0 kernels
-!
-!   g_n(x) = j_n(x) / x^n                       (stable for every x >= 0)
-!   a(T, i) = T! / (i! (T-2i)! 2^i)               (Cartesian derivatives of a function of h^2/2)
-!
-! For any radial function f(|h|) with f_n = (1/h d/dh)^n f,
-!   d^T/dhx^T d^U/dhy^U d^V/dhz^V f = sum_ijk a(T,i) a(U,j) a(V,k) hx^(T-2i) hy^(U-2j) hz^(V-2k)
-!                                     f_(T+U+V-i-j-k),
-! and for f = j0(q h):  f_n = (-q^2)^n g_n(q h).
+!> PyXSCAT - radial functions shared by the one- and two-centre j0 kernels
+!>
+!>      g_n(x) = j_n(x) / x^n                       (stable for every x >= 0)
+!>      a(T, i) = T! / (i! (T-2i)! 2^i)               (Cartesian derivatives of a function of h^2/2)
+!>
+!> For any radial function f(|h|) with f_n = (1/h d/dh)^n f,
+!>
+!>      d^T/dhx^T d^U/dhy^U d^V/dhz^V f = sum_ijk a(T,i) a(U,j) a(V,k) hx^(T-2i) hy^(U-2j) hz^(V-2k)
+!>                                        f_(T+U+V-i-j-k),
+!>
+!> and for f = j0(q h):  f_n = (-q^2)^n g_n(q h).
 !-----------------------------------------------------------------------
 module xs_radial
     implicit none
@@ -20,7 +22,7 @@ module xs_radial
     integer, parameter, private :: NJJ = 128
 contains
 
-    ! g(n) = j_n(x) / x^n, n = 0..nmax, accurate for every x >= 0.
+    !> g(n) = j_n(x) / x^n, n = 0..nmax, accurate for every x >= 0.
     pure subroutine jn_over_xn(x, nmax, g)
         real(kind=dp), intent(in) :: x
         integer(kind=ikind), intent(in) :: nmax
@@ -124,7 +126,7 @@ contains
     end subroutine jn_over_xn
 
 
-    ! a(T, i) for T <= lmax, i <= T/2
+    !> a(T, i) for T <= lmax, i <= T/2
     pure subroutine hermite_radial_coeffs(lmax, a)
         integer(kind=ikind), intent(in) :: lmax
         real(kind=dp), intent(out) :: a(0:lmax, 0:lmax/2)
@@ -139,20 +141,23 @@ contains
         end do
     end subroutine hermite_radial_coeffs
 
-    ! The upward recurrence g(m+1) = [(2m+1) g(m) - g(m-1)] / x^2 is stable only while the
-    ! order stays below x (above it the irregular solution y_m takes over, and rounding errors
-    ! grow like (2m-1)!! (2m+1)!! / x^(2m+1)).  It is therefore used only when x > kk + 1, for
-    ! all orders at once; below that, jn_over_xn propagates downward (series + downward
-    ! recurrence for x < 1, Miller's normalised backward recurrence for 1 <= x <= kk + 1).
+    !> The upward recurrence g(m+1) = [(2m+1) g(m) - g(m-1)] / x^2 is stable only while the
+    !> order stays below x (above it the irregular solution y_m takes over, and rounding errors
+    !> grow like (2m-1)!! (2m+1)!! / x^(2m+1)).  It is therefore used only when x > kk + 1, for
+    !> all orders at once; below that, jn_over_xn propagates downward (series + downward
+    !> recurrence for x < 1, Miller's normalised backward recurrence for 1 <= x <= kk + 1).
     pure real(kind=dp) function upward_threshold(kk)
         integer(kind=ikind), intent(in) :: kk
         upward_threshold = real(kk, dp) + 1.0_dp
     end function upward_threshold
 
-    ! out(iq) = sum_{b=0}^{order} coef(b+1) q^(2b) j_b(q h)/(q h)^b
-    !         = sum_b coef(b+1) j_b(q h) (q/h)^b,
-    ! the radial sum of the quartet kernel, accurate for every q and h (including q h -> 0, where
-    ! the closed forms of j_1, j_2, j_3 lose 2, 4, 6 powers of q h to cancellation).
+    !> The radial sum of the quartet kernel,
+    !>
+    !>      out(iq) = sum_{b=0}^{order} coef(b+1) q^(2b) j_b(q h)/(q h)^b
+    !>              = sum_b coef(b+1) j_b(q h) (q/h)^b,
+    !>
+    !> accurate for every q and h (including q h -> 0, where the closed forms of j_1, j_2, j_3
+    !> lose 2, 4, 6 powers of q h to cancellation).
     subroutine radial_series(nq, q, h, order, coef, out)
         integer(kind=ikind), intent(in) :: nq, order
         real(kind=dp), intent(in) :: q(nq), h, coef(order + 1)
