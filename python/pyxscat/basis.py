@@ -3,7 +3,7 @@
 """Package-independent description of a Gaussian basis set.
 
 The scattering kernels only ever see this object.  Every contracted basis function is a
-linear combination of primitive Cartesian Gaussians
+linear combination of primitive Cartesian Gaussians::
 
     chi_mu(r) = sum_p  coeff_p (x-X)^l (y-Y)^m (z-Z)^n exp(-ga |r-R|^2),
 
@@ -23,18 +23,26 @@ def cartesian_powers(l):
 
 @dataclass
 class Basis:
-    """Primitive Cartesian Gaussians grouped into primitive shells.
+    """Primitive Cartesian Gaussians grouped into primitive shells (every array has one entry
+    per primitive Cartesian function).
 
-    Attributes (one entry per primitive Cartesian function)
+    Attributes
     ----------
-    xyz : (nprim, 3) centres in bohr
-    ga : exponents
-    lmn : (nprim, 3) Cartesian powers
-    group : primitive shell index, 1-based, contiguous.  A primitive shell collects all
-        functions that share centre, exponent and l+m+n.
-    contr : index (1-based) of the contracted function the primitive belongs to
-    coeff : contraction coefficient times normalisation
-    nao : number of contracted functions
+    xyz : ndarray, shape (nprim, 3)
+        Centres in bohr.
+    ga : ndarray
+        Exponents.
+    lmn : ndarray, shape (nprim, 3)
+        Cartesian powers.
+    group : ndarray
+        Primitive shell index, 1-based, contiguous.  A primitive shell collects all functions
+        that share centre, exponent and l+m+n.
+    contr : ndarray
+        Index (1-based) of the contracted function the primitive belongs to.
+    coeff : ndarray
+        Contraction coefficient times normalisation.
+    nao : int
+        Number of contracted functions.
     """
 
     xyz: np.ndarray

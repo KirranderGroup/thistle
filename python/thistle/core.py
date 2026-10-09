@@ -329,7 +329,7 @@ class DetectorPattern:
 
     @property
     def q(self):
-        """|q| of every point, in the result's unit."""
+        """``|q|`` of every point, in the result's unit."""
         return np.linalg.norm(self.qvec, axis=1) * Q_UNITS[self.unit]
 
     def plot(self, path=None, curve="total", log=True):
@@ -338,7 +338,7 @@ class DetectorPattern:
         return plotting.detector(self, curve=curve if curve in self.values else None, path=path, log=log).axes[0]
 
     def save(self, path):
-        """``.npz``: arrays; any other extension: text, columns qx qy qz |q| (bohr^-1, as in
+        """``.npz``: arrays; any other extension: text, columns ``qx qy qz |q|`` (bohr^-1, as in
         qgrid.dat) followed by one column per curve."""
         meta = dict(self.meta, q_unit=self.unit, name=self.name)
         if str(path).endswith(".npz"):
@@ -673,11 +673,11 @@ class Molecule:
                          iam_source="ab initio"):
         """Detector pattern of molecules whose z axis is aligned along ``axis`` (laboratory frame,
         e.g. the laser polarisation; the beam runs along z) with degree of alignment
-        ``p2`` = <P2(cos beta)>, from the isotropic signal and the j2 moment:
+        ``p2`` = <P2(cos beta)>, from the isotropic signal and the j2 moment::
 
             I(q) = I0(|q|) + 5 p2 P2(q^ . axis^) S2(|q|)     (terms l >= 4 neglected)
 
-        I0 and S2 are rotational averages, computed once per distinct |q| (once per ring on the
+        I0 and S2 are rotational averages, computed once per distinct ``|q|`` (once per ring on the
         polar grid).  Grids and ``model`` (``"ab initio"`` or ``"iam"``) as in :meth:`detector`.
         """
         electron = _probe(probe) == "electron"

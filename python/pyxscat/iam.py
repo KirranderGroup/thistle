@@ -3,7 +3,7 @@
 """Independent atom model (IAM), for X-rays and electrons: the reference against which molecular (bonding, correlation)
 effects are measured.
 
-The molecule is modelled as free, spherically averaged atoms at the nuclear positions:
+The molecule is modelled as free, spherically averaged atoms at the nuclear positions::
 
     elastic     I_el(q)  = sum_AB f_A(q) f_B(q) j0(q R_AB)                 (rotational average)
                          = |sum_A f_A(q) exp(i q.R_A)|^2                   (fixed orientation)
@@ -274,7 +274,7 @@ def scattering_aligned(atom_numbers, coords, qvec, source="ab initio", basis="au
 def electron_scattering_aligned(atom_numbers, coords, qvec, source="ab initio", basis="aug-cc-pvtz",
                                 method="hf", total=True, **cutoffs):
     """Electron IAM at fixed orientation (bracket units; multiply by 4/q^4 for the cross section):
-    elastic |sum_A (Z_A - f_A) exp(i q.R_A)|^2, plus the atomic inelastic sum_A [S_A - f_A^2]."""
+    elastic ``|sum_A (Z_A - f_A) exp(i q.R_A)|^2``, plus the atomic inelastic ``sum_A [S_A - f_A^2]``."""
     symbols = [_symbol(z) for z in atom_numbers]
     zat = np.array([ELEMENTS.index(s) for s in symbols], dtype=float)
     coords = np.asarray(coords, dtype=float)

@@ -220,13 +220,13 @@ def _run(basis, q, mode, dm2, da, db, wc, wx, nthreads, return_stats, l=0, facto
 
 
 def two_electron(basis, q, dm2, symmetrize=True, nthreads=None, return_stats=False, l=0, **cutoffs):
-    """Two-electron part of the total scattering, sum Gamma <ij|j0(q r12)|kr>.
+    """Two-electron part of the total scattering, ``sum Gamma <ij|j0(q r12)|kr>``.
 
     Tends to N(N-1) at q = 0 and to zero at large q.  Set ``symmetrize=False`` only if ``dm2``
     already has the full 8-fold permutational symmetry (saves one copy of the array).
 
     ``l=2`` gives the second Legendre moment about the molecular z axis,
-    sum Gamma <ij| j2(q r12) P2(cos theta_12) |kr> (see :func:`scattering`).
+    ``sum Gamma <ij| j2(q r12) P2(cos theta_12) |kr>`` (see :func:`scattering`).
     """
     if isinstance(dm2, FactoredDM2):              # sum of products: no four-index array at all
         return _run(basis, q, 3, None, None, None, 0.0, 0.0, nthreads, return_stats, l=l, factors=dm2, **cutoffs)
@@ -235,7 +235,7 @@ def two_electron(basis, q, dm2, symmetrize=True, nthreads=None, return_stats=Fal
 
 
 def elastic(basis, q, dm1, dm1_b=None, nthreads=None, return_stats=False, l=0, method="pairs", **cutoffs):
-    """Rotationally averaged elastic scattering, <|F(q)|^2>, from a one-particle density matrix.
+    """Rotationally averaged elastic scattering, ``<|F(q)|^2>``, from a one-particle density matrix.
 
     With two different matrices this is the rotational average of F_a(q) F_b(q)^*, the building
     block of coherent mixed and inelastic terms from transition densities.
@@ -305,7 +305,7 @@ def scattering(wf, q, kind="total", nthreads=None, l=0, **cutoffs):
 
     kind
         ``"total"``         N + two-electron term (needs ``wf.dm2`` and ``wf.nelec``)
-        ``"elastic"``       <|F(q)|^2> from ``wf.dm1``
+        ``"elastic"``       ``<|F(q)|^2>`` from ``wf.dm1``
         ``"inelastic"``     total - elastic
         ``"two_electron"``  the two-electron term alone
         ``"hf_total"``      N + mean-field two-electron term from ``wf.dm1`` only

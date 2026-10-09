@@ -4,7 +4,7 @@
 
 Pure numpy and independent of any electronic structure package.  A CI wavefunction is given
 as Slater determinants over ``norb`` active orbitals, each as a pair of occupation bit
-strings (bit k set = orbital k occupied), with the determinant defined as
+strings (bit k set = orbital k occupied), with the determinant defined as::
 
     |alpha string, beta string> = a+_{a1 alpha} a+_{a2 alpha} ... a+_{b1 beta} a+_{b2 beta} ... |0>
 
@@ -68,21 +68,21 @@ def make_rdm12(norb, nalpha, nbeta, dets, coeffs, normalize=True, method="auto")
     ``dets`` is a sequence of (alpha_bits, beta_bits) integers, ``coeffs`` the CI coefficients.
     Returns dm1 (norb, norb) and dm2 (norb, norb, norb, norb).
 
-    Three exact builders (they agree to 1e-15):
+    Three exact builders (they agree to 1e-15)::
 
-    ``"dense"``    dm2[p,q,r,s] = <E_qp Psi|E_rs Psi> - delta_qr dm1[p,s] with the intermediates
-                   x_rs = E_rs|Psi> over the complete active space (alpha x beta strings, in
-                   blocks); cost ~ norb^4 N_FCI in BLAS.  Best for CASSCF/CASCI vectors.
-    ``"bitwise"``  the determinant-pair algorithm of the earlier code (Fortran, OpenMP): pairs
-                   screened with popcnt(ieor), Slater-Condon rules for those differing by at
-                   most two spin-orbitals; cost ~ N_det^2 (a few instructions per pair),
-                   independent of N_FCI.  Best for truncated or selected expansions (MCCI, a
-                   print threshold, RAS) in large orbital spaces.  Any number of orbitals
-                   (the only builder beyond 64: multiword bit strings).
-    ``"sparse"``   the x_rs intermediates only on the determinants reached from the given ones
-                   (sparse product, SciPy); cost ~ N_det norb N_el.  Linear in N_det: for
-                   very long expansions on few cores.
-    ``"auto"``     the cheapest by an estimate of the three costs.
+        "dense"    dm2[p,q,r,s] = <E_qp Psi|E_rs Psi> - delta_qr dm1[p,s] with the intermediates
+                       x_rs = E_rs|Psi> over the complete active space (alpha x beta strings, in
+                       blocks); cost ~ norb^4 N_FCI in BLAS.  Best for CASSCF/CASCI vectors.
+        "bitwise"  the determinant-pair algorithm of the earlier code (Fortran, OpenMP): pairs
+                       screened with popcnt(ieor), Slater-Condon rules for those differing by at
+                       most two spin-orbitals; cost ~ N_det^2 (a few instructions per pair),
+                       independent of N_FCI.  Best for truncated or selected expansions (MCCI, a
+                       print threshold, RAS) in large orbital spaces.  Any number of orbitals
+                       (the only builder beyond 64: multiword bit strings).
+        "sparse"   the x_rs intermediates only on the determinants reached from the given ones
+                       (sparse product, SciPy); cost ~ N_det norb N_el.  Linear in N_det: for
+                       very long expansions on few cores.
+        "auto"     the cheapest by an estimate of the three costs.
     """
     method = _choose(norb, nalpha, nbeta, len(dets), method)
     if method == "bitwise" or norb > 64:                  # beyond 64 orbitals only the pair loop

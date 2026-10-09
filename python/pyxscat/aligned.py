@@ -4,11 +4,11 @@
 detector images), at arbitrary scattering vectors q = (qx, qy, qz) in the molecular frame.
 
 Because exp(i q.(r1 - r2)) = exp(i q.r1) exp(-i q.r2), every quantity follows from the Fourier
-transforms of basis-function products,
+transforms of basis-function products::
 
     F_mu,nu(q) = int chi_mu(r) chi_nu(r) exp(i q.r) dr,
 
-computed analytically (``pair_transform``) and contracted with the density matrices:
+computed analytically (``pair_transform``) and contracted with the density matrices::
 
     form factor     F(q)   = sum D_mu,nu F_mu,nu(q)                  elastic = |F(q)|^2
     two-electron    I2(q)  = sum Gamma_{mu nu, la si} F_mu,nu F_la,si^*
@@ -69,7 +69,7 @@ def form_factor(basis, qvec, dm1, **kw):
 
 
 def elastic(basis, qvec, dm1, dm1_b=None, **kw):
-    """|F(q)|^2, or Re[F_a(q) F_b(q)^*] for two one-particle matrices (transition/mixed terms)."""
+    """``|F(q)|^2``, or ``Re[F_a(q) F_b(q)^*]`` for two one-particle matrices (transition/mixed terms)."""
     fa = form_factor(basis, qvec, dm1, **kw)
     fb = fa if dm1_b is None else form_factor(basis, qvec, dm1_b, **kw)
     return (fa * fb.conj()).real
@@ -188,14 +188,14 @@ def ewald_q(k0, two_theta, phi):
     """Scattering vectors q = k_out - k_in on the Ewald sphere, incident beam along +z.
 
     k0 = 2 pi / wavelength (bohr^-1); two_theta = scattering angle, phi = azimuth (radians,
-    broadcast against each other).  Returns an array (..., 3); |q| = 2 k0 sin(two_theta / 2).
+    broadcast against each other).  Returns an array (..., 3); ``|q| = 2 k0 sin(two_theta / 2)``.
     """
     tt, ph = np.broadcast_arrays(np.asarray(two_theta, float), np.asarray(phi, float))
     return k0 * np.stack([np.sin(tt) * np.cos(ph), np.sin(tt) * np.sin(ph), np.cos(tt) - 1.0], axis=-1)
 
 
 def detector_q(k0, qmax, npix):
-    """A square detector image in q space: (npix x npix) pixels covering |q_perp| <= qmax on the
+    """A square detector image in q space: (npix x npix) pixels covering ``|q_perp| <= qmax`` on the
     Ewald sphere, beam along +z.  Returns (qvec (npix*npix, 3), mask of pixels with q <= 2 k0)."""
     s = np.linspace(-qmax, qmax, npix)
     qx, qy = np.meshgrid(s, s, indexing="xy")

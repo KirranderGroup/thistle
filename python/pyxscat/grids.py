@@ -57,7 +57,7 @@ def qcoord3(e0_kev, thsmax_deg, n1, n2):
 
 def read_qgrid(path):
     """A q grid from a text file with columns qx qy qz (bohr^-1), e.g. qgrid.dat; extra columns
-    (such as |q|) are ignored."""
+    (such as ``|q|``) are ignored."""
     q = np.atleast_2d(np.loadtxt(path, comments="#"))
     if q.shape[1] < 3:
         raise ValueError(f"{path}: need at least three columns qx qy qz")
@@ -71,7 +71,7 @@ def write_qgrid(path, qvec):
 
 
 def unique_norms(qvec, decimals=12):
-    """|q| of every point, the distinct values, and the index of each point into them (so that
+    """``|q|`` of every point, the distinct values, and the index of each point into them (so that
     rotationally averaged quantities are computed once per ring)."""
     qn = np.linalg.norm(np.asarray(qvec, float), axis=1)
     uq, inv = np.unique(np.round(qn, decimals), return_inverse=True)
@@ -79,7 +79,7 @@ def unique_norms(qvec, decimals=12):
 
 
 def aligned_ensemble(qvec, axis, i0, s2, p2=1.0):
-    """Partially aligned ensemble from the isotropic signal and the j2 moment:
+    """Partially aligned ensemble from the isotropic signal and the j2 moment::
 
         I(q) = I0(|q|) + 5 <P2(cos beta)> P2(q^ . a^) S2(|q|)        (+ l = 4, ... neglected)
 

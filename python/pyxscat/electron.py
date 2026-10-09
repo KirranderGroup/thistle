@@ -4,12 +4,12 @@
 
 In the first Born approximation a fast electron is scattered by the whole charge distribution
 of the molecule.  With Z(q) = sum_A Z_A exp(i q.R_A) the nuclear and F(q) the electronic form
-factor, the differential cross section is
+factor, the differential cross section is::
 
     dsigma/dOmega = (4 / a0^2 q^4) [ <|Z(q) - F(q)|^2> + S_inel(q) ]
                   = (4 / a0^2 q^4) [ I_nn - 2 I_ne + I_ee ],
 
-where I_ee is the total X-ray scattering (N + two-electron term) and
+where I_ee is the total X-ray scattering (N + two-electron term) and::
 
     I_nn(q) = sum_AB Z_A Z_B j0(q R_AB)                               nucleus-nucleus
     I_ne(q) = sum_A Z_A int rho(r) j0(q |r - R_A|) dr                 electron-nucleus
@@ -131,7 +131,7 @@ def cross_section(bracket, q):
 
 
 def aligned(wf, qvec, hf=False, charges=None, **kw):
-    """Fixed orientation: |Z(q) - F(q)|^2 (+ inelastic) for qvec (nq, 3) in the molecular frame."""
+    """Fixed orientation: ``|Z(q) - F(q)|^2`` (+ inelastic) for qvec (nq, 3) in the molecular frame."""
     from . import aligned as al
     z = _charges(wf, charges)
     qvec = np.atleast_2d(np.asarray(qvec, dtype=float))
