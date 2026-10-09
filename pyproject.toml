@@ -37,6 +37,7 @@ pyscf = ["pyscf>=2.4"]
 iam = ["pyscf>=2.4", "scipy>=1.15", "xraydb"]
 test = ["pytest", "pyscf>=2.4", "scipy>=1.15", "xraydb"]
 all = ["pyscf>=2.4", "scipy>=1.15", "xraydb"]
+docs = ["sphinx>=8", "myst-parser>=3", "ford>=7", "sphinx-better-theme"]
 
 [tool.setuptools.packages.find]
 where = ["python"]

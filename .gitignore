@@ -20,6 +20,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# Documentation build output (Sphinx and FORD)
+docs/_build/
+docs/_ford/
+
 # Python packaging / build output
 build/
 dist/

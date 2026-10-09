@@ -2,6 +2,8 @@ include Makefile README.md setup.py LICENSE NOTICE CITATION.cff
 recursive-include src *.f90
 recursive-include examples *.py *.toml *.md *.input *.inp *.md *.txt *.sh
 recursive-include tests *.py *.md *.npz *.txt *.dat *.h5 *.out *.inp *.mld *.molden *.pun *.log
-recursive-include docs *.md
+recursive-include docs *.md *.rst *.py *.txt Makefile
+prune docs/_build
+prune docs/_ford
 recursive-include benchmarks *.py *.md *.inp *.input *.txt *.json *.f90 *.sh
 global-exclude *.pyc __pycache__ *.o *.mod libpyxscat.*
