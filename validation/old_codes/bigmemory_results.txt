@@ -1,0 +1,15 @@
+BigMemoryScattering (driven by cumulant_scattering) vs THISTLE; q = 1e-10..10 bohr^-1, 41 points
+max |old - THISTLE| / max |THISTLE|, per part of the two-electron term
+case                         part     cut-off 0.01      exact      I(0) old    time
+water/6-31G CCSD             Total         2.0e-14    1.7e-07     90.000000    0.0s
+water/6-31G CCSD             H             2.4e-14    8.8e-09    100.000000    0.0s
+water/6-31G CCSD             X             2.9e-14    1.5e-06     -9.827080    0.0s
+water/6-31G CCSD             Lambda        2.1e-12    3.6e-07     -0.172920    0.0s
+water/cc-pVDZ CASSCF(6,6)    Total         1.3e-14    2.3e-07     90.000000    0.1s
+water/cc-pVDZ CASSCF(6,6)    H             1.4e-14    1.5e-07    100.000000    0.1s
+water/cc-pVDZ CASSCF(6,6)    X             2.6e-14    2.1e-06     -9.878115    0.1s
+water/cc-pVDZ CASSCF(6,6)    Lambda        2.1e-12    2.1e-06     -0.121885    0.1s
+CO/cc-pVDZ CCSD              Total         7.0e-14    4.1e-07    182.000000    0.4s
+CO/cc-pVDZ CCSD              H             2.2e-14    3.1e-07    196.000000    0.4s
+CO/cc-pVDZ CCSD              X             8.5e-13    1.6e-06    -13.610276    0.4s
+CO/cc-pVDZ CCSD              Lambda        2.3e-12    4.0e-06     -0.389724    0.4s

@@ -1,0 +1,219 @@
+diff -ru -x '*.o' -x '*.mod' pmain/fortran/src/Bessels_j0.f90 pbuild/src/Bessels_j0.f90
+--- pmain/fortran/src/Bessels_j0.f90	2026-07-09 16:34:02.000000000 +0200
++++ pbuild/src/Bessels_j0.f90	2026-10-09 11:13:31.489625058 +0200
+@@ -74,7 +74,7 @@
+             !            h_2=((3.d0/(Pmu)**3-1.d0/Pmu)*sinpmu-3.d0/(pmu)**2.0d0*cospmu)*invpmu**2.0d0
+             !            h_1=(sinpmu/Pmu**2-cospmu/Pmu)*invpmu
+             !            h_sum=h_sum+h_saved(2)*h_1+h_saved(3)*h_2+h_saved(4)*h_3
+-            call dphrec(pmu, allbessels, 100, order + 1, size(mu))
++            call dphrec(pmu, allbessels, 100_8, int(order + 1, 8), int(size(mu), 8))
+            ! allbessels(1,1)=1.d0
+            ! allbessels(2:order+1,1)=0.d0
+            ! h_1 = (sinpmu / Pmu**2 - cospmu / Pmu)
+diff -ru -x '*.o' -x '*.mod' pmain/fortran/src/Integrals.f90 pbuild/src/Integrals.f90
+--- pmain/fortran/src/Integrals.f90	2026-07-09 16:34:02.000000000 +0200
++++ pbuild/src/Integrals.f90	2026-10-09 11:14:02.808023646 +0200
+@@ -5317,7 +5317,7 @@
+ !        
+ !        elseif(order>=4) then
+             
+-            call dphrec(pmu,allbessels,100,order+1,size(mu))
++            call dphrec(pmu,allbessels,100_8,int(order+1,8),int(size(mu),8))
+             do beta=1,order
+                 h_sum=h_sum+allbessels(beta+1,:)*invpmu**beta*h_saved(beta+1)
+  !               if (h_sum(20)>2000) then
+diff -ru -x '*.o' -x '*.mod' pmain/fortran/src/Logging.f90 pbuild/src/Logging.f90
+--- pmain/fortran/src/Logging.f90	2026-07-09 16:34:02.000000000 +0200
++++ pbuild/src/Logging.f90	2026-10-09 11:13:31.487728225 +0200
+@@ -19,7 +19,7 @@
+ 
+ module thistle_logging
+     use, intrinsic :: iso_fortran_env, only: output_unit, error_unit, int64, compiler_version
+-    use ifport, only: isatty
++    ! use ifport, only: isatty  (gfortran: GNU intrinsic)
+     implicit none
+     private
+ 
+diff -ru -x '*.o' -x '*.mod' pmain/fortran/src/Variables.f90 pbuild/src/Variables.f90
+--- pmain/fortran/src/Variables.f90	2026-07-09 16:34:02.000000000 +0200
++++ pbuild/src/Variables.f90	2026-10-09 11:14:42.911497240 +0200
+@@ -1009,7 +1009,7 @@
+ 
+         end do
+         divided=.True.
+-        if (divided==.True.) then
++        if (divided .eqv. .True.) then
+             matfin=mat1
+             totalfin=total
+             else
+diff -ru -x '*.o' -x '*.mod' pmain/fortran/src/one_rdm.f90 pbuild/src/one_rdm.f90
+--- pmain/fortran/src/one_rdm.f90	2026-07-09 16:34:02.000000000 +0200
++++ pbuild/src/one_rdm.f90	2026-10-09 11:15:14.923874410 +0200
+@@ -433,7 +433,7 @@
+      enddo
+         close(15)
+ !
+-     norbs=maxval(integer2binary_orbs(maxval(Nalphbet(1,1,:))))
++     norbs=maxval(integer2binary_orbs(int(maxval(Nalphbet(1,1,:)),4)))
+ 
+ 
+ 
+@@ -520,7 +520,7 @@
+                       ep=1
+                       mylow=min(j+1,k+1)
+                       myhigh=max(j+1,k+1)
+-                      ep=POPCNT(IAND(newdat(i,1),IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
++                      ep=POPCNT(IAND(newdat(i,1),IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
+ !                      buffer_prime=newdat(i,1)
+ !                      buffer_prime_2=particle_int
+ !
+@@ -547,7 +547,7 @@
+      !print*, newdat(2,1), single_exc(2,:)
+      call cpu_time(time1)
+      nel=popcnt(newdat(1,1))
+-     n_double=combo(nel,2)*combo(norbs-nel,2)
++     n_double=combo(int(nel,8),2_8)*combo(int(norbs-nel,8),2_8)
+ 
+      allocate(occ(nel), unocc(norbs-nel))
+      allocate(double_exc(size(newdat(:,1)), n_double), phases_2(size(newdat(:,1)), n_double))
+@@ -622,10 +622,10 @@
+                              ep=0
+                              mylow1=min(occ(i)+1,unocc(k)+1)
+                              myhigh1=max(occ(i)+1,unocc(k)+1)
+-                             ep=POPCNT(IAND(newdat(n,1),IAND(ibset(0,myhigh1-1)-1,ibclr(-1,mylow1)+1)))
++                             ep=POPCNT(IAND(newdat(n,1),IAND(ibset(0_8,myhigh1-1)-1,ibclr(-1_8,mylow1)+1)))
+                              mylow2=min(occ(j)+1,unocc(l)+1)
+                              myhigh2=max(occ(j)+1,unocc(l)+1)
+-                             ep=ep+POPCNT(IAND(newdat(n,1),IAND(ibset(0,myhigh2-1)-1,ibclr(-1,mylow2)+1)))
++                             ep=ep+POPCNT(IAND(newdat(n,1),IAND(ibset(0_8,myhigh2-1)-1,ibclr(-1_8,mylow2)+1)))
+ 
+                              if((mylow2>mylow1).AND.(mylow2<myhigh1).AND.(myhigh2>myhigh1)) ep=ep+1
+ 
+@@ -726,9 +726,9 @@
+ 
+                 buffer=IBCLR(Nalphbet(1,1,c1),porb-1)
+                 !if (particle_int/=nalphbet(1,2,c1) ) then
+-                c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                c_term=phase_dbl(iand(ep,int(1,kind(ep))))*2.00*civ1*civ2
+               !  else
+-                !     c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                !     c_term=phase_dbl(iand(ep,int(1,kind(ep))))*2.00*civ1*civ2
+               !  end if
+ 
+                 do while(buffer /= 0_8)
+@@ -782,7 +782,7 @@
+ 
+                   ep=phases(index1,i)+phases(index2,j)
+ 
+-                  c_term=1.00*phase_dbl(iand(ep,1))*civ1*civ2
++                  c_term=1.00*phase_dbl(iand(ep,int(1,kind(ep))))*civ1*civ2
+ 
+ 
+                    twordm(porb,rorb,sorb,qorb)=twordm(porb,rorb,sorb,qorb)&
+@@ -827,9 +827,9 @@
+             rorb=hole_exc_1(index1,i) !iorb
+ 
+             ! if (particle_int/=nalphbet(1,2,c1) .and. (nalphbet(1,2,c1)/=nalphbet(1,1,c1))) then
+-                c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                c_term=phase_dbl(iand(ep,int(1,kind(ep))))*2.00*civ1*civ2
+ 
+-            !c_term=4.00*phase_dbl(iand(ep,1))*civ1*civ2
++            !c_term=4.00*phase_dbl(iand(ep,int(1,kind(ep))))*civ1*civ2
+ 
+             twordm(porb,rorb,sorb,qorb)=twordm(porb,rorb,sorb,qorb)&
+                 +c_term
+@@ -961,7 +961,7 @@
+ close(15)
+ 
+ 
+- nbft=maxval(integer2binary_orbs(maxval(icij)))
++ nbft=maxval(integer2binary_orbs(int(maxval(icij),4)))
+ call log_kv('Number of orbitals', nbft)
+ ALLOCATE(SpinFree2RDM(nbft,nbft,nbft,nbft))
+ 
+@@ -1088,8 +1088,8 @@
+ do i=1,exc(0,1,myspin)
+ mylow=min(exc(i,1,myspin),exc(i,2,myspin))
+ myhigh=max(exc(i,1,myspin),exc(i,2,myspin))
+-nperm=nperm+POPCNT(IAND(icij(myspin,1,ici),&
+-IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow)+1)))
++nperm=nperm+POPCNT(IAND(int(icij(myspin,1,ici),8),&
++IAND(ibset(0_8,myhigh-1)-1,ibclr(-1_8,mylow)+1)))
+ 
+ 
+ end do
+@@ -1199,7 +1199,7 @@
+ mylow=min(tz,tz2)
+ myhigh=max(tz,tz2)
+ !PRINT *,mylow,myhigh
+-nperm=POPCNT(IAND(icij(myspin,1,ici),IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow)+1)))
++nperm=POPCNT(IAND(int(icij(myspin,1,ici),8),IAND(ibset(0_8,myhigh-1)-1,ibclr(-1_8,mylow)+1)))
+ 
+ 
+ 
+@@ -1397,7 +1397,7 @@
+            enddo
+            close(15)
+ 
+-           maxnmo=maxval(integer2binary_orbs(maxval(Nalphbet)))
++           maxnmo=maxval(integer2binary_orbs(int(maxval(Nalphbet),4)))
+ 
+            call log_kv('Number of orbitals', maxnmo)
+            nel=popcnt(Nalphbet(1,1,1))
+@@ -1446,7 +1446,7 @@
+                             ep=POPCNT(IAND(Nalphbet(1,1,c1),&
+                                 IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
+ !                            ep=ep+POPCNT(IAND(Nalphbet(1,2,c1),&
+-!                               IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow))))
++!                               IAND(ibset(0_8,myhigh-1)-1,ibclr(-1_8,mylow))))
+ 
+ 
+ 
+@@ -1464,9 +1464,9 @@
+                             mylow=min(porb,qorb)
+                             myhigh=max(porb,qorb)
+                             ep=POPCNT(IAND(Nalphbet(1,2,c1),&
+-                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
++                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
+                              !ep=ep+POPCNT(IAND(Nalphbet(1,1,c1),&
+-                             !   IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow)+1)))
++                             !   IAND(ibset(0_8,myhigh-1)-1,ibclr(-1_8,mylow)+1)))
+ 
+ 
+                           !  if (c1<=20) print*,'conguration of interest',c1,c2,ep
+@@ -1533,7 +1533,7 @@
+            count=numberlines
+ 
+ 
+-           maxnmo=maxval(integer2binary_orbs(maxval(Nalphbet)))
++           maxnmo=maxval(integer2binary_orbs(int(maxval(Nalphbet),4)))
+ 
+            call log_kv('Number of orbitals', maxnmo)
+            nel=popcnt(Nalphbet(1,1))
+@@ -1597,7 +1597,7 @@
+                             mylow=min(porb,qorb)
+                             myhigh=max(porb,qorb)
+                             ep=POPCNT(IAND(Nalphbet(2,c1),&
+-                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
++                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
+ 
+                             onerdm(porb,qorb)=onerdm(porb,qorb)+civ1(c1)*civ2(c2)*phase_dbl(iand(ep,1_8))
+ 
+@@ -1880,7 +1880,7 @@
+            close(15)
+ 
+ 
+-           nbft=maxval(integer2binary_orbs(maxval(icij)))
++           nbft=maxval(integer2binary_orbs(int(maxval(icij),4)))
+ 
+            allocate(list(2,popcnt(icij(1,1,1))*2))
+            open(file=file_write,unit=17)
+@@ -1965,7 +1965,7 @@
+            close(15)
+ 
+ 
+-           nbft=maxval(integer2binary_orbs(maxval(icij)))
++           nbft=maxval(integer2binary_orbs(int(maxval(icij),4)))
+ 
+            allocate(list(2,popcnt(icij(1,1,1))*2))
+            open(file=file_write,unit=17)

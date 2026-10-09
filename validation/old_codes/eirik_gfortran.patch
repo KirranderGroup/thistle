@@ -1,0 +1,310 @@
+diff -ru a/Integrals.f90 b/Integrals.f90
+--- a/Integrals.f90	2026-10-09 18:08:45.339859334 +0200
++++ b/Integrals.f90	2026-10-09 18:08:45.341819218 +0200
+@@ -6640,7 +6640,7 @@
+             h_sum=h_sum+h_saved(3)*h_2+h_saved(4)*h_3
+         
+         elseif(order>=4) then
+-            call dphrec(pmu,allbessels,100,order+1,size(mu))
++            call dphrec(pmu,allbessels,100_8,int(order+1,8),int(size(mu),8))
+         
+             do beta=2,order
+                 h_sum=h_sum+allbessels(beta+1,:)*mu**(beta-2)/H**beta*h_saved(beta+1)
+@@ -6747,7 +6747,7 @@
+ !        
+ !        elseif(order>=4) then
+             
+-            call dphrec(pmu,allbessels,100,order+1,size(mu))
++            call dphrec(pmu,allbessels,100_8,int(order+1,8),int(size(mu),8))
+             do beta=1,order
+                 h_sum=h_sum+allbessels(beta+1,:)*invpmu**beta*h_saved(beta+1)
+  !               if (h_sum(20)>2000) then
+diff -ru a/Main.f90 b/Main.f90
+--- a/Main.f90	2026-10-09 18:08:45.333602311 +0200
++++ b/Main.f90	2026-10-09 18:08:45.335209091 +0200
+@@ -142,7 +142,13 @@
+               ordering1 = 0
+               ordering2 = 0
+               end_2 = 0
+-              nconfs=4549
++              open(unit=16, file=file_bit)
++              nconfs=0
++              do
++                  read(16,*,end=998)
++                  nconfs=nconfs+1
++              end do
++998           close(16)
+               print*,mmod
+               call  total_scattering_calculation_2(Typec, atoms, geom, state1, state2, maxl, &
+       Ngtos, ng, ga, l, m, n, xx, yy, zz, mmod, q, nq, group, cutoffz, cutoffmd, cutoffcentre,file_bit, nconfs, newdat, &
+diff -ru a/Variables.f90 b/Variables.f90
+--- a/Variables.f90	2026-10-09 18:08:45.350394143 +0200
++++ b/Variables.f90	2026-10-09 18:08:45.352066413 +0200
+@@ -1009,7 +1009,7 @@
+         end do
+         print*,'wtf',nq,size(q)
+         divided=.True.
+-        if (divided==.True.) then
++        if (divided.eqv..True.) then
+             matfin=mat1
+             totalfin=total
+             else
+diff -ru a/main_calculation.f90 b/main_calculation.f90
+--- a/main_calculation.f90	2026-10-09 18:08:45.336731772 +0200
++++ b/main_calculation.f90	2026-10-09 18:08:45.338314192 +0200
+@@ -566,6 +566,7 @@
+         real(KIND=dp), dimension(nq) :: ss,ss2,Iee,Inn,Ine
+         real(kind=dp), dimension(nq):: result2
+         character (len=100) :: fileK
++        integer*8 :: nelec8
+ 
+         allocate(q_abs(nq), result(nq))
+        ! allocate(ep3(size(confs(:,1)),size(confs(:,1))),ndiff2(size(confs(:,1)),size(confs(:,1))) )
+@@ -742,7 +743,7 @@
+                 end do
+                    close(15)
+                 nmomax=maxval(mat)
+-                call one_rdm_two_rdm(mat,total,onerdm_matrix_2,24)
++                call one_rdm_two_rdm(mat,total,onerdm_matrix_2,24_8)
+ 
+             else
+                 print*,'calling onerdm_bit'
+@@ -778,10 +779,11 @@
+                 !CALL set_P0_j2(P0matrix, 4*maxval(l), q)
+                 ! CALL set_P0(P0matrix, 4*maxval(l), q)
+                 nmomax=19
+-                read2rdm2=.False.
++                read2rdm2=read2rdm
++                fileJ2=fileJ
+                 !fileJ2='twordm_fortran_bit_2.dat'
+                 if (read2rdm2) then
+-                    sizenmat=10950
++                    sizenmat=numberlines
+                     open(file=fileJ2,unit=15)
+                     allocate(mat(sizenmat,4), total(sizenmat))
+                     do i=1,sizenmat
+@@ -839,9 +841,25 @@
+             P0matrix_2 = 0
+             CALL set_P0_j2(P0matrix_2, 4*maxval(l), q)
+            
++            if (read2rdm) then
++                open(file=fileJ,unit=15)
++                allocate(mat(numberlines,4), total(numberlines))
++                do i=1,numberlines
++                    read(15,*)mat(i,1), mat(i,2), mat(i,3), mat(i,4), total(i)
++                end do
++                close(15)
++                co=0.0_dp
++                do i=1,numberlines
++                    if (mat(i,1)==mat(i,2) .and. mat(i,3)==mat(i,4)) co=co+total(i)
++                end do
++                nelec8=nint((1.0_dp+sqrt(1.0_dp+4.0_dp*co))/2.0_dp,8)
++                call one_rdm_two_rdm(mat,total,onerdm_matrix,nelec8)
++                nmomax=maxval(mat)
++            else
+             fileK = 'file.dat'
+             call mcci_to_bit(fileJ,fileK,numberlines)
+             call one_rdm_bit(fileK,onerdm_matrix,nmomax,numberlines,newdat,irep1)
++            end if
+ 
+             call variables_elastic(px,py,pz,ddx,ddy,ddz,z,e12,maxl, ngto,ng,group_start,group_count,group,ga,l,m,n,xx,yy,zz, &
+                      mmod,onerdm_matrix,nmomax,q,nq)
+diff -ru a/one_rdm.f90 b/one_rdm.f90
+--- a/one_rdm.f90	2026-10-09 18:08:45.343515370 +0200
++++ b/one_rdm.f90	2026-10-09 18:08:45.345348094 +0200
+@@ -446,7 +446,7 @@
+      enddo
+         close(15)
+ !
+-     norbs=maxval(integer2binary_orbs(maxval(Nalphbet(1,1,:))))
++     norbs=maxval(integer2binary_orbs(int(maxval(Nalphbet(1,1,:)),4)))
+ 
+ 
+ 
+@@ -535,7 +535,7 @@
+                       ep=1
+                       mylow=min(j+1,k+1)
+                       myhigh=max(j+1,k+1)
+-                      ep=POPCNT(IAND(newdat(i,1),IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
++                      ep=POPCNT(IAND(newdat(i,1),IAND(ibset(0,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
+ !                      buffer_prime=newdat(i,1)
+ !                      buffer_prime_2=particle_int
+ !
+@@ -562,7 +562,7 @@
+      !print*, newdat(2,1), single_exc(2,:)
+      call cpu_time(time1)
+      nel=popcnt(newdat(1,1))
+-     n_double=combo(nel,2)*combo(norbs-nel,2)
++     n_double=combo(nel,2_8)*combo(norbs-nel,2_8)
+ 
+      allocate(occ(nel), unocc(norbs-nel))
+      allocate(double_exc(size(newdat(:,1)), n_double), phases_2(size(newdat(:,1)), n_double))
+@@ -637,10 +637,10 @@
+                              ep=0
+                              mylow1=min(occ(i)+1,unocc(k)+1)
+                              myhigh1=max(occ(i)+1,unocc(k)+1)
+-                             ep=POPCNT(IAND(newdat(n,1),IAND(ibset(0,myhigh1-1)-1,ibclr(-1,mylow1)+1)))
++                             ep=POPCNT(IAND(newdat(n,1),IAND(ibset(0_8,myhigh1-1)-1,ibclr(-1_8,mylow1)+1)))
+                              mylow2=min(occ(j)+1,unocc(l)+1)
+                              myhigh2=max(occ(j)+1,unocc(l)+1)
+-                             ep=ep+POPCNT(IAND(newdat(n,1),IAND(ibset(0,myhigh2-1)-1,ibclr(-1,mylow2)+1)))
++                             ep=ep+POPCNT(IAND(newdat(n,1),IAND(ibset(0_8,myhigh2-1)-1,ibclr(-1_8,mylow2)+1)))
+ 
+                              if((mylow2>mylow1).AND.(mylow2<myhigh1).AND.(myhigh2>myhigh1)) ep=ep+1
+ 
+@@ -743,9 +743,9 @@
+ 
+                 buffer=IBCLR(Nalphbet(1,1,c1),porb-1)
+                 !if (particle_int/=nalphbet(1,2,c1) ) then
+-                c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                c_term=phase_dbl(iand(ep,int(1,kind(ep))))*2.00*civ1*civ2
+               !  else
+-                !     c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                !     c_term=phase_dbl(iand(ep,int(1,kind(ep))))*2.00*civ1*civ2
+               !  end if
+ 
+                 do while(buffer /= 0_8)
+@@ -799,7 +799,7 @@
+ 
+                   ep=phases(index1,i)+phases(index2,j)
+ 
+-                  c_term=1.00*phase_dbl(iand(ep,1))*civ1*civ2
++                  c_term=1.00*phase_dbl(iand(ep,int(1,kind(ep))))*civ1*civ2
+ 
+ 
+                    twordm(porb,rorb,sorb,qorb)=twordm(porb,rorb,sorb,qorb)&
+@@ -844,9 +844,9 @@
+             rorb=hole_exc_1(index1,i) !iorb
+ 
+             ! if (particle_int/=nalphbet(1,2,c1) .and. (nalphbet(1,2,c1)/=nalphbet(1,1,c1))) then
+-                c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                c_term=phase_dbl(iand(ep,int(1,kind(ep))))*2.00*civ1*civ2
+ 
+-            !c_term=4.00*phase_dbl(iand(ep,1))*civ1*civ2
++            !c_term=4.00*phase_dbl(iand(ep,int(1,kind(ep))))*civ1*civ2
+ 
+             twordm(porb,rorb,sorb,qorb)=twordm(porb,rorb,sorb,qorb)&
+                 +c_term
+@@ -982,7 +982,7 @@
+ close(15)
+ 
+ 
+- nbft=maxval(integer2binary_orbs(maxval(icij)))
++ nbft=maxval(integer2binary_orbs(int(maxval(icij),4)))
+ print*,'max orbs', nbft
+ ALLOCATE(SpinFree2RDM(nbft,nbft,nbft,nbft))
+ 
+@@ -1429,7 +1429,7 @@
+            enddo
+            close(15)
+ 
+-           maxnmo=maxval(integer2binary_orbs(maxval(Nalphbet)))
++           maxnmo=maxval(integer2binary_orbs(int(maxval(Nalphbet),4)))
+ 
+            print*,'max orbitals',maxnmo
+            nel=popcnt(Nalphbet(1,1,1))
+@@ -1478,7 +1478,7 @@
+                             mylow=min(porb,qorb)
+                             myhigh=max(porb,qorb)
+                             ep=POPCNT(IAND(Nalphbet(1,1,c1),&
+-                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
++                                IAND(ibset(0,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
+ !                            ep=ep+POPCNT(IAND(Nalphbet(1,2,c1),&
+ !                               IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow))))
+ 
+@@ -1498,7 +1498,7 @@
+                             mylow=min(porb,qorb)
+                             myhigh=max(porb,qorb)
+                             ep=POPCNT(IAND(Nalphbet(1,2,c1),&
+-                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
++                                IAND(ibset(0,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
+                              !ep=ep+POPCNT(IAND(Nalphbet(1,1,c1),&
+                              !   IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow)+1)))
+ 
+@@ -1567,7 +1567,7 @@
+            count=numberlines
+ 
+ 
+-           maxnmo=maxval(integer2binary_orbs(maxval(Nalphbet)))
++           maxnmo=maxval(integer2binary_orbs(int(maxval(Nalphbet),4)))
+ 
+            print*,'max orbitals',maxnmo
+            nel=popcnt(Nalphbet(1,1))
+@@ -1616,7 +1616,7 @@
+                             mylow=min(porb,qorb)
+                             myhigh=max(porb,qorb)
+                             ep=POPCNT(IAND(Nalphbet(1,c1),&
+-                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
++                                IAND(ibset(0,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
+ 
+ 
+                             onerdm(porb,qorb)=onerdm(porb,qorb)+civ1(c1)*civ2(c2)*phase_dbl(iand(ep,1_8))
+@@ -1633,7 +1633,7 @@
+                             mylow=min(porb,qorb)
+                             myhigh=max(porb,qorb)
+                             ep=POPCNT(IAND(Nalphbet(2,c1),&
+-                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
++                                IAND(ibset(0,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
+ 
+                             onerdm(porb,qorb)=onerdm(porb,qorb)+civ1(c1)*civ2(c2)*phase_dbl(iand(ep,1_8))
+ 
+@@ -1782,12 +1782,12 @@
+                    m = iand(high,63)
+                    if (j==k) then
+                        nperm = nperm + popcnt(iand(det1(j,ispin), &
+-                               iand( ibset(0_8,m-1)-1_8, ibclr(-1_8,n)+1_8 ) ))
++                               iand( ibset(0,m-1)-1_8, ibclr(-1,n)+1_8 ) ))
+                    else
+                        nperm = nperm + popcnt(iand(det1(k,ispin), &
+-                               ibset(0_8,m-1)-1_8)) &
++                               ibset(0,m-1)-1_8)) &
+                                + popcnt(iand(det1(j,ispin), &
+-                                       ibclr(-1_8,n) +1_8))
++                                       ibclr(-1,n) +1_8))
+                        do l=j+1,k-1
+                            nperm = nperm + popcnt(det1(l,ispin))
+                        end do
+@@ -1850,10 +1850,10 @@
+ !                       m = iand(high,63)
+ !                       if (j==k) then
+ !                           nperm = popcnt(iand(det1(j,ispin), &
+-!                                   iand( ibset(0_8,m-1)-1_8, ibclr(-1_8,n)+1_8 ) ))
++!                                   iand( ibset(0,m-1)-1_8, ibclr(-1,n)+1_8 ) ))
+ !                       else
+-!                           nperm = popcnt(iand(det1(k,ispin), ibset(0_8,m-1)-1_8)) + &
+-!                                   popcnt(iand(det1(j,ispin), ibclr(-1_8,n) +1_8))
++!                           nperm = popcnt(iand(det1(k,ispin), ibset(0,m-1)-1_8)) + &
++!                                   popcnt(iand(det1(j,ispin), ibclr(-1,n) +1_8))
+ !                           do i=j+1,k-1
+ !                               nperm = nperm + popcnt(det1(i,ispin))
+ !                           end do
+@@ -1916,7 +1916,7 @@
+            close(15)
+ 
+ 
+-           nbft=maxval(integer2binary_orbs(maxval(icij)))
++           nbft=maxval(integer2binary_orbs(int(maxval(icij),4)))
+ 
+            allocate(list(2,popcnt(icij(1,1,1))*2))
+            open(file=file_write,unit=17)
+@@ -2001,7 +2001,7 @@
+            close(15)
+ 
+ 
+-           nbft=maxval(integer2binary_orbs(maxval(icij)))
++           nbft=maxval(integer2binary_orbs(int(maxval(icij),4)))
+ 
+            allocate(list(2,popcnt(icij(1,1,1))*2))
+            open(file=file_write,unit=17)
+diff -ru a/twordms.f90 b/twordms.f90
+--- a/twordms.f90	2026-10-09 18:08:45.346990205 +0200
++++ b/twordms.f90	2026-10-09 18:08:45.348507004 +0200
+@@ -613,7 +613,7 @@
+         enddo
+         close(15)
+ 
+-     norbs=maxval(integer2binary_orbs(maxval(Nalpha)))
++     norbs=maxval(integer2binary_orbs(int(maxval(Nalpha),4)))
+      print*,'Number of orbitals',norbs
+     print*, 'read file'
+     allocate(twordm(norbs,norbs,norbs,norbs))

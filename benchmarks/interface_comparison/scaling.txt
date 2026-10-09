@@ -1,0 +1,8 @@
+thistle   6-31g    n=  66 elastic     25.9 s  peak RSS python  0.17 GB, engine  0.00 GB  ok
+thistle   6-31g    n=  66 total       26.1 s  peak RSS python  0.17 GB, engine  0.00 GB  ok
+scat_lib  6-31g    n=  66 elastic     29.3 s  peak RSS python  0.68 GB, engine  0.68 GB  ok
+scat_lib  6-31g    n=  66 total       31.1 s  peak RSS python  0.93 GB, engine  0.93 GB  ok
+thistle   cc-pvdz  n= 120 elastic     63.6 s  peak RSS python  0.51 GB, engine  0.00 GB  ok
+thistle   cc-pvdz  n= 120 total       64.2 s  peak RSS python  0.51 GB, engine  0.00 GB  ok
+scat_lib  cc-pvdz  n= 120 elastic    186.7 s  peak RSS python  5.34 GB, engine  5.34 GB  ok
+scat_lib  cc-pvdz  n= 120 total    killed by the out-of-memory handler (6.1 GB anon RSS, python)

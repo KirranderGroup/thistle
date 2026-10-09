@@ -1,0 +1,41 @@
+# Python virtual environment (this repo root is itself a venv)
+/bin/
+/lib/
+/lib64
+/include/
+/share/
+/pyvenv.cfg
+# Common venv directory names, in case one is created inside the repo
+.venv/
+venv/
+env/
+ENV/
+thistle_core/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python packaging / build output
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Compiled Fortran / C objects and modules
+*.o
+*.mod
+*.smod
+*.so
+*.a
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store

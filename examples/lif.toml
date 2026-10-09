@@ -1,0 +1,36 @@
+# THISTLE input file: LiF, state-averaged CASSCF(4 states) from Molpro, ground state.
+# Run with:   thistle run examples/lif.toml        (about 30 s on a laptop)
+
+[input]
+file  = "../tests/data/molpro/lif_sa4_casscf.out"   # lif_sa4_casscf.mld is found next to it
+state = 1
+
+[q]
+unit   = "1/A"
+max    = 4.0
+points = 101
+
+[compute]
+scattering = true
+parts      = "all"
+iam        = true
+iam_basis  = { Li = "cc-pvtz", F = "aug-cc-pvtz" }   # the basis of the Molpro run
+anisotropy = true
+
+[detector]
+wavelength  = 1.0
+pixels      = 61
+orientation = [0, 90, 0]     # bond axis perpendicular to the beam
+
+[output]
+prefix = "results/lif"
+plots  = true
+
+[run]
+threads = 0
+
+[cluster]
+time   = "00:30:00"
+cpus   = 8
+memory = "8G"
+# setup = ["module load gcc", "source ~/thistle-env/bin/activate"]

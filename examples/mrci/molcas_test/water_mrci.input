@@ -1,0 +1,45 @@
+*** Water, cc-pVDZ, no symmetry: CASSCF(6,5) -> uncontracted MRCI (SDCI), full CI printout.
+*** Purpose: an output THISTLE's reader can be written against.  Run: pymolcas water_mrci.input > water_mrci.log
+
+&GATEWAY
+  Coord
+   3
+   water
+   O   0.000000   0.000000   0.117300
+   H   0.000000   0.757200  -0.469200
+   H   0.000000  -0.757200  -0.469200
+  Basis = cc-pVDZ
+  Group = NoSym
+
+&SEWARD
+  NoCD
+
+&SCF
+
+&RASSCF
+  Spin     = 1
+  Symmetry = 1
+  NActEl   = 6 0 0
+  Inactive = 2
+  Ras2     = 5
+  CIRoot   = 1 1 1
+  PrWf     = 0.0
+
+&MOTRA
+  JobIph
+  Frozen = 1
+
+&GUGA
+  Title
+   water: 2s correlated at the SD level, CAS(6,5) reference
+  Electrons = 8
+  Spin      = 1
+  Inactive  = 1
+  Active    = 5
+  CIAll     = 1
+
+&MRCI
+  SDCI
+  THRPrint = 0.0
+  PRINt    = 5
+  PRORbitals = 0.0

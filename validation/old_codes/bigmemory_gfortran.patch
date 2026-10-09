@@ -1,0 +1,183 @@
+diff -ru a/Main.f90 b/Main.f90
+--- a/Main.f90	2026-10-09 18:08:45.323395965 +0200
++++ b/Main.f90	2026-10-09 18:08:45.324880001 +0200
+@@ -103,7 +103,7 @@
+     call linspace_1(qmin,qmax,npoints,q)
+     print*,nq, npoints,maxl,ngtos
+     nq=npoints
+-    if (2.eqv..False.) then
++    if (.True.) then   ! ifort: 2 is .false. (low bit), so 2.eqv..False. is .true.
+     print*,'calling total_scattering'
+     if (typec/=1 .and. typec/=11) then
+             
+diff -ru a/one_rdm.f90 b/one_rdm.f90
+--- a/one_rdm.f90	2026-10-09 18:08:45.323427709 +0200
++++ b/one_rdm.f90	2026-10-09 18:08:45.326363078 +0200
+@@ -537,7 +537,7 @@
+                       ep=1
+                       mylow=min(j+1,k+1)
+                       myhigh=max(j+1,k+1)
+-                      ep=POPCNT(IAND(newdat(i,1),IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
++                      ep=POPCNT(IAND(newdat(i,1),IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
+ !                      buffer_prime=newdat(i,1)
+ !                      buffer_prime_2=particle_int
+ !
+@@ -564,7 +564,7 @@
+      !print*, newdat(2,1), single_exc(2,:)
+      call cpu_time(time1)
+      nel=popcnt(newdat(1,1))
+-     n_double=combo(nel,2)*combo(norbs-nel,2)
++     n_double=combo(nel,2_8)*combo(norbs-nel,2_8)
+ 
+      allocate(occ(nel), unocc(norbs-nel))
+      allocate(double_exc(size(newdat(:,1)), n_double), phases_2(size(newdat(:,1)), n_double))
+@@ -639,10 +639,10 @@
+                              ep=0
+                              mylow1=min(occ(i)+1,unocc(k)+1)
+                              myhigh1=max(occ(i)+1,unocc(k)+1)
+-                             ep=POPCNT(IAND(newdat(n,1),IAND(ibset(0,myhigh1-1)-1,ibclr(-1,mylow1)+1)))
++                             ep=POPCNT(IAND(newdat(n,1),IAND(ibset(0_8,myhigh1-1)-1,ibclr(-1_8,mylow1)+1)))
+                              mylow2=min(occ(j)+1,unocc(l)+1)
+                              myhigh2=max(occ(j)+1,unocc(l)+1)
+-                             ep=ep+POPCNT(IAND(newdat(n,1),IAND(ibset(0,myhigh2-1)-1,ibclr(-1,mylow2)+1)))
++                             ep=ep+POPCNT(IAND(newdat(n,1),IAND(ibset(0_8,myhigh2-1)-1,ibclr(-1_8,mylow2)+1)))
+ 
+                              if((mylow2>mylow1).AND.(mylow2<myhigh1).AND.(myhigh2>myhigh1)) ep=ep+1
+ 
+@@ -745,9 +745,9 @@
+ 
+                 buffer=IBCLR(Nalphbet(1,1,c1),porb-1)
+                 !if (particle_int/=nalphbet(1,2,c1) ) then
+-                c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                c_term=phase_dbl(iand(ep,1_8))*2.00*civ1*civ2
+               !  else
+-                !     c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                !     c_term=phase_dbl(iand(ep,1_8))*2.00*civ1*civ2
+               !  end if
+ 
+                 do while(buffer /= 0_8)
+@@ -801,7 +801,7 @@
+ 
+                   ep=phases(index1,i)+phases(index2,j)
+ 
+-                  c_term=1.00*phase_dbl(iand(ep,1))*civ1*civ2
++                  c_term=1.00*phase_dbl(iand(ep,1_8))*civ1*civ2
+ 
+ 
+                    twordm(porb,rorb,sorb,qorb)=twordm(porb,rorb,sorb,qorb)&
+@@ -846,9 +846,9 @@
+             rorb=hole_exc_1(index1,i) !iorb
+ 
+             ! if (particle_int/=nalphbet(1,2,c1) .and. (nalphbet(1,2,c1)/=nalphbet(1,1,c1))) then
+-                c_term=phase_dbl(iand(ep,1))*2.00*civ1*civ2
++                c_term=phase_dbl(iand(ep,1_8))*2.00*civ1*civ2
+ 
+-            !c_term=4.00*phase_dbl(iand(ep,1))*civ1*civ2
++            !c_term=4.00*phase_dbl(iand(ep,1_8))*civ1*civ2
+ 
+             twordm(porb,rorb,sorb,qorb)=twordm(porb,rorb,sorb,qorb)&
+                 +c_term
+@@ -1125,7 +1125,7 @@
+ mylow=min(exc(i,1,myspin),exc(i,2,myspin))
+ myhigh=max(exc(i,1,myspin),exc(i,2,myspin))
+ nperm=nperm+POPCNT(IAND(icij(myspin,1,ici),&
+-IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow)+1)))
++IAND(ibset(0_8,myhigh-1)-1,ibclr(-1_8,mylow)+1)))
+ 
+ 
+ end do
+@@ -1143,7 +1143,7 @@
+ 
+ end do !loop over myspin
+ 
+-  c_term=c1(ici)*c2(jci)*phase_dbl(iand(nperm,1)) ! calculate once as common to all in this loop
++  c_term=c1(ici)*c2(jci)*phase_dbl(iand(nperm,1_8)) ! calculate once as common to all in this loop
+   ! c_term=c(ici)*c(jci)*ep
+    if(samespin.eq.0) THEN
+ 
+@@ -1235,11 +1235,11 @@
+ mylow=min(tz,tz2)
+ myhigh=max(tz,tz2)
+ !PRINT *,mylow,myhigh
+-nperm=POPCNT(IAND(icij(myspin,1,ici),IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow)+1)))
++nperm=POPCNT(IAND(icij(myspin,1,ici),IAND(ibset(0_8,myhigh-1)-1,ibclr(-1_8,mylow)+1)))
+ 
+ 
+ 
+-  c_term=c1(ici)*c2(jci)*phase_dbl(iand(nperm,1)) ! calculate once as common to all in this loop
++  c_term=c1(ici)*c2(jci)*phase_dbl(iand(nperm,1_8)) ! calculate once as common to all in this loop
+     !c_term=c(ici)*c(jci)*ep
+ !case 1 and 4 and 2 and 3
+ porb=tz
+@@ -1279,7 +1279,7 @@
+ 
+ end do
+ 
+-buffer=icij(IEOR(myspin,3),1,ici)  !map spin 1 to spin 2 and 2 to 1
++buffer=icij(ieor(myspin,3_8),1,ici)  !map spin 1 to spin 2 and 2 to 1
+ 
+ do while(buffer.ne.0)
+ rorb=trailz(buffer)+1
+@@ -1493,7 +1493,7 @@
+                             ep=POPCNT(IAND(Nalphbet(1,1,c1),&
+                                 IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
+ !                            ep=ep+POPCNT(IAND(Nalphbet(1,2,c1),&
+-!                               IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow))))
++!                               IAND(ibset(0_8,myhigh-1)-1,ibclr(-1_8,mylow))))
+ 
+ 
+ 
+@@ -1511,9 +1511,9 @@
+                             mylow=min(porb,qorb)
+                             myhigh=max(porb,qorb)
+                             ep=POPCNT(IAND(Nalphbet(1,2,c1),&
+-                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1,mylow)+1_8)))
++                                IAND(ibset(0_8,myhigh-1_8)-1_8,ibclr(-1_8,mylow)+1_8)))
+                              !ep=ep+POPCNT(IAND(Nalphbet(1,1,c1),&
+-                             !   IAND(ibset(0,myhigh-1)-1,ibclr(-1,mylow)+1)))
++                             !   IAND(ibset(0_8,myhigh-1)-1,ibclr(-1_8,mylow)+1)))
+ 
+ 
+                           !  if (c1<=20) print*,'conguration of interest',c1,c2,ep
+@@ -1661,9 +1661,9 @@
+                    low = min(exc(i,1,ispin),exc(i,2,ispin))
+                    high = max(exc(i,1,ispin),exc(i,2,ispin))
+                    j = ishft(low-1,-6)+1
+-                   n = iand(low,63)
++                   n = iand(low,63_8)
+                    k = ishft(high-1,-6)+1
+-                   m = iand(high,63)
++                   m = iand(high,63_8)
+                    if (j==k) then
+                        nperm = nperm + popcnt(iand(det1(j,ispin), &
+                                iand( ibset(0_8,m-1)-1_8, ibclr(-1_8,n)+1_8 ) ))
+@@ -1686,7 +1686,7 @@
+                    exit
+                end if
+            end do
+-           phase = phase_dble(iand(nperm,1))
++           phase = phase_dble(iand(nperm,1_8))
+ 
+        end
+ 
+@@ -1730,9 +1730,9 @@
+ !
+ !                       high = max(exc(1,1,ispin),exc(1,2,ispin))
+ !                       j = ishft(low-1,-6)+1
+-!                       n = iand(low,63)
++!                       n = iand(low,63_8)
+ !                       k = ishft(high-1,-6)+1
+-!                       m = iand(high,63)
++!                       m = iand(high,63_8)
+ !                       if (j==k) then
+ !                           nperm = popcnt(iand(det1(j,ispin), &
+ !                                   iand( ibset(0_8,m-1)-1_8, ibclr(-1_8,n)+1_8 ) ))
+@@ -1743,7 +1743,7 @@
+ !                               nperm = nperm + popcnt(det1(i,ispin))
+ !                           end do
+ !                       end if
+-!                       phase = phase_dble(iand(nperm,1))
++!                       phase = phase_dble(iand(nperm,1_8))
+ !                       return
+ !                   end if
+                end do

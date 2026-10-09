@@ -1,0 +1,14 @@
+{ "bagel" : [
+  { "title" : "molecule",
+    "basis" : "cc-pvtz",
+    "df_basis" : "cc-pvtz-jkfit",
+    "angstrom" : true,
+    "geometry" : [
+      { "atom" : "O", "xyz" : [ 0.0000,  0.0000,  0.1173 ] },
+      { "atom" : "H", "xyz" : [ 0.0000,  0.7572, -0.4692 ] },
+      { "atom" : "H", "xyz" : [ 0.0000, -0.7572, -0.4692 ] }
+    ]
+  },
+  { "title" : "hf" },
+  { "title" : "print", "file" : "water_bagel.molden", "orbitals" : true }
+]}

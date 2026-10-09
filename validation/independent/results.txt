@@ -1,0 +1,80 @@
+A1	PASS	A. X-ray, rotationally averaged	elastic <|F|^2>, RHF	water/cc-pVDZ	PySCF ft_aopair + Lebedev 2030	1.12e-11	1.30e-13	1e-09	rel	reference converged: Lebedev 2030 vs 3074 differ by 6.6e-16
+A2	PASS	A. X-ray, rotationally averaged	inelastic, RHF (Waller-Hartree)	water/cc-pVDZ	N - 2 sum_ij <|F_ij|^2>, PySCF ft	1.80e-10	2.11e-11	1e-09	rel	
+A3	PASS	A. X-ray, rotationally averaged	total, RHF	water/cc-pVDZ	elastic + Waller-Hartree inelastic, PySCF	1.78e-10	2.06e-12	1e-09	rel	
+A4	PASS	A. X-ray, rotationally averaged	elastic, RHF (f functions)	CO/cc-pVTZ	PySCF ft_aopair + Lebedev	5.37e-11	3.45e-13	1e-09	rel	
+A5	PASS	A. X-ray, rotationally averaged	inelastic, RHF (f functions)	CO/cc-pVTZ	Waller-Hartree, PySCF ft	8.01e-09	6.98e-10	1e-09	rel	
+A6	PASS	A. X-ray, rotationally averaged	elastic, RHF, spherical basis	water/cc-pVDZ (5d)	PySCF ft_aopair on spherical AOs	1.37e-11	1.59e-13	1e-09	rel	
+A7a	PASS	A. X-ray, rotationally averaged	total, CCSD	water/cc-pVDZ	N + <sum Gamma F F*>, PySCF Gamma + ft	2.93e-10	3.38e-12	1e-09	rel	
+A7b	PASS	A. X-ray, rotationally averaged	total, CCSD, factored density	water/cc-pVDZ	same reference	1.81e-10	2.10e-12	1e-09	rel	
+A7c	PASS	A. X-ray, rotationally averaged	elastic, CCSD	water/cc-pVDZ	<|sum D F|^2>, PySCF D + ft	1.83e-11	2.14e-13	1e-09	rel	
+A7d	PASS	A. X-ray, rotationally averaged	inelastic, CCSD	water/cc-pVDZ	difference of the two references	2.74e-10	3.22e-11	1e-09	rel	
+A7e	PASS	A. X-ray, rotationally averaged	exchange part, CCSD	water/cc-pVDZ	-1/2 <sum D D F F*>, PySCF	1.80e-10	2.02e-11	1e-09	rel	
+A7f	PASS	A. X-ray, rotationally averaged	cumulant part, CCSD	water/cc-pVDZ	total - N - Hartree - exchange (refs)	4.55e-10	7.15e-10	1e-07	rel	small quantity: relative to its own size
+A8a	PASS	A. X-ray, rotationally averaged	total, CISD	water/cc-pVDZ	N + <sum Gamma F F*>, PySCF Gamma + ft	3.51e-10	4.06e-12	1e-09	rel	
+A8b	PASS	A. X-ray, rotationally averaged	total, CISD, factored density	water/cc-pVDZ	same reference	6.95e-11	8.03e-13	1e-09	rel	
+A8c	PASS	A. X-ray, rotationally averaged	elastic, CISD	water/cc-pVDZ	<|sum D F|^2>, PySCF D + ft	2.02e-11	2.36e-13	1e-09	rel	
+A8d	PASS	A. X-ray, rotationally averaged	inelastic, CISD	water/cc-pVDZ	difference of the two references	3.31e-10	3.89e-11	1e-09	rel	
+A8e	PASS	A. X-ray, rotationally averaged	exchange part, CISD	water/cc-pVDZ	-1/2 <sum D D F F*>, PySCF	9.18e-11	1.03e-11	1e-09	rel	
+A8f	PASS	A. X-ray, rotationally averaged	cumulant part, CISD	water/cc-pVDZ	total - N - Hartree - exchange (refs)	4.06e-10	6.88e-10	1e-07	rel	small quantity: relative to its own size
+A9a	PASS	A. X-ray, rotationally averaged	total, CASSCF(6,6)	water/cc-pVDZ	N + <sum Gamma F F*>, PySCF Gamma + ft	2.65e-10	3.06e-12	1e-09	rel	
+A9b	PASS	A. X-ray, rotationally averaged	total, CASSCF(6,6), factored density	water/cc-pVDZ	same reference	4.85e-11	5.60e-13	1e-09	rel	
+A9c	PASS	A. X-ray, rotationally averaged	elastic, CASSCF(6,6)	water/cc-pVDZ	<|sum D F|^2>, PySCF D + ft	2.05e-11	2.39e-13	1e-09	rel	
+A9d	PASS	A. X-ray, rotationally averaged	inelastic, CASSCF(6,6)	water/cc-pVDZ	difference of the two references	2.45e-10	2.88e-11	1e-09	rel	
+A9e	PASS	A. X-ray, rotationally averaged	exchange part, CASSCF(6,6)	water/cc-pVDZ	-1/2 <sum D D F F*>, PySCF	2.31e-10	2.57e-11	1e-09	rel	
+A9f	PASS	A. X-ray, rotationally averaged	cumulant part, CASSCF(6,6)	water/cc-pVDZ	total - N - Hartree - exchange (refs)	4.76e-10	1.73e-09	1e-07	rel	small quantity: relative to its own size
+B1	PASS	B. Exact limits and sum rules	I_tot(0) = N^2	water CCSD	N^2 = 100	3.03e-10	3.03e-12	1e-10	rel	
+B2	PASS	B. Exact limits and sum rules	I_el(0) = N^2	water CCSD	N^2 = 100	4.68e-11	4.68e-13	1e-10	rel	
+B3	PASS	B. Exact limits and sum rules	I_inel(0) = 0	water CCSD	0	2.60e-10	2.60e-10	1e-09	abs	
+B4	PASS	B. Exact limits and sum rules	total at large q (8, 12, 16 bohr^-1)	water CCSD	N + <sum Gamma F F*>, PySCF, Lebedev 5810	4.29e-10	4.03e-11	1e-09	rel	two-electron term there: 6.3e-01, 2.9e-01, 1.1e-01 (tight core pairs keep it finite in a Gaussian basis; it does not vanish)
+B5	PASS	B. Exact limits and sum rules	sum Gamma S S = N(N-1)	water CCSD (PySCF Gamma)	90	2.56e-13	2.84e-15	1e-10	rel	
+C1a	PASS	C. j2 moment (aligned molecules)	S2 elastic, RHF	water/cc-pVDZ	<I_el(q n) P2(n_z)>, PySCF ft + Lebedev	7.43e-13	5.98e-12	1e-08	rel	
+C1b	PASS	C. j2 moment (aligned molecules)	S2 total, RHF	water/cc-pVDZ	<I_tot(q n) P2(n_z)>, PySCF	2.72e-12	2.21e-11	1e-08	rel	
+C2a	PASS	C. j2 moment (aligned molecules)	S2 elastic, CCSD	water/cc-pVDZ	<I_el(q n) P2(n_z)>, PySCF ft + Lebedev	7.11e-13	5.74e-12	1e-08	rel	
+C2b	PASS	C. j2 moment (aligned molecules)	S2 total, CCSD	water/cc-pVDZ	<I_tot(q n) P2(n_z)>, PySCF	2.76e-12	2.22e-11	1e-08	rel	
+D1	PASS	D. Fixed orientation, detector grids	elastic |F(q)|^2, 40 random q vectors	water CCSD	PySCF ft_aopair	2.84e-14	3.57e-16	1e-10	rel	
+D2	PASS	D. Fixed orientation, detector grids	total, 40 random q vectors	water CCSD	N + sum Gamma F F*, PySCF	2.84e-14	3.52e-16	1e-10	rel	
+D3	PASS	D. Fixed orientation, detector grids	photon k0 at 10 keV	-	E/(hbar c), CODATA (scipy)	2.03e-09	7.56e-10	1e-06	rel	
+D4	PASS	D. Fixed orientation, detector grids	|q| on the Ewald sphere	9 directions	2 k0 sin(2theta/2)	4.44e-16	1.73e-16	1e-12	rel	
+D5	PASS	D. Fixed orientation, detector grids	polar detector grid (qcoord3)	10 keV, 60 deg, 49 x 73	qgrid.dat written by the original grid.f90	5.00e-13	5.00e-13	1e-11	abs	3529 points; file has 12 decimals
+D6	PASS	D. Fixed orientation, detector grids	aligned ensemble, elastic, <P2> = 0.4	water RHF, 4 lab q vectors	explicit average over 590 x 24 orientations, PySCF ft	2.07e-11	4.77e-13	1e-07	rel	
+E1	PASS	E. Electron scattering	electron-nucleus term I_ne(q)	water RHF	sum_A Z_A int rho j0(q|r-R_A|), DFT grid (level 6)	6.02e-08	6.02e-10	1e-07	rel	grid integrates N to 6.0e-09
+E2	PASS	E. Electron scattering	I_ne(0) = N sum Z	water RHF	10 x 10	5.68e-14	5.68e-16	1e-10	rel	
+E3	PASS	E. Electron scattering	nucleus-nucleus term	water	sum Z_A Z_B j0(q R_AB)	2.84e-14	2.84e-16	1e-14	rel	
+E4	PASS	E. Electron scattering	electron bracket, total, CCSD	water/cc-pVDZ	I_nn - 2 I_ne + I_ee, PySCF ft + Lebedev	2.92e-10	5.60e-12	1e-09	rel	
+E5	PASS	E. Electron scattering	elastic bracket -> q^2 mu^2/3 (q = 2e-3)	water RHF	PySCF SCF dipole	8.83e-11	1.01e-04	3e-03	rel	leading term only; next order is O(q^4)
+E6	PASS	E. Electron scattering	electron k0 at 100 keV (relativistic)	-	p/hbar, CODATA (scipy)	2.43e-06	2.71e-08	1e-06	rel	
+E7	PASS	E. Electron scattering	cross section from the bracket	-	4 bracket / (a0^2 q^4) (bohr^2, no gamma)	0.00e+00	0.00e+00	1e-14	rel	units of the interface: bohr^2/sr for q in bohr^-1
+F1	PASS	F. Exact one-electron results	H atom elastic F(q)^2	H/aug-cc-pV5Z UHF	exact [16/(4+q^2)^2]^2	2.04e-05	2.59e-05	3e-04	rel	UHF energy error 5.2e-06 Eh: basis-set limit
+F2	PASS	F. Exact one-electron results	H atom inelastic 1 - F^2 (one electron: I_tot = 1)	H/aug-cc-pV5Z UHF	exact 1 - F(q)^2	2.04e-05	2.04e-05	3e-04	rel	
+F3	PASS	F. Exact one-electron results	H atom electron elastic bracket	H/aug-cc-pV5Z UHF	exact (1 - F)^2 (Mott-Bethe)	2.13e-05	2.31e-05	3e-04	rel	
+G1H	PASS	G. Independent atom model	f(q) of the free atom H	HF/aug-cc-pVQZ	xraydb f0 (Waasmaier-Kirfel)	1.61e-04	1.82e-04	1e-02	rel	method difference (HF in a finite basis vs relativistic HF tables): agreement to ~1% of Z expected
+G1C	PASS	G. Independent atom model	f(q) of the free atom C	HF/aug-cc-pVQZ	xraydb f0 (Waasmaier-Kirfel)	2.86e-02	5.23e-03	1e-02	rel	method difference (HF in a finite basis vs relativistic HF tables): agreement to ~1% of Z expected
+G1N	PASS	G. Independent atom model	f(q) of the free atom N	HF/aug-cc-pVQZ	xraydb f0 (Waasmaier-Kirfel)	3.47e-02	5.33e-03	1e-02	rel	method difference (HF in a finite basis vs relativistic HF tables): agreement to ~1% of Z expected
+G1O	PASS	G. Independent atom model	f(q) of the free atom O	HF/aug-cc-pVQZ	xraydb f0 (Waasmaier-Kirfel)	5.79e-03	7.66e-04	1e-02	rel	method difference (HF in a finite basis vs relativistic HF tables): agreement to ~1% of Z expected
+G1F	PASS	G. Independent atom model	f(q) of the free atom F	HF/aug-cc-pVQZ	xraydb f0 (Waasmaier-Kirfel)	4.64e-03	5.40e-04	1e-02	rel	method difference (HF in a finite basis vs relativistic HF tables): agreement to ~1% of Z expected
+G1Ne	PASS	G. Independent atom model	f(q) of the free atom Ne	HF/aug-cc-pVQZ	xraydb f0 (Waasmaier-Kirfel)	4.13e-03	4.29e-04	1e-02	rel	method difference (HF in a finite basis vs relativistic HF tables): agreement to ~1% of Z expected
+G2	PASS	G. Independent atom model	IAM elastic (Debye sum)	water, xraydb f	sum f_A f_B j0(q R_AB) written here	3.55e-15	4.28e-17	1e-12	rel	
+H1	PASS	H. Radial functions j_n(x)/x^n	q^2b j_b(x)/x^b, b <= 18, x = 1e-3 .. 1e3	-	mpmath, 40 digits	8.18e-15	8.18e-15	1e-13	abs	pointwise relative error, worst over all orders and x
+I1	PASS	I. Density matrices	factored 2RDM, CCSD (MO basis)	water/cc-pVDZ	PySCF make_rdm2	3.51e-14	3.51e-14	1e-12	abs	max element difference
+I2	PASS	I. Density matrices	factored 2RDM, CISD (MO basis)	water/cc-pVDZ	PySCF make_rdm2	3.60e-14	3.60e-14	1e-12	abs	max element difference
+I3	PASS	I. Density matrices	factored 2RDM, CASSCF(6,6) (AO basis)	water/cc-pVDZ	PySCF mcscf.addons.make_rdm12	6.20e-15	6.20e-15	1e-12	abs	
+I4d	PASS	I. Density matrices	RDM builder 'dense', CAS(8,8) FCI vector	N2/6-31G	PySCF fci.direct_spin1.make_rdm12	3.11e-15	3.11e-15	1e-12	abs	
+I4b	PASS	I. Density matrices	RDM builder 'bitwise', CAS(8,8) FCI vector	N2/6-31G	PySCF fci.direct_spin1.make_rdm12	1.29e-14	1.29e-14	1e-12	abs	
+I4s	PASS	I. Density matrices	RDM builder 'sparse', CAS(8,8) FCI vector	N2/6-31G	PySCF fci.direct_spin1.make_rdm12	1.27e-14	1.27e-14	1e-12	abs	
+I5	PASS	I. Density matrices	two-electron term, FCI root 2 via th.load(fci.FCI)	water/STO-3G	same kernel on PySCF's root-2 RDMs	1.14e-13	1.50e-15	1e-11	rel	checks the loader (orbitals, root selection) with the kernel held fixed
+I6	PASS	I. Density matrices	total, DMRG-CASCI(6,6) (block2, M = 500), factored	water/cc-pVDZ	PySCF exact CASCI Gamma + ft + Lebedev	2.90e-08	3.35e-10	1e-08	rel	DMRG - CASCI: energy 5.7e-14 Eh, active 2RDM 2.6e-07 (DMRG convergence of the density, not THISTLE)
+J1	PASS	J. Readers (energies printed by the programs)	Molpro MULTI: 4 state energies from our RDMs	LiF SA4-CASSCF(6,4)	energies printed by Molpro	4.17e-09	4.17e-09	2e-07	abs	Hartree; limited by the 8 printed decimals
+J2	PASS	J. Readers (energies printed by the programs)	OpenMolcas MRCI: energy from our RDMs (12626 CSFs)	water/cc-pVDZ	CI energy printed by OpenMolcas	7.90e-08	7.90e-08	3e-07	abs	limited by the 6 printed decimals of the CSF coefficients
+J4	PASS	J. Readers (energies printed by the programs)	OpenMolcas RASSCF: active natural occupations from our 1RDM	C7H8/ANO-L-MB CASSCF(8,8)	occupations printed by OpenMolcas	3.35e-06	3.35e-06	1e-05	abs	CI vector of 1764 CSFs -> determinants; printed to 4 decimals. Energy not usable: Molcas ran with RICD integrals
+J3	PASS	J. Readers (energies printed by the programs)	Molden reader: elastic scattering	CO UHF (PySCF Molden file)	PySCF molden.load + ft_aopair + Lebedev	6.85e-11	5.46e-13	1e-09	rel	
+K1co_631	PASS	K. Other implementations	earlier production kernel, HF, its own cut-off	co_631gs	stored output of the earlier code	5.00e-12	2.75e-14	1e-09	rel	
+K2co_631	PASS	K. Other implementations	earlier production kernel, CCSD 2-e, its own cut-off	co_631gs	stored output of the earlier code	1.82e-09	1.00e-11	1e-09	rel	
+K1h2o_63	PASS	K. Other implementations	earlier production kernel, HF, its own cut-off	h2o_631g	stored output of the earlier code	2.00e-12	2.23e-14	1e-09	rel	
+K2h2o_63	PASS	K. Other implementations	earlier production kernel, CCSD 2-e, its own cut-off	h2o_631g	stored output of the earlier code	1.79e-12	1.99e-14	1e-09	rel	
+K1h2o_cc	PASS	K. Other implementations	earlier production kernel, HF, its own cut-off	h2o_ccpvdz	stored output of the earlier code	2.50e-12	2.78e-14	1e-09	rel	
+K2h2o_cc	PASS	K. Other implementations	earlier production kernel, CCSD 2-e, its own cut-off	h2o_ccpvdz	stored output of the earlier code	4.89e-11	5.44e-13	1e-09	rel	
+K1h2o_st	PASS	K. Other implementations	earlier production kernel, HF, its own cut-off	h2o_sto3g	stored output of the earlier code	1.36e-12	1.52e-14	1e-09	rel	
+K2h2o_st	PASS	K. Other implementations	earlier production kernel, CCSD 2-e, its own cut-off	h2o_sto3g	stored output of the earlier code	9.81e-13	1.09e-14	1e-09	rel	
+K3total	PASS	K. Other implementations	thistle-dev Fortran engine (MO deck)	CH4/STO-3G	thistle-dev golden output (ifort engine)	1.14e-13	1.26e-15	1e-11	rel	
+K3zcotr	PASS	K. Other implementations	thistle-dev Fortran engine (AO deck)	CH4/STO-3G	thistle-dev golden output (ifort engine)	6.54e-13	7.26e-15	1e-11	rel	
+K4	PASS	K. Other implementations	earlier j2 code (Y20 convention), its own cut-off	water/6-31G	stored output (E. Moen Liane)	5.77e-09	8.35e-08	1e-06	rel	

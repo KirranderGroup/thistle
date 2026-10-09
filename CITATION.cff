@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use THISTLE in your research, please cite it as below."
+title: "THISTLE: ab initio X-ray and electron scattering from electronic wavefunctions"
+version: 0.2.0.dev0
+license: Apache-2.0
+authors:
+  - family-names: "Moreno Carrascosa"
+    given-names: "Andrés"
+  - family-names: "Simmermacher"
+    given-names: "Mats"
+  - family-names: "Wang"
+    given-names: "Patrick Yuheng"
+  - family-names: "Moen Liane"
+    given-names: "Eirik"
+  - family-names: "Cooper"
+    given-names: "Joseph"
+  - family-names: "Zotev"
+    given-names: "Nikola"
+  - family-names: "Northey"
+    given-names: "Thomas"
+  - family-names: "Kirrander"
+    given-names: "Adam"
+keywords:
+  - X-ray scattering
+  - electron diffraction
+  - ultrafast scattering
+  - reduced density matrices
+  - quantum chemistry

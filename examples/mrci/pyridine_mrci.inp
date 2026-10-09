@@ -1,0 +1,46 @@
+***, pyridine: SA-CASSCF + internally contracted MRCI, what can be exported for THISTLE
+memory,2000,m
+gthresh,printci=0.0                 ! print every CI coefficient (MULTI and the MRCI reference part)
+basis=cc-pvtz
+symmetry,nosym                      ! keeps orbital order simple for the Molden file
+geometry={
+N   0.000000   0.000000   1.422300
+C   0.000000   1.141400   0.717900
+C   0.000000  -1.141400   0.717900
+C   0.000000   1.195500  -0.677500
+C   0.000000  -1.195500  -0.677500
+C   0.000000   0.000000  -1.380900
+H   0.000000   2.058800   1.306400
+H   0.000000  -2.058800   1.306400
+H   0.000000   2.154400  -1.213100
+H   0.000000  -2.154400  -1.213100
+H   0.000000   0.000000  -2.466500
+}
+hf
+
+! --- SA-CASSCF: pi system + N lone pair, CAS(8,7), three singlets (S0, n-pi*, pi-pi*)
+{multi
+ closed,17; occ,24
+ wf,42,1,0; state,3
+ config,det                         ! determinant printout (what THISTLE's Molpro reader parses)
+ gprint,civector
+ natorb,2140.2,ci,state=1.1
+ natorb,2141.2,ci,state=2.1
+ natorb,2142.2,ci,state=3.1
+ save,detcirec=5100.2}              ! the three CAS vectors in determinant form, for the record
+put,molden,pyridine_cas.mld; orbital,2140.2
+
+! --- MRCI on the CAS reference, all three states
+{mrci
+ core,6; closed,17; occ,24          ! core = 1s of C,N frozen; the rest correlated
+ wf,42,1,0; state,3
+ print,ci=1,ref=1                   ! internal (reference-space) coefficients and the external
+                                    ! EXPANSION coefficients: the latter are contracted pair
+                                    ! functions, NOT determinants (see the note)
+ dm,6100.2                          ! MRCI one-particle density of every state -> natural orbitals
+ natorb,6100.2,print=0
+ save,civec=6200.2,config=6300.2}
+put,molden,pyridine_mrci_no_state1.mld; orbital,6100.2; state,1.1   ! MRCI natural orbitals + occupations
+put,molden,pyridine_mrci_no_state2.mld; orbital,6100.2; state,2.1
+put,molden,pyridine_mrci_no_state3.mld; orbital,6100.2; state,3.1
+---

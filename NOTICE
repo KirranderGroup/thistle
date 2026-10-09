@@ -1,0 +1,14 @@
+THISTLE (and its kernel library pyxscat)
+Copyright 2026 Andrés Moreno Carrascosa
+
+Authors: Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane,
+Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander.
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes software derived from PySCF (https://github.com/pyscf/pyscf):
+python/pyxscat/ccsd.py transcribes the intermediates of passes 1 and 2 of
+pyscf/cc/ccsd_rdm.py (_gamma2_outcore).
+    Copyright 2014-2021 The PySCF Developers. All Rights Reserved.
+    Licensed under the Apache License, Version 2.0.
+    Author: Qiming Sun <osirpt.sun@gmail.com>

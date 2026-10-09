@@ -1,0 +1,11 @@
+&GATEWAY
+  coord
+  3
+  water (Angstrom)
+  O   0.0000   0.0000   0.1173
+  H   0.0000   0.7572  -0.4692
+  H   0.0000  -0.7572  -0.4692
+  basis = cc-pVTZ
+  group = nosym
+&SEWARD
+&SCF

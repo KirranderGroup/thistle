@@ -1,0 +1,27 @@
+diff -ru a/Integrals.f90 b/Integrals.f90
+--- a/Integrals.f90	2026-10-09 18:08:45.363583642 +0200
++++ b/Integrals.f90	2026-10-09 18:08:45.365435435 +0200
+@@ -2058,7 +2058,7 @@
+                                     za,zb,  cutoffz, cutoffmd,f)
+ 
+ 
+-                            f=0.0_dp
++                            ! f=0.0_dp   (debug line: dropped every two-centre quartet)
+ 
+ 
+                         end if
+diff -ru a/main_calculation.f90 b/main_calculation.f90
+--- a/main_calculation.f90	2026-10-09 18:08:45.360302803 +0200
++++ b/main_calculation.f90	2026-10-09 18:08:45.361855915 +0200
+@@ -775,8 +775,9 @@
+ 
+            else if (type==7) then
+ 
+-                P0matrix = 0.0_dp
+-                !CALL set_P0_j2(P0matrix, 4*maxval(l), q)
++                P0matrix_2 = 0
++                CALL set_P0_j2(P0matrix_2, 4*maxval(l), q)
++                P0matrix = real(P0matrix_2, dp)
+                 ! CALL set_P0(P0matrix, 4*maxval(l), q)
+                 nmomax=19
+                 read2rdm2=read2rdm

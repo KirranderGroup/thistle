@@ -1,0 +1,29 @@
+# THISTLE input file: electron diffraction (UED) of LiF, state-averaged CASSCF from Molpro.
+# Run with:   thistle run examples/lif_electrons.toml
+# For X-rays and electrons together, set probe = "both".
+
+[input]
+file  = "../tests/data/molpro/lif_sa4_casscf.out"
+state = 1
+
+[q]
+unit   = "1/A"
+max    = 10.0
+points = 101
+
+[compute]
+probe      = "electron"
+energy_kev = 3000           # MeV UED: relativistic factor gamma^2 and the detector wavelength
+scattering = true
+parts      = "all"          # nucleus-nucleus, electron-nucleus, electron-electron terms in the table
+iam        = true           # IAM, % difference and sM(s)
+iam_basis  = { Li = "cc-pvtz", F = "aug-cc-pvtz" }
+anisotropy = true           # j2 moment for laser-aligned molecules
+
+[detector]
+pixels      = 61
+qmax        = 10.0
+orientation = [0, 90, 0]    # bond perpendicular to the beam
+
+[output]
+prefix = "results/lif"

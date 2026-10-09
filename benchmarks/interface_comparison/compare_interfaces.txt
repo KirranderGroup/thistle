@@ -1,0 +1,41 @@
+DMRG(6,6) M=500 vs CASCI(6,6): dE = 2.8e-14 Eh
+
+q = 1e-10..8 bohr^-1, 81 points; engine output divided by its single-precision pi factor
+case                                   deck   obs     | A-B cc=0.01  A-B cc=1e-10 | B-C (exact) | t_A    t_B    t_C
+H2O/6-31G CASSCF(4,4)                  MO     total   |    4.7e-15     5.2e-15  |    1.7e-14  |   5.4s  0.06s  0.04s
+H2O/6-31G CASSCF(4,4)                  MO     elastic |    3.0e-15     2.4e-15  |    2.0e-14  |   0.7s  0.05s  0.04s
+H2O/6-31G CASSCF(4,4)                  AO     total   |    5.4e-15     6.9e-15  |    1.8e-14  |   0.1s  0.04s  0.04s
+H2O/6-31G CASSCF(4,4)                  AO     elastic |    7.0e-15     9.1e-15  |    2.0e-14  |   0.1s  0.04s  0.04s
+H2O/6-31G SA2-CASSCF(4,4), root 2      MO     total   |  scat_lib failed: AssertionError: 
+H2O/6-31G SA2-CASSCF(4,4), root 2      MO     elastic |  scat_lib failed: AssertionError: 
+H2O/6-31G SA2-CASSCF(4,4), root 2      AO     total   |  scat_lib failed: AssertionError: 
+H2O/6-31G SA2-CASSCF(4,4), root 2      AO     elastic |  scat_lib failed: AssertionError: 
+  same root as CASCI(nroots=2) on SA orbitals MO     total   |    3.4e-15     2.5e-15  |    8.5e-09  |   4.3s  0.05s  0.04s
+  same root as CASCI(nroots=2) on SA orbitals MO     elastic |    4.7e-15     3.3e-15  |    8.9e-09  |   0.7s  0.05s  0.05s
+  same root as CASCI(nroots=2) on SA orbitals AO     total   |    2.8e-15     3.0e-15  |    8.5e-09  |   0.1s  0.04s  0.04s
+  same root as CASCI(nroots=2) on SA orbitals AO     elastic |    4.4e-15     2.6e-15  |    8.9e-09  |   0.1s  0.04s  0.04s
+H2O/6-31G CCSD                         MO     total   |    1.9e-15     4.1e-15  |    2.5e-14  |   2.8s  0.07s  0.05s
+H2O/6-31G CCSD                         MO     elastic |    2.8e-15     2.1e-15  |    1.8e-14  |   0.8s  0.04s  0.04s
+H2O/6-31G CCSD                         AO     total   |    5.1e-15     4.6e-15  |    1.7e-14  |   0.1s  0.03s  0.04s
+H2O/6-31G CCSD                         AO     elastic |    5.3e-15     4.8e-15  |    2.1e-14  |   0.1s  0.04s  0.04s
+H2O/6-31G DMRG-CASCI(6,6), block2      MO     total   |    3.2e-15     2.4e-15  |    1.8e-14  |   0.7s  0.05s  0.04s
+H2O/6-31G DMRG-CASCI(6,6), block2      MO     elastic |    5.5e-15     3.0e-15  |    1.7e-14  |   0.8s  0.04s  0.04s
+H2O/6-31G DMRG-CASCI(6,6), block2      AO     total   |    5.5e-15     4.1e-15  |    1.7e-14  |   0.1s  0.04s  0.04s
+H2O/6-31G DMRG-CASCI(6,6), block2      AO     elastic |    5.1e-15     4.3e-15  |    1.8e-14  |   0.2s  0.03s  0.04s
+H2O/cc-pVDZ (cart) CASSCF(6,6)         MO     total   |  scat_lib failed: RuntimeError: Error running fortran engine on HDF5 deck 'scat.h5'
+H2O/cc-pVDZ (cart) CASSCF(6,6)         MO     elastic |    3.6e-15     2.3e-15  |    1.9e-14  |   1.0s  0.11s  0.14s
+H2O/cc-pVDZ (cart) CASSCF(6,6)         AO     total   |    6.6e-15     1.6e-13  |    2.1e-14  |   0.3s  0.26s  0.14s
+H2O/cc-pVDZ (cart) CASSCF(6,6)         AO     elastic |    5.3e-15     1.1e-13  |    1.9e-14  |   0.3s  0.19s  0.10s
+H2O/STO-3G FCI (fci.FCI)               MO     total   |    4.2e-15     1.6e-15  |    1.8e-14  |   0.2s  0.02s  0.02s
+H2O/STO-3G FCI (fci.FCI)               MO     elastic |    3.3e-15     1.7e-15  |    1.8e-14  |   0.2s  0.02s  0.02s
+H2O/STO-3G FCI (fci.FCI)               AO     total   |    2.4e-15     3.4e-15  |    1.3e-14  |   0.0s  0.01s  0.01s
+H2O/STO-3G FCI (fci.FCI)               AO     elastic |    2.3e-15     2.7e-15  |    1.1e-14  |   0.0s  0.01s  0.01s
+H2O/STO-3G FCI, root 3                 MO     total   |    1.9e-15     1.7e-15  |    1.8e-14  |   0.2s  0.02s  0.01s
+H2O/STO-3G FCI, root 3                 MO     elastic |    2.7e-15     1.7e-15  |    1.7e-14  |   0.2s  0.01s  0.01s
+H2O/STO-3G FCI, root 3                 AO     total   |    3.5e-15     3.5e-15  |    1.2e-14  |   0.0s  0.01s  0.01s
+H2O/STO-3G FCI, root 3                 AO     elastic |    1.7e-15     2.1e-15  |    1.2e-14  |   0.0s  0.01s  0.01s
+
+scat_lib orbital_type (route A, AO deck, total), against orbital_type='HF':
+  HF       0.0e+00
+  CASSCF   1.4e-15
+  natural  1.7e-15

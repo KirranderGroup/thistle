@@ -1,0 +1,37 @@
+
+memory,100,m
+gprint,civector,orbitals,angles=-1,distance=-1
+gthresh,twoint=1.0d-13
+gthresh,energy=1.0d-7,gradient=1.0d-2
+
+gthresh,thrpun=0.000000001
+punch, sf6+_cas56.pun, new
+
+symmetry, nosym
+orient, noorient
+angstrom
+
+R=1.56000000 Ang
+THETA=90.000
+PHI=180.000
+DIH=90.000
+
+geometry={S;
+          F1,S,R;
+          F2,S,R,F1,THETA;
+          F3,S,R,F1,THETA,F2,DIH;
+          F4,S,R,F1,THETA,F3,DIH;
+          F5,S,R,F1,THETA,F4,DIH;
+          F6,S,R,F1,PHI,F5,DIH}
+
+basis=6-311g
+hf
+
+{multi;
+occ,     38;
+closed,  32;
+!frozen,  11;
+wf, 69, 1, 1;
+}
+
+put, molden, sf6+_cas56.molden

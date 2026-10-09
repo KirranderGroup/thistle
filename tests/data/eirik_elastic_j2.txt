@@ -1,0 +1,11 @@
+# Elastic j2 (Ylm-normalised: sum D D <j2(q r12) Y20>) from Eirik's code (Scattering_eirik/Eirik_j2,
+# elastic_integration_j2 + set_P0_j2, cutoffcentre 0.01), driven directly from Fortran.
+# System: H2O RHF/6-31G (Cartesian), O 0.05 0.02 0.1173; H 0 0.7572 -0.4692; H 0 -0.7572 -0.4692 (Angstrom).
+# Expected relation to pyxscat (Legendre-normalised): eirik = sqrt(5 / (4 pi)) * pyxscat.elastic(..., l=2)
+# q (bohr^-1)          value
+3.000000000000000E-01   9.317544269705873E-03
+7.000000000000000E-01   4.282204823725913E-02
+1.000000000000000E+00   6.916678692367975E-02
+2.000000000000000E+00   5.826369108386830E-02
+3.000000000000000E+00  -6.708331102288319E-04
+5.000000000000000E+00  -4.291028007961371E-03

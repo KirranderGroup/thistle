@@ -1,0 +1,22 @@
+Eirik's MO-route code (driven by cumulant_scattering) vs THISTLE; q = 1e-10..10 bohr^-1, 100 points
+max |Eirik - reference| / max |reference|; reference = THISTLE quartets, cutoffcentre 0.01, in Eirik's convention
+  as-is: Eirik's kernels unchanged (input reading only); repaired: the two debugging lines undone (see header)
+case                           observable             as-is  repaired  2RDM lines    time
+water/6-31G CCSD               total j0             2.1e-14       nan        8937    1.8s
+water/6-31G CCSD               total j2             5.5e-01   6.5e-14        8937    2.6s
+water/6-31G CCSD               elastic j2           1.6e+00   7.4e-14        8937   10.6s
+water/cc-pVDZ CASSCF(6,6)      total j0             1.1e-14       nan        1590    3.3s
+water/cc-pVDZ CASSCF(6,6)      total j2             1.1e+00   4.4e-14        1590    5.1s
+water/cc-pVDZ CASSCF(6,6)      elastic j2           2.2e+00   1.3e-13        1590   81.3s
+H4 chain/6-31G CCSD (s only)   total j0             9.3e-15       nan        4096    0.2s
+H4 chain/6-31G CCSD (s only)   total j2             9.5e-15   9.3e-15        4096    0.5s
+H4 chain/6-31G CCSD (s only)   elastic j2           1.0e+00   1.3e-14        4096    1.7s
+
+Parts of the two-electron term (cumulant_scattering's decomposition of the same 2RDM), repaired build
+case                           part     total j0  total j2
+water/6-31G CCSD               H         2.2e-14   5.7e-14
+water/6-31G CCSD               X         2.2e-14   3.5e-13
+water/6-31G CCSD               Lambda    1.7e-12   1.4e-12
+water/cc-pVDZ CASSCF(6,6)      H         1.3e-14   6.0e-14
+water/cc-pVDZ CASSCF(6,6)      X         1.9e-14   7.3e-13
+water/cc-pVDZ CASSCF(6,6)      Lambda    2.5e-12   2.0e-13

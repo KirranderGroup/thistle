@@ -1,0 +1,23 @@
+step 0  water CASSCF(6,6)/cc-pVDZ (Cartesian): n = 25 basis functions, 2 core, 6 active, 17 virtual orbitals; N = 10 electrons; E = -76.11372947 Eh
+step 1  active 1RDM (6, 6), trace 6.0000000000 (= 6 active electrons); natural occupations [1.984, 1.9778, 1.9766, 0.0233, 0.0229, 0.0154]
+        active 2RDM (6, 6, 6, 6) = 1296 numbers, sum_pq Gamma_ppqq = 30.0000000000 (= 6 x 5)
+step 2  8-fold average: largest change 0.982 (of max |Gamma| 3.928); trace unchanged: 30.0000000000
+step 3  M = Gamma reshaped to (36, 36); 21 non-zero eigenvalues of 36 (bound n_act(n_act+1)/2 = 21); the other 15 are 7e-16 or less
+        eigenvalues w_k, largest |w| first: 9.8173, -1.9599, -1.9589, -1.9587, -1.9523, -1.9447, -0.3429, -0.0786, -0.0735, -0.0719, -0.0541, 0.0220, -0.0144, 0.0111, 0.0077, -0.0054, -0.0043, 0.0033, 0.0028, 0.0025, 0.0015
+        factor_active: 21 terms, each V_k a 6x6 matrix, symmetric to 1e-11
+        sum_k w_k V_k(pq) V_k(rs) vs averaged Gamma: max error 1.4e-14
+step 4  core embedding (core + active = 8 orbitals): 24 Coulomb terms (21 active + 3 core), 3 exchange terms, each 8x8
+        core Hartree  Dc x Dc                        contributes  16.0000 to N(N-1)
+        core exchange -1/2 Dc.Dc                     contributes  -4.0000 to N(N-1)
+        core-active Hartree  Dc x Da + Da x Dc       contributes  48.0000 to N(N-1)
+        core-active exchange -1/2 (Dc.Da + Da.Dc)    contributes  -0.0000 to N(N-1)
+        active block sum_k w_k tr(V_k)^2             contributes  30.0000 to N(N-1)
+        total 90.0000000000 = N(N-1) = 90
+        rebuilt MO tensor vs dense embedding (both averaged): 1.0e-14
+step 5  A_AO = C A C^T with C the 25x8 core+active coefficients: 24 + 3 terms, each 25x25
+        storage: factors 54 matrices = 33,750 numbers (0.270 MB) vs dense 390,625 (3.12 MB)
+        rebuilt AO tensor vs dense AO tensor (averaged): 5.7e-15
+step 6  block Gamma(O 2p, O 2p | H 1s, H 1s), 3x3x1x1: Coulomb part = A^T B (9x24 times 24x1), exchange part the same over 3 terms
+        block by the matrix products vs the same block of the rebuilt tensor: 2.7e-15; 8-fold averaged, vs the dense tensor: 1.7e-15
+step 7  two-electron scattering, 41 q to 10 bohr^-1, unscreened: dense vs factored max rel 5.7e-15; I2(0) = 90.00000000 (N(N-1) = 90); 0.09 s dense, 0.20 s factored
+        parts at q = 2.5 bohr^-1: total 16.749351 = N 10 + Hartree 9.981952 + exchange -3.084739 + cumulant -0.147862
