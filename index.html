@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>THISTLE &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/better.css?v=bb9f1030" />
+    <script src="_static/documentation_options.js?v=130a53a1"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/index.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="THISTLE quick start" href="QUICKSTART.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="# ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          <a href="QUICKSTART.html" title="Next document">THISTLE quick start</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="#">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="thistle">
+<h1>THISTLE<a class="headerlink" href="#thistle" title="Link to this heading">¶</a></h1>
+<p><strong>Ab initio X-ray and electron scattering from electronic wavefunctions.</strong></p>
+<p>THISTLE computes what gas-phase X-ray scattering and electron diffraction experiments measure,
+directly from the wavefunction of a quantum chemistry calculation, without the independent atom
+model.  It takes a Gaussian basis and the one- and two-particle density matrices of any method
+(Hartree–Fock, CASSCF, CI, coupled cluster) and returns rotationally averaged, partially aligned
+and fixed-orientation scattering for X-rays and electrons, with the independent atom model as a
+reference.</p>
+<p>The code has three layers:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">thistle</span></code>, the simple interface: load an output file, get a <code class="docutils literal notranslate"><span class="pre">Molecule</span></code>, ask it for scattering,
+plot and save the result; input files, the <code class="docutils literal notranslate"><span class="pre">thistle</span></code> command and Slurm submission.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pyxscat</span></code>, the kernel-level API: basis sets, density matrices, every scattering kind, the
+adapters for PySCF, Molden, OpenMolcas and Molpro, CI and CCSD densities.</p></li>
+<li><p>The Fortran kernels (<code class="docutils literal notranslate"><span class="pre">src/fortran</span></code>), compiled into <code class="docutils literal notranslate"><span class="pre">libpyxscat</span></code> and called through a C
+interface: the analytic integrals, screened and parallel (OpenMP).</p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="QUICKSTART.html">THISTLE quick start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="QUICKSTART.html#install-once">1. Install (once)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="QUICKSTART.html#straight-from-an-output-file">2. Straight from an output file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="QUICKSTART.html#electrons">Electrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="QUICKSTART.html#with-an-input-file">3. With an input file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="QUICKSTART.html#on-a-cluster">4. On a cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="QUICKSTART.html#from-python">5. From Python</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="FOR_TESTERS.html#install">1. Install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FOR_TESTERS.html#quick-check-seconds">2. Quick check (seconds)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FOR_TESTERS.html#run-the-test-suite">3. Run the test suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FOR_TESTERS.html#try-it-on-your-own-calculations">4. Try it on your own calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FOR_TESTERS.html#what-to-report">5. What to report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="THEORY.html">THISTLE: what is computed, and how</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="THEORY.html#x-ray-scattering">1. X-ray scattering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="THEORY.html#electron-scattering">2. Electron scattering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="THEORY.html#independent-atom-model-iam">3. Independent atom model (IAM)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="THEORY.html#wavefunctions-and-conventions">4. Wavefunctions and conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="THEORY.html#validation">5. Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="THEORY.html#limits-and-plans">6. Limits and plans</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/thistle.html">thistle: the simple interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pyxscat.html">pyxscat: the kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/interfaces.html">pyxscat.interfaces: wavefunction adapters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kernels.html">Fortran kernels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html#modules">Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html#building-the-fortran-reference">Building the Fortran reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html#writing-the-fortran-comments">Writing the Fortran comments</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="STATUS.html">Status of the refactoring</a></li>
+</ul>
+</div>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="#">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          <a href="QUICKSTART.html" title="Next document">THISTLE quick start</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="#">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

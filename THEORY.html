@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>THISTLE: what is computed, and how &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/better.css?v=bb9f1030" />
+    <script src="_static/documentation_options.js?v=130a53a1"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/THEORY.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Python API" href="api/index.html" />
+    <link rel="prev" title="Testing THISTLE 0.2.0.dev0" href="FOR_TESTERS.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="FOR_TESTERS.html" title="Previous document">Testing THISTLE 0.2.0.dev0</a>
+        </li>
+        <li>
+          <a href="api/index.html" title="Next document">Python API</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="thistle-what-is-computed-and-how">
+<h1>THISTLE: what is computed, and how<a class="headerlink" href="#thistle-what-is-computed-and-how" title="Link to this heading">¶</a></h1>
+<p><em>Authors: Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander.</em></p>
+<p>THISTLE (with its kernel library <code class="docutils literal notranslate"><span class="pre">pyxscat</span></code>) computes the scattering of X-rays and fast electrons
+by molecules directly from their electronic wavefunction, given as a Gaussian basis set and one-
+and two-particle density matrices (1RDM, 2RDM). It does not depend on any electronic structure
+program: PySCF objects, Molden files, OpenMolcas RASSCF and Molpro MULTI outputs are read by thin
+adapters, and any other source only needs to provide a basis and density matrices.</p>
+<p>Atomic units throughout unless stated (q in bohr⁻¹, lengths in bohr). The user interface
+converts to Å⁻¹ and Å² by default.</p>
+<hr class="docutils" />
+<section id="x-ray-scattering">
+<h2>1. X-ray scattering<a class="headerlink" href="#x-ray-scattering" title="Link to this heading">¶</a></h2>
+<section id="total-elastic-and-inelastic-scattering">
+<h3>1.1 Total, elastic and inelastic scattering<a class="headerlink" href="#total-elastic-and-inelastic-scattering" title="Link to this heading">¶</a></h3>
+<p>For a molecule in electronic state Ψ, the X-ray scattering in electron units (Thomson cross
+section = 1), summed over all final electronic states (the closure or Waller–Hartree
+approximation, valid when the photon energy greatly exceeds the electronic excitation energies),
+is</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>I_tot(q) = ⟨Ψ| Σ_ij exp(iq·(r_i − r_j)) |Ψ⟩ = N + ∫∫ Γ(r₁, r₂) exp(iq·(r₁ − r₂)) dr₁ dr₂,
+</pre></div>
+</div>
+<p>with N the number of electrons and Γ the spin-summed pair density (normalised to N(N−1)).
+The elastic part is the square of the form factor F(q) = ∫ ρ(r) exp(iq·r) dr,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>I_el(q) = |F(q)|²,         I_inel(q) = I_tot(q) − I_el(q).
+</pre></div>
+</div>
+<p>In the Gaussian basis {χ_μ}, with ρ = Σ D_μν χ_μ χ_ν and Γ = Σ Γ_μνλσ χ_μ χ_ν (1) χ_λ χ_σ (2)
+(chemists’ order, PySCF’s <code class="docutils literal notranslate"><span class="pre">make_rdm2</span></code> convention),</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>F(q)  = Σ_μν D_μν F_μν(q),       F_μν(q) = ∫ χ_μ χ_ν exp(iq·r) dr,
+I₂(q) = Σ_μνλσ Γ_μνλσ ⟨μν|exp(iq·r₁₂)|λσ⟩.
+</pre></div>
+</div>
+</section>
+<section id="decomposition">
+<h3>1.2 Decomposition<a class="headerlink" href="#decomposition" title="Link to this heading">¶</a></h3>
+<p>Writing Γ = D⊗D − ½ D⊗D (exchange) + Λ, with Λ the cumulant (the genuinely correlated part),</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>I_tot = N + I_Hartree + I_exchange + I_cumulant,     I_el = I_Hartree,
+</pre></div>
+</div>
+<p>where the first three terms are built from the 1RDM alone. For a closed-shell Hartree–Fock
+determinant Λ = 0, so total scattering follows from the orbitals (<code class="docutils literal notranslate"><span class="pre">hf_total</span></code>, <code class="docutils literal notranslate"><span class="pre">--hf</span></code>). For
+natural orbitals of correlated wavefunctions it does not, which is why a Molden file alone only
+gives elastic scattering unless the user declares it Hartree–Fock.</p>
+<p><strong>Coupled cluster without the four-index density.</strong> The CCSD 2RDM of PySCF is an n_MO⁴ then
+n_AO⁴ array, several copies of it: benzene/cc-pVDZ (120 Cartesian functions) needs more than
+6 GB, 500 functions would need 360 GB for the array alone. Its cumulant has structure: every
+block carries occupied indices except the all-virtual one, and that block is exactly a sum over
+occupied pairs of products,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Λ_abcd (vvvv) = Σ_ij λ₂^{ij}_{ac} (τ^{ij} − ½ τ^{ij,T})_{bd} (+ images),    τ = t₂ + t₁t₁,
+</pre></div>
+</div>
+<p>and the blocks with one occupied index (ovvv) are sums of products of the λ- and t-amplitudes
+with one summed occupied index. The whole density is therefore written, exactly, as</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Γ_μνλσ = Σ_k A^C_k(μν) B^C_k(λσ)  +  Σ_k A^X_k(μλ) B^X_k(νσ),
+</pre></div>
+</div>
+<p>with K_C = 2 n_occ² + 2 Coulomb-paired and K_X = 5 n_occ² + 2 exchange-paired terms (the
+one-particle part is 4 P⊗(D − P) − 2 P⊗(D − P)_exchange with P the occupied projector), each
+an n_AO × n_AO matrix: memory 2(K_C + K_X) n_AO² instead of n_AO⁴ (benzene 0.7 GB; 500 functions
+and 40 occupied orbitals 45 GB). The intermediates are those of PySCF’s <code class="docutils literal notranslate"><span class="pre">ccsd_rdm</span></code>
+(passes 1 and 2, at most n_occ² n_vir²); pass 3, which builds the n_vir⁴ and n_occ n_vir³
+blocks, is replaced by the factorisation. The kernels contract this form directly (mode 3): the
+Coulomb-paired terms in the canonical shell-quartet loop (their block is 8-fold symmetric by
+itself), the exchange-paired ones in a pass ordered by the (μ,λ) shell pair, where the block of
+a batch of shell quartets is built from eight matrix products over k (BLAS <code class="docutils literal notranslate"><span class="pre">dgemm</span></code>, taken from
+SciPy at run time) of factor blocks shared across the batch. It reproduces the dense route to
+10⁻¹³ (every block of the MO density, and total, j₂, fixed-orientation and electron scattering;
+frozen core included) and is the default beyond 60 basis functions. Timings on 2 cores:
+water/cc-pVTZ 4.3 s against 2.2 s dense; benzene/cc-pVDZ 120 s in 2.4 GB, where the dense route
+does not fit in 6 GB. The same representation serves any method whose 2RDM is given as products
+of one-particle matrices.</p>
+</section>
+<section id="rotational-average-gas-phase">
+<h3>1.3 Rotational average (gas phase)<a class="headerlink" href="#rotational-average-gas-phase" title="Link to this heading">¶</a></h3>
+<p>For randomly oriented molecules, exp(iq·r) averages to j₀(qr) = sin(qr)/(qr):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>⟨I(q)⟩ = N + Σ Γ_μνλσ ⟨μν|j₀(q r₁₂)|λσ⟩.
+</pre></div>
+</div>
+<p><strong>Evaluation.</strong> Each primitive product χ_a χ_b is expanded in Hermite Gaussians at its centre
+P with exponent p (McMurchie–Davidson; p’ and Q for the second pair). The Hermite coefficients come from the usual recurrence, valid for any
+angular momentum. A primitive quartet then reduces to derivatives of j₀(q|P − Q|) with respect to
+the vector between the two pair centres:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>⟨ab|j₀(q r₁₂)|cd⟩ = (π²/pp')^{3/2} exp(−q²/4p − q²/4p') Σ E^{ab}_{tuv} E^{cd}_{τνφ} (−1)^{τ+ν+φ}
+                    ∂^{t+τ}_x ∂^{u+ν}_y ∂^{v+φ}_z j₀(q|h|) at h = P − Q.
+</pre></div>
+</div>
+<p>The Cartesian derivatives of j₀ are combinations Σ_b c_b j_b(qh)(q/h)^b = Σ_b c_b q^{2b} g_b(qh) with
+g_b(x) = j_b(x)/x^b (b up to 4l_max + 2). Each order must be accurate for every x, and no single
+recurrence direction achieves that: the upward recurrence is stable only for orders b &lt; x, the
+downward one for b &gt; x. The radial functions are therefore evaluated as follows:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>x = qh</p></th>
+<th class="head"><p>method</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>x &lt; 1</p></td>
+<td><p>power series g_b = Σ_k (−x²/2)^k / [k!(2b+2k+1)!!] for the two highest orders, then the downward recurrence g_{b−1} = (2b+1) g_b − x² g_{b+1}</p></td>
+</tr>
+<tr class="row-odd"><td><p>1 ≤ x ≤ b_max + 1</p></td>
+<td><p>upward recurrence from j₀, j₁ for b ≤ x; Miller’s backward recurrence for b &gt; x, started where the neglected minimal solution is below 10⁻¹⁷ and matched to the upward values at the junction</p></td>
+</tr>
+<tr class="row-even"><td><p>x &gt; b_max + 1</p></td>
+<td><p>upward recurrence for all orders</p></td>
+</tr>
+</tbody>
+</table>
+<p>Against 40-digit reference values every order up to 18 is accurate to 2·10⁻¹⁵ for
+10⁻³ ≤ x ≤ 10³ (<code class="docutils literal notranslate"><span class="pre">tests/test_radial.py</span></code>). The earlier routine used the closed forms of j₁, j₂, j₃
+for quartets of total order ≤ 3, which lose 2, 4 and 6 powers of x to cancellation (7·10⁻³
+relative error at x = 10⁻³), and Miller’s recurrence above, with its start capped at order 500
+(wrong for x ≳ 480). Coincident centres need no special treatment; the closed form</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>∂^{L}_x ∂^{M}_y ∂^{N}_z j₀(q|h|) at h = 0 = (−1)^{S/2} q^S (L−1)!!(M−1)!!(N−1)!!/(S+1)!!,  S = L+M+N even,
+</pre></div>
+</div>
+<p>is still used for h &lt; <code class="docutils literal notranslate"><span class="pre">cutoffcentre</span></code> (10⁻¹⁰ bohr), where it is exact to machine precision.</p>
+<p><strong>Density providers.</strong> The quartet loop is the same for every quantity; only the weights
+change: an explicit 2RDM, or products built on the fly from one-particle matrices
+(Z = w_c/2 (A⊗B + B⊗A) + w_x A⊗A exchange). This gives elastic, transition and coherent cross
+terms (w_c = 1, w_x = 0), exchange (w_c = 0, w_x = −1/4) and the Hartree–Fock mean field
+(w_c = 1, w_x = −1/4) without storing any four-index array.</p>
+<p><strong>Efficiency.</strong> This is the “one-loop” algorithm of the earlier code (the latest version,
+<code class="docutils literal notranslate"><span class="pre">Total_scattering_one_loop_opt.f90</span></code>): a canonical loop over contracted-shell quartets with the
+primitive quartets inside, so each block of the pair density is gathered once per shell
+quartet; quartets are screened by bounds on Gaussian prefactors and density weights
+(<code class="docutils literal notranslate"><span class="pre">screen_tol</span></code>, 10⁻¹² by default); the outer loop is parallelised with OpenMP. The cost scales as
+the number of significant primitive quartets × the number of q points.</p>
+<p><strong>Elastic scattering by density-weighted pairs.</strong> For the elastic term (and coherent/transition
+terms) the pair density is a product, D⊗D, and a much cheaper route exists. The density is folded
+into every primitive-shell pair first, turning it into one Hermite charge distribution at its
+centre P,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>W_P(tuv) = Σ_{a∈P, b∈P} c_a c_b D_ab E^{ab}_{tuv},
+</pre></div>
+</div>
+<p>and the elastic scattering becomes a generalised Debye sum over pairs of such distributions,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>⟨|F(q)|²⟩ = Σ_{P,Q} pref_P pref_Q e^{−q²/4p − q²/4p'} Σ_m S_m(P − Q) (−q²)^m j_m(qh)/(qh)^m,
+
+S_m = Σ_{TUV} U_{TUV} Σ_{ijk: T+U+V−i−j−k=m} a_{Ti} a_{Uj} a_{Vk} h_x^{T−2i} h_y^{U−2j} h_z^{V−2k},
+U_{TUV} = Σ W_P(tuv) W_Q(t'u'v') (−1)^{t'+u'+v'}  (t+t' = T, …),   a_{Ti} = T!/(i!(T−2i)! 2^i),
+</pre></div>
+</div>
+<p>where the second line is the closed form of the Cartesian derivatives of a radial function
+(f_n = (1/h d/dh)^n f). Per pair of pairs the work is one convolution of two Hermite tables, a
+q-independent radial sum and, for each q, one set of j_m(x)/x^m (evaluated as above). Because |∂^{tuv} j₀(q|h|)| ≤ q^{t+u+v}, the contribution at each q
+is rigorously bounded by pref_P pref_Q e^{−q²/4p−q²/4p’} Σ_m |U_m| q^m, which drops the q tail of
+diffuse pairs. Nothing is special at coincident or nearly coincident pair centres, so there is
+no <code class="docutils literal notranslate"><span class="pre">cutoffcentre</span></code> approximation. This route is the default for elastic scattering:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Elastic, 2 threads, 200 q</p></th>
+<th class="head"><p>basis functions</p></th>
+<th class="head"><p>pairs route</p></th>
+<th class="head"><p>quartet route</p></th>
+<th class="head"><p>speed-up</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>benzene / 6-31G</p></td>
+<td><p>66</p></td>
+<td><p>9.8 s</p></td>
+<td><p>12.8 s</p></td>
+<td><p>1.3</p></td>
+</tr>
+<tr class="row-odd"><td><p>benzene / cc-pVDZ</p></td>
+<td><p>120</p></td>
+<td><p>15.1 s</p></td>
+<td><p>25.6 s</p></td>
+<td><p>1.7</p></td>
+</tr>
+<tr class="row-even"><td><p>benzene / aug-cc-pVDZ</p></td>
+<td><p>204</p></td>
+<td><p>66 s</p></td>
+<td><p>132 s</p></td>
+<td><p>2.0</p></td>
+</tr>
+<tr class="row-odd"><td><p>CO / cc-pVQZ (7 q)</p></td>
+<td><p>110</p></td>
+<td><p>0.57 s</p></td>
+<td><p>36 s</p></td>
+<td><p>63</p></td>
+</tr>
+</tbody>
+</table>
+<p>The gain grows with angular momentum, because the quartet route loops over every Cartesian
+component of four functions. Accuracy also improves: at the same tolerance (10⁻¹²) the
+screening error is 10⁻⁹ instead of 10⁻⁶, I(0) = N² holds to machine precision, and the j₂ moment
+is exact where the coincident-centre approximation of the earlier code (<code class="docutils literal notranslate"><span class="pre">cutoffcentre</span></code> = 0.01)
+costs 2.5·10⁻⁴.</p>
+</section>
+<section id="partially-aligned-molecules-the-j2-moment">
+<h3>1.4 Partially aligned molecules: the j₂ moment<a class="headerlink" href="#partially-aligned-molecules-the-j2-moment" title="Link to this heading">¶</a></h3>
+<p>For molecules aligned along a laboratory axis (laser alignment, with axial symmetry), the signal
+at a scattering vector making the angle θ_q with that axis is</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>I(q, θ_q) = I₀(q) + 5 ⟨P₂(cos β)⟩ P₂(cos θ_q) S₂(q) + (l = 4, …),
+</pre></div>
+</div>
+<p>with ⟨P₂⟩ the degree of alignment and</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>S₂(q) = i² Σ Γ ⟨μν| j₂(q r₁₂) P₂(cos θ₁₂) |λσ⟩ = −Σ Γ ⟨μν| j₂(q r₁₂) P₂(cos θ₁₂) |λσ⟩,
+</pre></div>
+</div>
+<p>θ₁₂ being the angle of r₁₂ with the molecular z axis. The factor i² = −1 is the phase of the
+l = 2 term of the plane-wave expansion, e^{iq·r} = Σ_l (2l+1) iˡ j_l(qr) P_l(q̂·r̂); with it
+included every moment enters with a plus sign, I = Σ_l (2l+1) ⟨P_l⟩ P_l(cos θ_q) S_l, and S₂ is
+directly the projection S₂ = ⟨I(q) P₂(cos θ_q)⟩ over directions of q for perfect alignment
+(= a₂/5, a₂ the l = 2 Legendre coefficient). (Before 8 October 2026 pyxscat returned −S₂, with
+I = I₀ − 5⟨P₂⟩P₂S₂; the numbers are the same up to that sign.) The j₂P₂ kernel is reduced to j₀ by
+Hobson’s theorem,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>j₂(qh) P₂(cos θ_h) = [3 ∂²/∂h_z² + q²] j₀(qh) / (2q²),
+</pre></div>
+</div>
+<p>so the same derivative machinery serves (two more orders), with closed-form coincident limits.
+The isotropic self term N does not contribute to S₂. The convention of the earlier code (with
+Y₂₀ and without i²) differs by a factor −√(5/4π).</p>
+</section>
+<section id="fixed-orientation-oriented-molecules-single-shot-detector-images">
+<h3>1.5 Fixed orientation (oriented molecules, single-shot detector images)<a class="headerlink" href="#fixed-orientation-oriented-molecules-single-shot-detector-images" title="Link to this heading">¶</a></h3>
+<p>Since exp(iq·(r₁ − r₂)) = exp(iq·r₁) exp(−iq·r₂), all fixed-orientation quantities follow from
+the analytic pair transforms</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>F_ab(q) = (π/p)^{3/2} exp(−q²/4p) exp(iq·P) Σ E^{ab}_{tuv} (iq_x)^t (iq_y)^u (iq_z)^v,
+</pre></div>
+</div>
+<p>contracted with density matrices: elastic |Σ D F|², two-electron Σ Γ F F* (one matrix product
+per q), exchange and mean field from the 1RDM at O(n³) per q. There is no Bessel expansion and no
+coincident-centre special case. Detector geometry: q vectors on the Ewald sphere for a given
+wavelength (beam along z), and molecular orientations as z-y-z Euler angles.</p>
+</section>
+<section id="detector-grids-and-aligned-ensembles-in-the-laboratory">
+<h3>1.6 Detector grids and aligned ensembles in the laboratory<a class="headerlink" href="#detector-grids-and-aligned-ensembles-in-the-laboratory" title="Link to this heading">¶</a></h3>
+<p>The beam runs along z with wavenumber k₀ (k₀ = E·0.26817 bohr⁻¹/keV for photons; relativistic
+2π/λ for electrons), and the scattered wave vectors lie on the Ewald sphere. Besides a square
+(q_x, q_y) image, results can be computed on the <strong>polar grid of the earlier <code class="docutils literal notranslate"><span class="pre">grid.f90</span></code>
+(<code class="docutils literal notranslate"><span class="pre">qcoord3</span></code>)</strong>, reproduced point for point: n₁ rings of transverse momentum
+q⊥,i = i·k₀ sin θ_max / n₁, n_φ equally spaced azimuths per ring (φ from the y axis:
+q_x = q⊥ sin φ, q_y = q⊥ cos φ), q_z = k₀[1 − (1 − q⊥²/k₀²)^{1/2}], and q = 0 first
+(N = n₁ n_φ + 1 points; <code class="docutils literal notranslate"><span class="pre">grid.f90</span></code>’s n₂ is n_φ + 1). Its sign is q = k_in − k_out; since
+I(−q) = I(q) for real wavefunctions and the alignment weight below is even, the patterns are the
+same in either convention. Any other list of laboratory vectors can be read from a file
+(columns q_x q_y q_z in bohr⁻¹).</p>
+<p><em>Fixed orientation.</em> For Euler angles (α, β, γ), q_mol = Rᵀ q_lab and §1.5 applies point by point.</p>
+<p><em>Partially aligned ensemble.</em> For an alignment axis â (e.g. the laser polarisation) and a degree
+of alignment ⟨P₂(cos β)⟩ of the molecular z axis, §1.4 gives at every grid point</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>I(q) = I₀(|q|) + 5 ⟨P₂⟩ P₂(q̂·â) S₂(|q|),
+</pre></div>
+</div>
+<p>with I₀ and S₂ computed once per distinct |q| (once per ring on the polar grid). Terms l ≥ 4
+(⟨P₄⟩ S₄, …) are neglected; the relation is exact for any distribution with no components beyond
+l = 2, e.g. f(β) ∝ 1 + 5⟨P₂⟩P₂(cos β). The same holds for electron cross sections.</p>
+<p><em>IAM on the same grid.</em> At fixed orientation the IAM is |Σ_A f_A(q) e^{iq·R_A}|² plus the atomic
+inelastic terms (electrons: amplitudes Z_A − f_A); for the aligned ensemble its I₀ and S₂ are the
+Debye forms of §3 at l = 0 and 2. Molecule and IAM are thus compared point by point, as
+100 (I − I_IAM)/I_IAM.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="electron-scattering">
+<h2>2. Electron scattering<a class="headerlink" href="#electron-scattering" title="Link to this heading">¶</a></h2>
+<section id="cross-sections">
+<h3>2.1 Cross sections<a class="headerlink" href="#cross-sections" title="Link to this heading">¶</a></h3>
+<p>A fast electron is scattered by the whole charge distribution, nuclei and electrons. In the
+first Born approximation, with Z(q) = Σ_A Z_A exp(iq·R_A) the nuclear form factor,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>dσ/dΩ = (4 / a₀² q⁴) [ |Z(q) − F(q)|² + I_inel(q) ],
+</pre></div>
+</div>
+<p>where I_inel is the same inelastic term as for X-rays (nuclei do not scatter inelastically at
+these energies). Expanding the square,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>dσ/dΩ = (4 / a₀² q⁴) [ I_nn − 2 I_ne + I_ee ],
+
+I_nn = Σ_AB Z_A Z_B exp(iq·R_AB)                (nucleus–nucleus)
+I_ne = Σ_A Z_A Re[exp(−iq·R_A) F(q)]             (electron–nucleus)
+I_ee = I_tot (X-ray, total) or |F|² (elastic)    (electron–electron)
+</pre></div>
+</div>
+<p>The code reports the bracket (as the earlier code did) at the kernel level and dσ/dΩ in the
+interface (Å²/sr for q in Å⁻¹; bohr²/sr for q in bohr⁻¹). For a neutral molecule the bracket
+vanishes at q = 0; for a polar molecule the elastic bracket starts as q² μ²/3 (μ the dipole
+moment), so dσ/dΩ diverges as 1/q² and the q = 0 point is undefined. For fast beams, the
+relativistic correction multiplies the cross section by γ² = (1 + E/mc²)²; the wavelength
+λ = h/p is relativistic as well (<code class="docutils literal notranslate"><span class="pre">electron_wavelength</span></code>).</p>
+</section>
+<section id="rotational-average-and-the-electronnucleus-integrals">
+<h3>2.2 Rotational average and the electron–nucleus integrals<a class="headerlink" href="#rotational-average-and-the-electronnucleus-integrals" title="Link to this heading">¶</a></h3>
+<p>On rotational averaging, I_nn = Σ Z_A Z_B j₀(qR_AB) and</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>I_ne(q) = Σ_A Z_A Σ_μν D_μν ∫ χ_μ χ_ν j₀(q|r − R_A|) dr.
+</pre></div>
+</div>
+<p>This one-electron integral is evaluated analytically. With the Hermite expansion of χ_a χ_b at P,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>∫ Λ_tuv(r − P) j₀(q|r − A|) dr = (π/p)^{3/2} exp(−q²/4p) ∂^t_x ∂^u_y ∂^v_z j₀(q|h|),  h = P − A,
+</pre></div>
+</div>
+<p>and the derivatives of the radial function follow from the McMurchie–Davidson recursion</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>R^n_{000} = f_n(h),   R^n_{t+1,u,v} = t R^{n+1}_{t−1,u,v} + h_x R^{n+1}_{t,u,v}   (and y, z),
+</pre></div>
+</div>
+<p>with the auxiliary functions</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>f_n(h) = (1/h d/dh)^n j₀(qh) = (−q²)^n j_n(qh)/(qh)^n.
+</pre></div>
+</div>
+<p>The functions j_n(x)/x^n are evaluated by their power series for x &lt; 1, by Miller’s backward
+recurrence for 1 ≤ x ≤ n_max + 1 and by upward recurrence beyond, so they are accurate for every
+x including x = 0. Nothing is singular when a nucleus sits on a pair centre. The j₂P₂ moment for
+aligned molecules uses Hobson’s theorem as in §1.4, and I_nn at l = 2 is
+−Σ Z_A Z_B j₂(qR_AB) P₂(cos θ_AB). The relation I(q, θ_q) = I₀ + 5⟨P₂⟩P₂(cos θ_q) S₂ holds term by
+term, so it holds for electrons as for X-rays.</p>
+<p>The cost is one pass over primitive pairs × atoms × q points, negligible next to the
+two-electron terms (0.7 s for benzene/cc-pVDZ at 200 q on two cores, against 30 s for the X-ray
+elastic term).</p>
+</section>
+<section id="fixed-orientation">
+<h3>2.3 Fixed orientation<a class="headerlink" href="#fixed-orientation" title="Link to this heading">¶</a></h3>
+<p>At fixed orientation, Z(q) is a sum of plane waves and F(q) comes from the pair transforms of
+§1.5, so |Z − F|² and the inelastic term are exact for any list of q vectors (detector images
+for UED, given the beam energy).</p>
+</section>
+<section id="modified-scattering-intensity-sm-s">
+<h3>2.4 Modified scattering intensity sM(s)<a class="headerlink" href="#modified-scattering-intensity-sm-s" title="Link to this heading">¶</a></h3>
+<p>Electron diffraction experiments report the modified intensity</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>sM(s) = s (I − I_at) / I_at,      s = q,
+</pre></div>
+</div>
+<p>where I_at is the incoherent sum of atomic scattering. THISTLE gives it for the ab initio
+molecule (with I_at from the independent atom model below) and for the IAM itself
+(s I_mol/I_at, the usual simulation). The difference is the effect of chemical bonding and
+electron correlation on the diffraction pattern.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="independent-atom-model-iam">
+<h2>3. Independent atom model (IAM)<a class="headerlink" href="#independent-atom-model-iam" title="Link to this heading">¶</a></h2>
+<p>The reference against which molecular effects are measured: free, spherically averaged atoms at
+the nuclear positions.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>X-rays     I_el = Σ_AB f_A f_B j₀(qR_AB),     I_tot = Σ_A S_A + Σ_{A≠B} f_A f_B j₀(qR_AB)
+electrons  I_el = Σ_AB (Z_A − f_A)(Z_B − f_B) j₀(qR_AB),   + Σ_A (S_A − f_A²) inelastic
+</pre></div>
+</div>
+<p>(the electron amplitude Z_A − f_A is the Mott–Bethe formula). At fixed orientation j₀(qR) becomes
+exp(iq·R_AB); for l = 2, j₂(qR_AB) P₂(cos θ_AB).</p>
+<p>The atomic form factors f_A and total scattering S_A = N_A + I₂,A come either from ab initio
+free-atom calculations through the same kernels (UHF or closed-shell CCSD, in a chosen basis per
+element; the spherical average is exact on a Lebedev grid of degree 17 because the angular
+structure of an atomic density is a polynomial of low degree), or from the Waasmaier–Kirfel
+tables (elastic only). Using the molecule’s own method and basis isolates the effect of bonding.</p>
+</section>
+<hr class="docutils" />
+<section id="wavefunctions-and-conventions">
+<h2>4. Wavefunctions and conventions<a class="headerlink" href="#wavefunctions-and-conventions" title="Link to this heading">¶</a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Source</p></th>
+<th class="head"><p>Read through</p></th>
+<th class="head"><p>Gives</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>PySCF, in memory</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">interfaces.pyscf</span></code></p></td>
+<td><p>RHF, CCSD, CISD, FCI, CASSCF/CASCI (state-averaged: any root)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Molden file (Molpro, OpenMolcas, BAGEL, ORCA, PySCF, …)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">interfaces.molden</span></code></p></td>
+<td><p>basis, orbitals, occupations</p></td>
+</tr>
+<tr class="row-even"><td><p>OpenMolcas RASSCF output + <code class="docutils literal notranslate"><span class="pre">.rasscf.molden</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">interfaces.molcas</span></code></p></td>
+<td><p>CI vector of any root (GUGA CSFs → determinants)</p></td>
+</tr>
+<tr class="row-odd"><td><p>OpenMolcas MRCI output (uncontracted SDCI/ACPF, <code class="docutils literal notranslate"><span class="pre">THRPrint</span> <span class="pre">=</span> <span class="pre">0.0</span></code>) + <code class="docutils literal notranslate"><span class="pre">.rasscf.molden</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">interfaces.molcas</span></code></p></td>
+<td><p>the complete MRCI vector of any state: CSFs over inactive, active and virtual orbitals (≤ 64 correlated orbitals)</p></td>
+</tr>
+<tr class="row-even"><td><p>Molpro MULTI output (<code class="docutils literal notranslate"><span class="pre">config,det</span></code>) or punch file + Molden</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">interfaces.molpro</span></code></p></td>
+<td><p>CI vectors of all states, transition 1RDMs</p></td>
+</tr>
+<tr class="row-odd"><td><p>Your own CI vector</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pyxscat.ci</span></code></p></td>
+<td><p>spin-summed 1RDM, 2RDM, transition 1RDM</p></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p>Spherical basis functions (Molden <code class="docutils literal notranslate"><span class="pre">[5D]</span></code>, <code class="docutils literal notranslate"><span class="pre">[7F]</span></code>, <code class="docutils literal notranslate"><span class="pre">[9G]</span></code>) are converted to Cartesian ones by
+real solid harmonics; the Cartesian normalisation convention of the Molden file is detected
+from MO orthonormality. Molpro orbital order is restored from the symmetry labels.</p></li>
+<li><p>Molpro’s orbital-ordered determinants carry the phase that converts them to α-string-first
+order; truncated CI printouts are detected (and the punch file used instead when present).</p></li>
+<li><p>Active-space RDMs are embedded with the doubly occupied core. Beyond 60 basis functions (or
+with <code class="docutils literal notranslate"><span class="pre">factored=True</span></code>) the embedded 2RDM is never formed as an n⁴ array but kept as products of
+one-particle matrices, Γ = Σ_k w_k V_k ⊗ V_k + D_c⊗D_c + D_c⊗D_a + D_a⊗D_c − ½(exchange
+pairings of the same three), where V_k, w_k diagonalise the active Γ as a symmetric
+(pq)×(rs) matrix (at most n_act(n_act+1)/2 terms: 21 for CAS(6,6), 136 for CAS(16,16)) and
+D_c, D_a are the core and active 1RDMs. It is exact (same scattering to 10⁻¹⁴) and is
+contracted by the factored kernel (mode 3, as for CCSD). Memory 2K n_AO² instead of n_AO⁴:
+benzene CAS(6,6)/cc-pVTZ needs 39 MB of factors instead of a 65 GB array (peak 0.33 GB for the
+whole run instead of &gt; 200 GB). Molpro, Molcas, PySCF CASSCF/CASCI and FCI all use it.</p></li>
+<li><p><strong>RDMs from determinant expansions</strong> (<code class="docutils literal notranslate"><span class="pre">pyxscat.ci.make_rdm12</span></code>), three exact builders, chosen
+automatically by an estimate of their cost (all agree to 10⁻¹⁵ and with PySCF):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Builder</p></th>
+<th class="head"><p>How</p></th>
+<th class="head"><p>Cost</p></th>
+<th class="head"><p>Suited to</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>dense</p></td>
+<td><p>Γ_pqrs = ⟨E_qp Ψ|E_rs Ψ⟩ − δ_qr γ_ps, intermediates E_rs|Ψ⟩ over the complete active space (α × β strings, in blocks), one matrix product</p></td>
+<td><p>norb⁴ N_FCI (BLAS)</p></td>
+<td><p>CASSCF/CASCI vectors: CAS(12,12) 1.6 s, CAS(13,13) 6 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>bitwise</p></td>
+<td><p>the determinant-pair algorithm of the earlier code (Fortran, OpenMP): pairs screened by popcnt(ieor), Slater–Condon rules for ≤ 2 differences; multiword bit strings, so any number of orbitals (the RDMs accumulate in thread-private copies while they are small, otherwise in the shared array with atomic updates)</p></td>
+<td><p>≈ 1 ns per pair and thread, N_det²/2 pairs; independent of N_FCI</p></td>
+<td><p>truncated and selected expansions (MCCI, print thresholds, RAS) in large orbital spaces: 10⁵ determinants in 27 orbitals 2.9 s on 2 cores; a CAS vector on scattered orbitals of a 128-orbital space reproduces PySCF to 10⁻¹⁴</p></td>
+</tr>
+<tr class="row-even"><td><p>external (<code class="docutils literal notranslate"><span class="pre">make_rdm12_external</span></code>)</p></td>
+<td><p>for expansions with at most two electrons in an “external” set of orbitals (uncontracted MRCI, CISD-like): determinants grouped by their external label; the pair loop runs only over label pairs that can couple (differing by ≤ 3 spin-orbitals), and the external-external-external-external block, the only one fed by labels differing by 4, is a matrix product over the internal parts, Γ_vvvv[c,a,d,b] = Σ_K Σ_στ T_K^στ[c,d] T_K^στ[a,b]</p></td>
+<td><p>pairs ∝ N_det × (neighbouring labels), plus GEMMs</p></td>
+<td><p>MRCI: water/cc-pVDZ (50 034 CSFs) and a 120-orbital test agree with the full pair loop to 10⁻¹³; 4× faster at 70 orbitals with an MRCI-like label distribution, and the gain grows with the virtual space</p></td>
+</tr>
+<tr class="row-odd"><td><p>sparse</p></td>
+<td><p>the same intermediates as dense, but only on the determinants reached (bit-string excitations, sparse product, bounded memory)</p></td>
+<td><p>linear in N_det</p></td>
+<td><p>very long expansions on few cores (4·10⁵ determinants: 55 s, against 264 s for the pair loop on 2 cores)</p></td>
+</tr>
+</tbody>
+</table>
+<p>Measured on 2 cores (<code class="docutils literal notranslate"><span class="pre">benchmarks/ci_rdm_scaling</span></code>): a full CAS(14,14) vector (1.2·10⁷
+determinants) takes 39 s with the dense builder (peak 3.2 GB); FCI of water/6-31G (1.7·10⁶
+determinants) 4.9 s. The pair loop needs N_det²/2 pair tests whatever the language: in Fortran
+~1 ns per pair (10⁵ determinants in 3 s), in pure Python 170 ns per pair for the <em>screening
+alone</em> (0.1 h at 6·10⁴ determinants, 64 h at 1.7·10⁶); that is why the earlier
+pure-Python version stopped at ~10³ determinants. None of the builders is pure Python: the
+dense and sparse ones do their work in BLAS/SciPy, the bitwise one in Fortran.</p>
+</li>
+<li><p>Nuclear charges for electron scattering are the atomic numbers (pass <code class="docutils literal notranslate"><span class="pre">charges=</span></code> to override,
+e.g. with effective core potentials).</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="validation">
+<h2>5. Validation<a class="headerlink" href="#validation" title="Link to this heading">¶</a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>What</p></th>
+<th class="head"><p>Against</p></th>
+<th class="head"><p>Agreement</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Rotationally averaged kernel (elastic, exchange, CCSD two-electron)</p></td>
+<td><p>independent route: analytic pair transforms (equal to PySCF <code class="docutils literal notranslate"><span class="pre">ft_aopair</span></code>) averaged on a 131-point Lebedev grid</p></td>
+<td><p>10⁻⁸</p></td>
+</tr>
+<tr class="row-odd"><td><p>Radial functions j_b(x)/x^b, b ≤ 18, 10⁻⁴ ≤ x ≤ 10³</p></td>
+<td><p>40-digit values (mpmath); SciPy</p></td>
+<td><p>2·10⁻¹⁵</p></td>
+</tr>
+<tr class="row-even"><td><p>Elastic by density-weighted pairs (l = 0 and 2, q from 10⁻³; transition densities)</p></td>
+<td><p>the same Lebedev route; the quartet kernel up to f functions</p></td>
+<td><p>10⁻¹¹; 10⁻⁹</p></td>
+</tr>
+<tr class="row-odd"><td><p>j₂ at small q through the quartet kernel (exchange, CCSD two-electron, elastic)</p></td>
+<td><p>Lebedev projection of the fixed-orientation terms; the pair route</p></td>
+<td><p>10⁻⁹ for q ≥ 0.01 bohr⁻¹, 10⁻⁶ at 10⁻³</p></td>
+</tr>
+<tr class="row-even"><td><p>The earlier code (BigMemoryScattering kernel)</p></td>
+<td><p>stored reference curves (HF and CCSD, four molecules)</p></td>
+<td><p>10⁻⁹ (after its single-precision π)</p></td>
+</tr>
+<tr class="row-odd"><td><p>j₂ moment</p></td>
+<td><p>Lebedev projection of the fixed-orientation signal; the earlier code (Y₂₀ convention); IAM for separated atoms (Ne₂ at 14 bohr)</p></td>
+<td><p>5·10⁻⁸; 10⁻⁶; 10⁻⁸</p></td>
+</tr>
+<tr class="row-even"><td><p>Electron–nucleus integrals (l = 0 and 2)</p></td>
+<td><p>Lebedev average of Re[Z* F] from pair transforms, up to g functions, Cartesian and spherical, q up to 12 bohr⁻¹</p></td>
+<td><p>10⁻¹⁰</p></td>
+</tr>
+<tr class="row-odd"><td><p>Electron–nucleus integrals</p></td>
+<td><p>the earlier code (<code class="docutils literal notranslate"><span class="pre">nuclei_electron_integration</span></code>)</p></td>
+<td><p>4·10⁻⁸ (its single-precision π)</p></td>
+</tr>
+<tr class="row-even"><td><p>Electron scattering of one atom</p></td>
+<td><p>Mott–Bethe: elastic = (Z − f)² with f² the X-ray elastic</p></td>
+<td><p>10⁻⁸</p></td>
+</tr>
+<tr class="row-odd"><td><p>H atom, elastic electron scattering</p></td>
+<td><p>exact [1 − 16/(4 + q²)²]²</p></td>
+<td><p>2·10⁻⁴ (basis set)</p></td>
+</tr>
+<tr class="row-even"><td><p>Polar molecule at small q</p></td>
+<td><p>elastic bracket → q² μ²/3 with the SCF dipole</p></td>
+<td><p>2·10⁻³ at q = 2·10⁻³</p></td>
+</tr>
+<tr class="row-odd"><td><p>Fixed-orientation electron and X-ray scattering</p></td>
+<td><p>rotational kernels after Lebedev averaging (l = 0 and l = 2)</p></td>
+<td><p>10⁻⁹–10⁻⁸</p></td>
+</tr>
+<tr class="row-even"><td><p>Partially aligned ensemble on a detector grid (X-ray elastic and HF total, electron elastic)</p></td>
+<td><p>explicit orientational average of fixed-orientation patterns with f(β) ∝ 1 + 5⟨P₂⟩P₂(cos β) (Lebedev order 59 × 24 γ)</p></td>
+<td><p>10⁻¹²–10⁻¹⁰</p></td>
+</tr>
+<tr class="row-odd"><td><p>Polar detector grid</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">qgrid.dat</span></code> written by the original <code class="docutils literal notranslate"><span class="pre">grid.f90</span></code></p></td>
+<td><p>identical file</p></td>
+</tr>
+<tr class="row-even"><td><p>IAM on detector grids: fixed orientation (electrons), aligned ensemble (X-rays, electrons)</p></td>
+<td><p>Lebedev average to the Debye form; explicit orientational average as above</p></td>
+<td><p>10⁻¹⁰; 10⁻⁹</p></td>
+</tr>
+<tr class="row-odd"><td><p>CCSD density as a sum of products (kernel mode 3), all routes</p></td>
+<td><p>PySCF <code class="docutils literal notranslate"><span class="pre">make_rdm2</span></code> block by block (10⁻¹⁵); the dense route for total, cumulant, j₂, fixed orientation, electrons (10⁻¹³)</p></td>
+<td><p>10⁻¹³</p></td>
+</tr>
+<tr class="row-even"><td><p>RDMs from determinants: dense, bitwise and sparse builders</p></td>
+<td><p>PySCF FCI (<code class="docutils literal notranslate"><span class="pre">direct_spin1</span></code>) and selected CI (<code class="docutils literal notranslate"><span class="pre">selected_ci</span></code>, 27 orbitals); each other up to 64 orbitals</p></td>
+<td><p>10⁻¹⁵</p></td>
+</tr>
+<tr class="row-odd"><td><p>Molden reader</p></td>
+<td><p>PySCF round trip, up to g functions</p></td>
+<td><p>density 10⁻¹¹, scattering 10⁻⁹</p></td>
+</tr>
+<tr class="row-even"><td><p>h functions (l = 5): elastic (pairs, quartets), exchange, l = 0 and 2; electron–nucleus</p></td>
+<td><p>Lebedev route</p></td>
+<td><p>10⁻¹¹ (pairs, electron–nucleus); 10⁻⁸ (quartets)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Molcas and Molpro adapters</p></td>
+<td><p>state energies rebuilt from our RDMs</p></td>
+<td><p>10⁻⁸ (Molpro), CASCI eigenvector (Molcas)</p></td>
+</tr>
+<tr class="row-even"><td><p>IAM</p></td>
+<td><p>a closed-shell atom through the molecular kernels; Waasmaier–Kirfel tables (H to S, aug-cc-pVQZ)</p></td>
+<td><p>10⁻⁸; within 1 % of Z</p></td>
+</tr>
+</tbody>
+</table>
+<p>Exact limits are tested throughout: I_tot(0) = I_el(0) = N², I_ne(0) = Σ Z_A · N, the
+decompositions sum to the totals, and electron brackets vanish at q = 0 for neutral molecules.
+The suite (<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pytest</span></code>, about 5 minutes) runs 217 tests; <code class="docutils literal notranslate"><span class="pre">PYXSCAT_SLOW=1</span></code> adds 5 on large basis sets.</p>
+</section>
+<hr class="docutils" />
+<section id="limits-and-plans">
+<h2>6. Limits and plans<a class="headerlink" href="#limits-and-plans" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Angular momentum: tested up to h functions (l = 5) in every kernel. The quartet kernel’s
+derivative tables are dimensioned for 4 l_max + 3 ≤ 32 (l ≤ 7); the pair, electron–nucleus and
+fixed-orientation kernels have no fixed limit. The Molden format defines shells only up to g, so
+h functions come in through PySCF (or any adapter that supplies the basis directly).</p></li>
+<li><p>Closure (Waller–Hartree) and first Born approximations; no Compton energy resolution, no
+multiple scattering.</p></li>
+<li><p>The j₂ moment is computed through Hobson’s theorem, [3∂²_z + q²] j₀/(2q²), which cancels as
+q → 0: with the stable radial functions the relative error is 10⁻¹¹ at q = 0.01 bohr⁻¹ and
+4·10⁻⁸ at 10⁻³ (the elastic j₂ through the pair route: 10⁻¹³).</p></li>
+<li><p>j₂ / aligned ensembles: S₂ is the moment about the <strong>molecular z axis</strong> of the input frame
+(the laboratory alignment axis is free). A molecule whose aligned axis is not z must be
+reoriented before the quantum-chemistry run; nothing warns about it. To do: a
+<code class="docutils literal notranslate"><span class="pre">molecular_axis</span></code> option (rotate basis and densities, exact for Cartesian Gaussians) or the full
+l = 2 tensor T (S₂(n) = n·T·n, five components, any axis afterwards). Only one-dimensional
+alignment (⟨P₂⟩ of one axis); 3D alignment of asymmetric tops would need higher terms.</p></li>
+<li><p>Planned: j₁ terms; BAGEL and NEXMD adapters. (Factored CCSD and CAS/CI densities: done.)</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">THISTLE: what is computed, and how</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#x-ray-scattering">1. X-ray scattering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#electron-scattering">2. Electron scattering</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#independent-atom-model-iam">3. Independent atom model (IAM)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wavefunctions-and-conventions">4. Wavefunctions and conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validation">5. Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#limits-and-plans">6. Limits and plans</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">THISTLE: what is computed, and how</a><ul>
+<li><a class="reference internal" href="#x-ray-scattering">1. X-ray scattering</a><ul>
+<li><a class="reference internal" href="#total-elastic-and-inelastic-scattering">1.1 Total, elastic and inelastic scattering</a></li>
+<li><a class="reference internal" href="#decomposition">1.2 Decomposition</a></li>
+<li><a class="reference internal" href="#rotational-average-gas-phase">1.3 Rotational average (gas phase)</a></li>
+<li><a class="reference internal" href="#partially-aligned-molecules-the-j2-moment">1.4 Partially aligned molecules: the j₂ moment</a></li>
+<li><a class="reference internal" href="#fixed-orientation-oriented-molecules-single-shot-detector-images">1.5 Fixed orientation (oriented molecules, single-shot detector images)</a></li>
+<li><a class="reference internal" href="#detector-grids-and-aligned-ensembles-in-the-laboratory">1.6 Detector grids and aligned ensembles in the laboratory</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#electron-scattering">2. Electron scattering</a><ul>
+<li><a class="reference internal" href="#cross-sections">2.1 Cross sections</a></li>
+<li><a class="reference internal" href="#rotational-average-and-the-electronnucleus-integrals">2.2 Rotational average and the electron–nucleus integrals</a></li>
+<li><a class="reference internal" href="#fixed-orientation">2.3 Fixed orientation</a></li>
+<li><a class="reference internal" href="#modified-scattering-intensity-sm-s">2.4 Modified scattering intensity sM(s)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#independent-atom-model-iam">3. Independent atom model (IAM)</a></li>
+<li><a class="reference internal" href="#wavefunctions-and-conventions">4. Wavefunctions and conventions</a></li>
+<li><a class="reference internal" href="#validation">5. Validation</a></li>
+<li><a class="reference internal" href="#limits-and-plans">6. Limits and plans</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+<form class="search" action="search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="FOR_TESTERS.html" title="Previous document">Testing THISTLE 0.2.0.dev0</a>
+        </li>
+        <li>
+          <a href="api/index.html" title="Next document">Python API</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

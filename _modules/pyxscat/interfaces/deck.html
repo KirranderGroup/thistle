@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyxscat.interfaces.deck &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/better.css?v=bb9f1030" />
+    <script src="../../../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/_modules/pyxscat/interfaces/deck.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../../../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxscat.interfaces.deck</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+<span class="c1"># Copyright 2026 Andrés Moreno Carrascosa</span>
+<span class="sd">"""Read the HDF5 "deck" of thistle-dev (KirranderGroup/thistle-dev, schema v1).</span>
+
+<span class="sd">A deck holds a primitive Cartesian basis, molecular orbitals over the primitives (``mos/mmod``,</span>
+<span class="sd">contraction and normalisation included), the geometry, the q grid and cutoffs (``params``), and</span>
+<span class="sd">the density in one of two representations (attribute ``rdm_mode``):</span>
+
+<span class="sd">``MO``  ``rdm/onerdm_mo`` and ``rdm/mo2rdm`` in the orbital basis (chemists' notation, trace</span>
+<span class="sd">        N(N-1), PySCF's convention).  Here every primitive becomes its own function and the</span>
+<span class="sd">        densities are transformed with ``mmod``.</span>
+<span class="sd">``AO``  ``rdm/gamma_ao`` (total) or ``rdm/onerdm_ao`` (elastic) over contracted functions,</span>
+<span class="sd">        with ``basis/contr`` and ``contraction/coeffs`` defining them: exactly pyxscat's Basis.</span>
+<span class="sd">        Without a one-particle density (total decks) it follows from the two-particle one,</span>
+<span class="sd">        D = sum_rs Gamma[:, :, r, s] S_rs / (N - 1), with N(N - 1) = sum Gamma S S.</span>
+
+<span class="sd">Arrays were written in Fortran order; read back from Python they come with reversed axes,</span>
+<span class="sd">which is harmless here: the 1RDM is symmetric and the 2RDM is invariant under reversing all</span>
+<span class="sd">four indices.  Checked against the five test decks of thistle-dev to 4e-13 (with the deck's</span>
+<span class="sd">cutoffcentre); see benchmarks/thistle_dev_crosscheck.</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..basis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Basis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Wavefunction</span><span class="p">,</span> <span class="n">transform_dm2</span>
+
+
+<div class="viewcode-block" id="is_deck">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.deck.is_deck">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_deck</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""True for an HDF5 file with the attributes of a thistle-dev deck."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"rdm_mode"</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">attrs</span> <span class="ow">and</span> <span class="s2">"basis"</span> <span class="ow">in</span> <span class="n">f</span> <span class="ow">and</span> <span class="s2">"mos"</span> <span class="ow">in</span> <span class="n">f</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="read">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.deck.read">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""``(Wavefunction, info)`` from a deck; ``info`` holds the q grid, cutoffs, observable,</span>
+<span class="sd">    states and the representation."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"basis"</span><span class="p">]</span>
+        <span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="s2">"x"</span><span class="p">][()],</span> <span class="n">b</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][()],</span> <span class="n">b</span><span class="p">[</span><span class="s2">"z"</span><span class="p">][()]])</span>
+        <span class="n">ga</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s2">"exponent"</span><span class="p">][()]</span>
+        <span class="n">lmn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="s2">"l"</span><span class="p">][()],</span> <span class="n">b</span><span class="p">[</span><span class="s2">"m"</span><span class="p">][()],</span> <span class="n">b</span><span class="p">[</span><span class="s2">"n"</span><span class="p">][()]])</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s2">"group"</span><span class="p">][()]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">ga</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s2">"rdm_mode"</span><span class="p">])</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">zat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">"molecule/atomic_numbers"</span><span class="p">][()],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">"molecule/coords"</span><span class="p">][()],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>   <span class="c1"># stored (natoms, 3) in Fortran order</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">"item"</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">f</span><span class="p">[</span><span class="s2">"params"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span> \
+            <span class="k">if</span> <span class="s2">"params"</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">else</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"MO"</span><span class="p">:</span>
+            <span class="n">basis</span> <span class="o">=</span> <span class="n">Basis</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">ga</span><span class="p">,</span> <span class="n">lmn</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">n</span><span class="p">)</span>
+            <span class="n">mmod</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"mos/mmod"</span><span class="p">][()]</span>
+            <span class="n">mmod</span> <span class="o">=</span> <span class="n">mmod</span> <span class="k">if</span> <span class="n">mmod</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">n</span> <span class="k">else</span> <span class="n">mmod</span><span class="o">.</span><span class="n">T</span>             <span class="c1"># (ngto, norbs)</span>
+            <span class="n">d1</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"rdm/onerdm_mo"</span><span class="p">][()]</span> <span class="k">if</span> <span class="s2">"rdm/onerdm_mo"</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"rdm/mo2rdm"</span><span class="p">][()]</span> <span class="k">if</span> <span class="s2">"rdm/mo2rdm"</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">dm1</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">d1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mmod</span> <span class="o">@</span> <span class="n">d1</span> <span class="o">@</span> <span class="n">mmod</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">dm2</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">g</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">transform_dm2</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">mmod</span><span class="p">)</span>
+            <span class="n">nelec</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">d1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">d1</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">dm1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">g</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>                         <span class="c1"># 1RDM from the 2RDM</span>
+                <span class="n">nn</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ppqq-&gt;"</span><span class="p">,</span> <span class="n">g</span><span class="p">))</span>
+                <span class="n">nelec</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">nn</span><span class="p">))</span>
+                <span class="n">dm1</span> <span class="o">=</span> <span class="n">mmod</span> <span class="o">@</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"pqrr-&gt;pq"</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">nelec</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">@</span> <span class="n">mmod</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"AO"</span><span class="p">:</span>
+            <span class="n">contr</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s2">"contr"</span><span class="p">][()]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">coeff</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"contraction/coeffs"</span><span class="p">][()]</span>
+            <span class="n">nao</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">contr</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+            <span class="n">basis</span> <span class="o">=</span> <span class="n">Basis</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">ga</span><span class="p">,</span> <span class="n">lmn</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">contr</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">nao</span><span class="p">)</span>
+            <span class="n">dm1</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"rdm/onerdm_ao"</span><span class="p">][()]</span> <span class="k">if</span> <span class="s2">"rdm/onerdm_ao"</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">dm2</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"rdm/gamma_ao"</span><span class="p">][()]</span> <span class="k">if</span> <span class="s2">"rdm/gamma_ao"</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">nelec</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">.molden</span><span class="w"> </span><span class="kn">import</span> <span class="n">overlap_matrix</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">overlap_matrix</span><span class="p">(</span><span class="n">basis</span><span class="p">)</span>
+                <span class="n">nn</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"pqrs,pq,rs-&gt;"</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+                <span class="n">nelec</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">nn</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">dm1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">dm1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"pqrs,rs-&gt;pq"</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">nelec</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dm1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">.molden</span><span class="w"> </span><span class="kn">import</span> <span class="n">overlap_matrix</span>
+                <span class="n">nelec</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"pq,qp-&gt;"</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">overlap_matrix</span><span class="p">(</span><span class="n">basis</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">: unknown rdm_mode </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">q</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="p">{</span><span class="s2">"qmin"</span><span class="p">,</span> <span class="s2">"qmax"</span><span class="p">,</span> <span class="s2">"npoints"</span><span class="p">}</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"qmin"</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"qmax"</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">"npoints"</span><span class="p">]))</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"rdm_mode"</span><span class="p">:</span> <span class="n">mode</span><span class="p">,</span> <span class="s2">"observable"</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"observable"</span><span class="p">),</span> <span class="s2">"typec"</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"typec"</span><span class="p">),</span>
+                <span class="s2">"states"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"states"</span><span class="p">,</span> <span class="p">[]))</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="s2">"q"</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span>
+                <span class="s2">"cutoffcentre"</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cutoffcentre"</span><span class="p">),</span> <span class="s2">"cutoffz"</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cutoffz"</span><span class="p">),</span>
+                <span class="s2">"cutoffmd"</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cutoffmd"</span><span class="p">),</span> <span class="s2">"file_out"</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"file_out"</span><span class="p">)}</span>
+    <span class="n">wf</span> <span class="o">=</span> <span class="n">Wavefunction</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">nelec</span><span class="o">=</span><span class="n">nelec</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"thistle-dev deck (</span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span>
+                      <span class="n">atom_numbers</span><span class="o">=</span><span class="n">zat</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">coords</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wf</span><span class="p">,</span> <span class="n">info</span></div>
+
+
+
+<span class="c1"># ----------------------------------------------------------------------------- writer</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_native</span><span class="p">(</span><span class="n">grp</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Store ``a`` (the engines' native, column-major logical shape) as thistle-dev does: the</span>
+<span class="sd">    Fortran-order transpose, so that a Fortran/Julia read recovers it index for index."""</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">grp</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="write">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.deck.write">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">wf</span><span class="p">,</span> <span class="n">observable</span><span class="o">=</span><span class="s2">"total"</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cutoffcentre</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">cutoffz</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">,</span> <span class="n">cutoffmd</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">,</span>
+          <span class="n">states</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">typec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">file_out</span><span class="o">=</span><span class="s2">"scattering_out.dat"</span><span class="p">,</span> <span class="n">max_gb</span><span class="o">=</span><span class="mf">8.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Write a wavefunction as a thistle-dev deck (HDF5 schema v1, AO representation), the</span>
+<span class="sd">    input of its Fortran and Julia engines.</span>
+
+<span class="sd">    observable</span>
+<span class="sd">        ``"total"`` writes the two-particle density (``rdm/gamma_ao``, chemists' notation, trace</span>
+<span class="sd">        N(N-1)); ``"elastic"`` the one-particle density (``rdm/onerdm_ao``).</span>
+<span class="sd">    q</span>
+<span class="sd">        the q grid for the deck's ``params`` (bohr^-1, evenly spaced; default 1e-10 to 10, 200</span>
+<span class="sd">        points).  ``cutoffcentre`` defaults to thistle-dev's 0.01 (THISTLE itself uses the exact</span>
+<span class="sd">        limit), so that both codes compute the same numbers.</span>
+
+<span class="sd">    The deck format holds the four-index array: a factored density is expanded here, up to</span>
+<span class="sd">    ``max_gb`` gigabytes.  The orbitals in ``mos`` are natural orbitals of the 1RDM.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+    <span class="k">if</span> <span class="n">observable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"total"</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"observable must be 'total' or 'elastic'"</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">basis</span>
+    <span class="n">nao</span><span class="p">,</span> <span class="n">ngto</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">nao</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">ga</span><span class="o">.</span><span class="n">size</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.molden</span><span class="w"> </span><span class="kn">import</span> <span class="n">overlap_matrix</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">overlap_matrix</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+    <span class="n">rdm</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">observable</span> <span class="o">==</span> <span class="s2">"total"</span><span class="p">:</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span>
+        <span class="k">if</span> <span class="n">g</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"a total deck needs a two-particle density (a correlated wavefunction)"</span><span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FactoredDM2</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">FactoredDM2</span><span class="p">):</span>
+            <span class="n">need</span> <span class="o">=</span> <span class="mf">8.0</span> <span class="o">*</span> <span class="n">nao</span> <span class="o">**</span> <span class="mi">4</span> <span class="o">/</span> <span class="mf">1e9</span>
+            <span class="k">if</span> <span class="n">need</span> <span class="o">&gt;</span> <span class="n">max_gb</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">MemoryError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the deck needs the </span><span class="si">{</span><span class="n">nao</span><span class="si">}</span><span class="s2">^4 array (</span><span class="si">{</span><span class="n">need</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> GB &gt; max_gb=</span><span class="si">{</span><span class="n">max_gb</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">dense</span><span class="p">()</span>
+        <span class="n">rdm</span><span class="p">[</span><span class="s2">"gamma_ao"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rdm</span><span class="p">[</span><span class="s2">"onerdm_ao"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="c1"># natural orbitals: S^1/2 D S^1/2 = U n U^T, C = S^-1/2 U (contracted functions x orbitals)</span>
+    <span class="n">w</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">sh</span><span class="p">,</span> <span class="n">smh</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">w</span><span class="p">))</span> <span class="o">@</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="p">(</span><span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">w</span><span class="p">))</span> <span class="o">@</span> <span class="n">v</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">occ</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">sh</span> <span class="o">@</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span> <span class="o">@</span> <span class="n">sh</span><span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">-</span><span class="n">occ</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">smh</span> <span class="o">@</span> <span class="n">u</span><span class="p">[:,</span> <span class="n">order</span><span class="p">]</span>                                     <span class="c1"># (ncontr, norbs)</span>
+    <span class="n">mmod</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">coeff</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">c</span><span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">contr</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>               <span class="c1"># (ngto, norbs): primitives x orbitals</span>
+    <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">contr</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">minlength</span><span class="o">=</span><span class="n">nao</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">gf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="n">gs</span> <span class="o">=</span> <span class="p">(</span><span class="n">gf</span> <span class="o">-</span> <span class="n">counts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1e-10</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">q</span><span class="p">),</span> <span class="n">q</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">q</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"a deck stores qmin, qmax and npoints: q must be evenly spaced"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">typec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">typec</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">observable</span> <span class="o">==</span> <span class="s2">"total"</span> <span class="k">else</span> <span class="mi">2</span>
+    <span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">states</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">states</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">libver</span><span class="o">=</span><span class="p">(</span><span class="s2">"earliest"</span><span class="p">,</span> <span class="s2">"v110"</span><span class="p">))</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"deck_format"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"rdm_mode"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"AO"</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"observable"</span><span class="p">]</span> <span class="o">=</span> <span class="n">observable</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"typec"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">typec</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"states"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"file_out"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bytes_</span><span class="p">(</span><span class="n">file_out</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"source_var"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"readtwordm"</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"source_rdm_files"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">b</span><span class="s2">"THISTLE"</span><span class="p">]</span>
+        <span class="n">mol</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">"molecule"</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span> <span class="k">if</span> <span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">_native</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="s2">"atomic_numbers"</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">_native</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="s2">"coords"</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span> <span class="k">if</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">prm</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">"params"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"cutoffcentre"</span><span class="p">,</span> <span class="n">cutoffcentre</span><span class="p">),</span> <span class="p">(</span><span class="s2">"cutoffz"</span><span class="p">,</span> <span class="n">cutoffz</span><span class="p">),</span> <span class="p">(</span><span class="s2">"cutoffmd"</span><span class="p">,</span> <span class="n">cutoffmd</span><span class="p">),</span>
+                     <span class="p">(</span><span class="s2">"qmin"</span><span class="p">,</span> <span class="n">q</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="p">(</span><span class="s2">"qmax"</span><span class="p">,</span> <span class="n">q</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])):</span>
+            <span class="n">prm</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="n">prm</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"npoints"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">bas</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">"basis"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="p">(</span><span class="s2">"y"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="p">(</span><span class="s2">"z"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]),</span> <span class="p">(</span><span class="s2">"exponent"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">ga</span><span class="p">)):</span>
+            <span class="n">_native</span><span class="p">(</span><span class="n">bas</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"l"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="p">(</span><span class="s2">"m"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="p">(</span><span class="s2">"n"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]),</span> <span class="p">(</span><span class="s2">"group"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">group</span><span class="p">),</span>
+                     <span class="p">(</span><span class="s2">"contr"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">contr</span><span class="p">)):</span>
+            <span class="n">_native</span><span class="p">(</span><span class="n">bas</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">mos</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">"mos"</span><span class="p">)</span>
+        <span class="n">_native</span><span class="p">(</span><span class="n">mos</span><span class="p">,</span> <span class="s2">"mmod"</span><span class="p">,</span> <span class="n">mmod</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>              <span class="c1"># native (norbs, ngto)</span>
+        <span class="n">mos</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"norbs"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nao</span><span class="p">)</span>
+        <span class="n">mos</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"ngto"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ngto</span><span class="p">)</span>
+        <span class="n">con</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">"contraction"</span><span class="p">)</span>
+        <span class="n">con</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"ncontr"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nao</span><span class="p">)</span>
+        <span class="n">_native</span><span class="p">(</span><span class="n">con</span><span class="p">,</span> <span class="s2">"coeffs"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">coeff</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"gs"</span><span class="p">,</span> <span class="n">gs</span><span class="p">),</span> <span class="p">(</span><span class="s2">"gf"</span><span class="p">,</span> <span class="n">gf</span><span class="p">),</span> <span class="p">(</span><span class="s2">"gc"</span><span class="p">,</span> <span class="n">counts</span><span class="p">)):</span>
+            <span class="n">_native</span><span class="p">(</span><span class="n">con</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">m2</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">"mos2"</span><span class="p">)</span>
+        <span class="n">_native</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> <span class="s2">"C"</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>                       <span class="c1"># native (ncontr, norbs)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">"rdm"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">rdm</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">_native</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="../../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

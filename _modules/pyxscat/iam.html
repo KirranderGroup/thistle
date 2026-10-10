@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyxscat.iam &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/better.css?v=bb9f1030" />
+    <script src="../../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/_modules/pyxscat/iam.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxscat.iam</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+<span class="c1"># Copyright 2026 Andrés Moreno Carrascosa</span>
+<span class="sd">"""Independent atom model (IAM), for X-rays and electrons: the reference against which molecular (bonding, correlation)</span>
+<span class="sd">effects are measured.</span>
+
+<span class="sd">The molecule is modelled as free, spherically averaged atoms at the nuclear positions::</span>
+
+<span class="sd">    elastic     I_el(q)  = sum_AB f_A(q) f_B(q) j0(q R_AB)                 (rotational average)</span>
+<span class="sd">                         = |sum_A f_A(q) exp(i q.R_A)|^2                   (fixed orientation)</span>
+<span class="sd">    total       I_tot(q) = sum_A S_A(q) + sum_{A != B} f_A f_B j0(q R_AB)   (or cos(q.R_AB))</span>
+<span class="sd">    inelastic   I_tot - I_el = sum_A [S_A(q) - f_A(q)^2]</span>
+
+<span class="sd">f_A is the form factor of the spherically averaged atomic density and S_A = N_A + I2_A the total</span>
+<span class="sd">(elastic + inelastic) scattering of the free atom.  Two sources:</span>
+
+<span class="sd">* ``source="ab initio"`` (default): free-atom calculations (``basis`` is a PySCF basis name, or</span>
+<span class="sd">  a dict element -&gt; basis name) with PySCF at a chosen level</span>
+<span class="sd">  (UHF by default, or CCSD for closed-shell atoms) and basis, through the same kernels as the</span>
+<span class="sd">  molecule.  Elastic and total.  With the molecule's own method and basis, molecule minus IAM</span>
+<span class="sd">  isolates the effect of bonding.</span>
+<span class="sd">* ``source="tables"``: Waasmaier-Kirfel form factors (through the ``xraydb`` package).  Elastic</span>
+<span class="sd">  only; the tables give no incoherent scattering.</span>
+
+<span class="sd">q is in inverse bohr throughout.</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">lru_cache</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">aligned</span> <span class="k">as</span> <span class="n">_aligned</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">core</span>
+
+<span class="n">ELEMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"X"</span><span class="p">,</span> <span class="s2">"H"</span><span class="p">,</span> <span class="s2">"He"</span><span class="p">,</span> <span class="s2">"Li"</span><span class="p">,</span> <span class="s2">"Be"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"C"</span><span class="p">,</span> <span class="s2">"N"</span><span class="p">,</span> <span class="s2">"O"</span><span class="p">,</span> <span class="s2">"F"</span><span class="p">,</span> <span class="s2">"Ne"</span><span class="p">,</span> <span class="s2">"Na"</span><span class="p">,</span> <span class="s2">"Mg"</span><span class="p">,</span> <span class="s2">"Al"</span><span class="p">,</span> <span class="s2">"Si"</span><span class="p">,</span> <span class="s2">"P"</span><span class="p">,</span> <span class="s2">"S"</span><span class="p">,</span> <span class="s2">"Cl"</span><span class="p">,</span>
+            <span class="s2">"Ar"</span><span class="p">,</span> <span class="s2">"K"</span><span class="p">,</span> <span class="s2">"Ca"</span><span class="p">,</span> <span class="s2">"Sc"</span><span class="p">,</span> <span class="s2">"Ti"</span><span class="p">,</span> <span class="s2">"V"</span><span class="p">,</span> <span class="s2">"Cr"</span><span class="p">,</span> <span class="s2">"Mn"</span><span class="p">,</span> <span class="s2">"Fe"</span><span class="p">,</span> <span class="s2">"Co"</span><span class="p">,</span> <span class="s2">"Ni"</span><span class="p">,</span> <span class="s2">"Cu"</span><span class="p">,</span> <span class="s2">"Zn"</span><span class="p">,</span> <span class="s2">"Ga"</span><span class="p">,</span> <span class="s2">"Ge"</span><span class="p">,</span> <span class="s2">"As"</span><span class="p">,</span> <span class="s2">"Se"</span><span class="p">,</span>
+            <span class="s2">"Br"</span><span class="p">,</span> <span class="s2">"Kr"</span><span class="p">]</span>
+<span class="n">BOHR_IN_ANGSTROM</span> <span class="o">=</span> <span class="mf">0.52917721092</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_symbol</span><span class="p">(</span><span class="n">z_or_symbol</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">z_or_symbol</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">z_or_symbol</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ELEMENTS</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">z_or_symbol</span><span class="p">)]</span>
+
+
+<span class="c1"># ----------------------------------------------------------------------------- free atoms</span>
+<span class="n">_GROUND_STATE_SPIN</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"H"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"He"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"Li"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Be"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"C"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"N"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"O"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"F"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Ne"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                      <span class="s2">"Na"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Mg"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"Al"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Si"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"P"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"S"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"Cl"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"Ar"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+
+
+<span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_atom_wavefunction</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">pyscf</span><span class="w"> </span><span class="kn">import</span> <span class="n">gto</span><span class="p">,</span> <span class="n">scf</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyscf</span> <span class="k">as</span> <span class="n">xp</span>
+    <span class="n">spin</span> <span class="o">=</span> <span class="n">_GROUND_STATE_SPIN</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">spin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no ground-state multiplicity tabulated for </span><span class="si">{</span><span class="n">symbol</span><span class="si">}</span><span class="s2">; pass source='tables'"</span><span class="p">)</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">gto</span><span class="o">.</span><span class="n">M</span><span class="p">(</span><span class="n">atom</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">symbol</span><span class="si">}</span><span class="s2"> 0 0 0"</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="n">basis</span><span class="p">,</span> <span class="n">spin</span><span class="o">=</span><span class="n">spin</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">symmetry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"hf"</span><span class="p">:</span>
+        <span class="n">mf</span> <span class="o">=</span> <span class="n">scf</span><span class="o">.</span><span class="n">UHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">conv_tol</span><span class="o">=</span><span class="mf">1e-11</span><span class="p">)</span> <span class="k">if</span> <span class="n">spin</span> <span class="k">else</span> <span class="n">scf</span><span class="o">.</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">conv_tol</span><span class="o">=</span><span class="mf">1e-11</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">spin</span><span class="p">:</span>
+            <span class="n">da</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="n">mf</span><span class="o">.</span><span class="n">make_rdm1</span><span class="p">()</span>
+            <span class="n">wf</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">from_density</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">da</span> <span class="o">+</span> <span class="n">db</span><span class="p">)</span>
+            <span class="n">sa</span><span class="p">,</span> <span class="n">sb</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">from_density</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">da</span><span class="p">)</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">xp</span><span class="o">.</span><span class="n">from_density</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">db</span><span class="p">)</span><span class="o">.</span><span class="n">dm1</span>
+            <span class="k">return</span> <span class="n">wf</span><span class="p">,</span> <span class="p">(</span><span class="n">sa</span><span class="p">,</span> <span class="n">sb</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">xp</span><span class="o">.</span><span class="n">from_scf</span><span class="p">(</span><span class="n">mf</span><span class="p">),</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"ccsd"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">spin</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"CCSD atoms are implemented for closed shells only; use method='hf'"</span><span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">pyscf</span><span class="w"> </span><span class="kn">import</span> <span class="n">cc</span>
+        <span class="n">mf</span> <span class="o">=</span> <span class="n">scf</span><span class="o">.</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">conv_tol</span><span class="o">=</span><span class="mf">1e-11</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">xp</span><span class="o">.</span><span class="n">from_cc</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">conv_tol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)),</span> <span class="kc">None</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"method must be 'hf' or 'ccsd'"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sphere</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">17</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.integrate</span><span class="w"> </span><span class="kn">import</span> <span class="n">lebedev_rule</span>
+    <span class="n">xyz</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">lebedev_rule</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">xyz</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">w</span> <span class="o">/</span> <span class="n">w</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="atomic_form_factor">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.atomic_form_factor">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">atomic_form_factor</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"ab initio"</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s2">"aug-cc-pvtz"</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"hf"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Form factor f(q) of the spherically averaged free atom (q in bohr^-1)."""</span>
+    <span class="n">symbol</span> <span class="o">=</span> <span class="n">_symbol</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">"tables"</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">xraydb</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">q</span> <span class="o">/</span> <span class="n">BOHR_IN_ANGSTROM</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>            <span class="c1"># sin(theta)/lambda in Angstrom^-1</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">xraydb</span><span class="o">.</span><span class="n">f0</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">s</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">wf</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_atom_wavefunction</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+    <span class="c1"># &lt;F(q n)&gt; over directions n = spherical average of the density, exactly (Lebedev grid of</span>
+    <span class="c1"># degree 17 integrates the angular structure of densities up to g functions)</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">_sphere</span><span class="p">()</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">qq</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">q</span><span class="p">):</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">@</span> <span class="n">_aligned</span><span class="o">.</span><span class="n">form_factor</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="n">qq</span> <span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">))</span><span class="o">.</span><span class="n">real</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="atomic_total">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.atomic_total">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">atomic_total</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s2">"aug-cc-pvtz"</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"hf"</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Total (elastic + inelastic) rotationally averaged scattering S(q) = N + I2(q) of a free atom."""</span>
+    <span class="n">symbol</span> <span class="o">=</span> <span class="n">_symbol</span><span class="p">(</span><span class="n">symbol</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">wf</span><span class="p">,</span> <span class="n">spins</span> <span class="o">=</span> <span class="n">_atom_wavefunction</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"ccsd"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">core</span><span class="o">.</span><span class="n">scattering</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="s2">"total"</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">spins</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">wf</span><span class="o">.</span><span class="n">nelec</span> <span class="o">+</span> <span class="n">core</span><span class="o">.</span><span class="n">mean_field</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">da</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="n">spins</span>
+    <span class="c1"># UHF pair density: D(1)D(2) - Da Da - Db Db  (exchange within each spin)</span>
+    <span class="n">i2</span> <span class="o">=</span> <span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+          <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">core</span><span class="o">.</span><span class="n">exchange</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">da</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">core</span><span class="o">.</span><span class="n">exchange</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">db</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">wf</span><span class="o">.</span><span class="n">nelec</span> <span class="o">+</span> <span class="n">i2</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_atom_terms</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">need_total</span><span class="p">,</span> <span class="n">cutoffs</span><span class="p">):</span>
+    <span class="n">uniq</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">symbols</span><span class="p">))</span>
+    <span class="n">bas</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="p">:</span> <span class="p">(</span><span class="n">basis</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">basis</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">uniq</span><span class="p">}</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="p">:</span> <span class="n">atomic_form_factor</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">bas</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="n">method</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">uniq</span><span class="p">}</span>
+    <span class="n">tot</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">need_total</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">"tables"</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the tables give no inelastic scattering: use source='ab initio' for total/inelastic"</span><span class="p">)</span>
+        <span class="n">tot</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="p">:</span> <span class="n">atomic_total</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">bas</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">uniq</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">f</span><span class="p">,</span> <span class="n">tot</span>
+
+
+<span class="c1"># ----------------------------------------------------------------------------- molecules</span>
+<div class="viewcode-block" id="scattering">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.scattering">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scattering</span><span class="p">(</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"ab initio"</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s2">"aug-cc-pvtz"</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"hf"</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Rotationally averaged IAM (Debye formula).  ``coords`` in bohr.</span>
+
+<span class="sd">    Returns a dict over q: elastic, and with ``total=True`` also total, inelastic and the atomic</span>
+<span class="sd">    and interference parts.</span>
+
+<span class="sd">    ``l=2``: the second Legendre moment about the z axis (the IAM counterpart of</span>
+<span class="sd">    ``pyxscat.scattering(..., l=2)``),</span>
+
+<span class="sd">        S2(q) = -sum_{A != B} f_A f_B j2(q R_AB) P2(cos theta_AB)   (i^2 = -1, see core.lsign),</span>
+
+<span class="sd">    where theta_AB is the angle of R_A - R_B with z.  Free atoms are spherical, so their own</span>
+<span class="sd">    elastic and inelastic scattering is isotropic: atomic and inelastic parts vanish at l = 2.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_scattering_l2</span><span class="p">(</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">l</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"only l = 0 and l = 2 are implemented"</span><span class="p">)</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="n">_symbol</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">atom_numbers</span><span class="p">]</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">tot</span> <span class="o">=</span> <span class="n">_atom_terms</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">fa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">])</span>                         <span class="c1"># (natom, nq)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">coords</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">qr</span> <span class="o">=</span> <span class="n">q</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">r</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">j0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">qr</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">qr</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">qr</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">qr</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">elastic</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"aq,bq,abq-&gt;q"</span><span class="p">,</span> <span class="n">fa</span><span class="p">,</span> <span class="n">fa</span><span class="p">,</span> <span class="n">j0</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"q"</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">:</span> <span class="n">elastic</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">total</span><span class="p">:</span>
+        <span class="n">atomic</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">tot</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">)</span>
+        <span class="n">self_el</span> <span class="o">=</span> <span class="p">(</span><span class="n">fa</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"atomic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">atomic</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"interference"</span><span class="p">]</span> <span class="o">=</span> <span class="n">elastic</span> <span class="o">-</span> <span class="n">self_el</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span> <span class="o">=</span> <span class="n">atomic</span> <span class="o">+</span> <span class="n">elastic</span> <span class="o">-</span> <span class="n">self_el</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"inelastic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span> <span class="o">-</span> <span class="n">elastic</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_j2</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">small</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-3</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">small</span><span class="p">]</span>
+    <span class="n">out</span><span class="p">[</span><span class="n">small</span><span class="p">]</span> <span class="o">=</span> <span class="n">xs</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="mf">15.0</span> <span class="o">-</span> <span class="n">xs</span> <span class="o">**</span> <span class="mi">4</span> <span class="o">/</span> <span class="mf">210.0</span>
+    <span class="n">xl</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">~</span><span class="n">small</span><span class="p">]</span>
+    <span class="n">out</span><span class="p">[</span><span class="o">~</span><span class="n">small</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">3.0</span> <span class="o">/</span> <span class="n">xl</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">xl</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">xl</span><span class="p">)</span> <span class="o">-</span> <span class="mf">3.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">xl</span><span class="p">)</span> <span class="o">/</span> <span class="n">xl</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_scattering_l2</span><span class="p">(</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">total</span><span class="p">):</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="n">_symbol</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">atom_numbers</span><span class="p">]</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_atom_terms</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">fa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">])</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">r</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">r</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">j2</span> <span class="o">=</span> <span class="n">_j2</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">r</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">])</span>
+    <span class="n">elastic</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"aq,bq,ab,abq-&gt;q"</span><span class="p">,</span> <span class="n">fa</span><span class="p">,</span> <span class="n">fa</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="n">j2</span><span class="p">)</span>        <span class="c1"># i^2 = -1 (core.lsign)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"q"</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">:</span> <span class="n">elastic</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">total</span><span class="p">:</span>
+        <span class="n">zero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">atomic</span><span class="o">=</span><span class="n">zero</span><span class="p">,</span> <span class="n">interference</span><span class="o">=</span><span class="n">elastic</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">elastic</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">inelastic</span><span class="o">=</span><span class="n">zero</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<div class="viewcode-block" id="electron_scattering">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.electron_scattering">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">electron_scattering</span><span class="p">(</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"ab initio"</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s2">"aug-cc-pvtz"</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"hf"</span><span class="p">,</span>
+                        <span class="n">total</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Electron scattering of independent atoms (rotational average), in the bracket units of</span>
+<span class="sd">    :mod:`pyxscat.electron` (multiply by 4/q^4 for the cross section).</span>
+
+<span class="sd">    Each atom scatters with the Mott-Bethe amplitude Z_A - f_A(q):</span>
+
+<span class="sd">        elastic    sum_AB (Z_A - f_A)(Z_B - f_B) j0(q R_AB)</span>
+<span class="sd">        atomic     sum_A  (Z_A - f_A)^2  (+ inelastic sum_A [S_A - f_A^2] with ``total``)</span>
+<span class="sd">        molecular  elastic - sum_A (Z_A - f_A)^2      (the interference, as in sM(s))</span>
+
+<span class="sd">    ``l=2``: -sum_{A != B} (Z_A - f_A)(Z_B - f_B) j2(q R_AB) P2(cos theta_AB)  (i^2 = -1).</span>
+<span class="sd">    """</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="n">_symbol</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">atom_numbers</span><span class="p">]</span>
+    <span class="n">zat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ELEMENTS</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">tot</span> <span class="o">=</span> <span class="n">_atom_terms</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">total</span> <span class="ow">and</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">amp</span> <span class="o">=</span> <span class="n">zat</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">])</span>        <span class="c1"># (natom, nq)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">qr</span> <span class="o">=</span> <span class="n">q</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">r</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">r</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">r</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">el</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"aq,bq,ab,abq-&gt;q"</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="n">_j2</span><span class="p">(</span><span class="n">qr</span><span class="p">))</span>      <span class="c1"># i^2 = -1 (core.lsign)</span>
+        <span class="n">zero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"q"</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">:</span> <span class="n">el</span><span class="p">,</span> <span class="s2">"molecular"</span><span class="p">:</span> <span class="n">el</span><span class="p">,</span> <span class="s2">"atomic"</span><span class="p">:</span> <span class="n">zero</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">total</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">el</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">inelastic</span><span class="o">=</span><span class="n">zero</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+    <span class="k">if</span> <span class="n">l</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"only l = 0 and l = 2 are implemented"</span><span class="p">)</span>
+    <span class="n">j0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">qr</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">qr</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">qr</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">qr</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">el</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"aq,bq,abq-&gt;q"</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">j0</span><span class="p">)</span>
+    <span class="n">self_el</span> <span class="o">=</span> <span class="p">(</span><span class="n">amp</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"q"</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">:</span> <span class="n">el</span><span class="p">,</span> <span class="s2">"molecular"</span><span class="p">:</span> <span class="n">el</span> <span class="o">-</span> <span class="n">self_el</span><span class="p">,</span> <span class="s2">"atomic"</span><span class="p">:</span> <span class="n">self_el</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">total</span><span class="p">:</span>
+        <span class="n">inel</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">tot</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">-</span> <span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"inelastic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">inel</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span> <span class="o">=</span> <span class="n">el</span> <span class="o">+</span> <span class="n">inel</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"atomic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">self_el</span> <span class="o">+</span> <span class="n">inel</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="electron_for_wavefunction">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.electron_for_wavefunction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">electron_for_wavefunction</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">aligned</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Electron IAM for the geometry of a :class:`~pyxscat.Wavefunction` (``aligned=True``: q</span>
+<span class="sd">    vectors in the molecular frame)."""</span>
+    <span class="k">if</span> <span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"this Wavefunction carries no nuclear positions; call iam.electron_scattering directly"</span><span class="p">)</span>
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">electron_scattering_aligned</span> <span class="k">if</span> <span class="n">aligned</span> <span class="k">else</span> <span class="n">electron_scattering</span>
+    <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="scattering_aligned">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.scattering_aligned">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scattering_aligned</span><span class="p">(</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"ab initio"</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s2">"aug-cc-pvtz"</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"hf"</span><span class="p">,</span>
+                       <span class="n">total</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""IAM at fixed orientation; ``qvec`` (nq, 3) in the molecular frame (bohr^-1)."""</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="n">_symbol</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">atom_numbers</span><span class="p">]</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">qvec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">qn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">qvec</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">uq</span><span class="p">,</span> <span class="n">inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">qn</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">tot</span> <span class="o">=</span> <span class="n">_atom_terms</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">uq</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">fa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">inv</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">])</span>                    <span class="c1"># (natom, nq)</span>
+    <span class="n">amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"aq,aq-&gt;q"</span><span class="p">,</span> <span class="n">fa</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">coords</span> <span class="o">@</span> <span class="n">qvec</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+    <span class="n">elastic</span> <span class="o">=</span> <span class="p">(</span><span class="n">amp</span> <span class="o">*</span> <span class="n">amp</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">.</span><span class="n">real</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"qvec"</span><span class="p">:</span> <span class="n">qvec</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">:</span> <span class="n">elastic</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">total</span><span class="p">:</span>
+        <span class="n">atomic</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">tot</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">inv</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">)</span>
+        <span class="n">self_el</span> <span class="o">=</span> <span class="p">(</span><span class="n">fa</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"atomic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">atomic</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"interference"</span><span class="p">]</span> <span class="o">=</span> <span class="n">elastic</span> <span class="o">-</span> <span class="n">self_el</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span> <span class="o">=</span> <span class="n">atomic</span> <span class="o">+</span> <span class="n">elastic</span> <span class="o">-</span> <span class="n">self_el</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"inelastic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span> <span class="o">-</span> <span class="n">elastic</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="electron_scattering_aligned">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.electron_scattering_aligned">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">electron_scattering_aligned</span><span class="p">(</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"ab initio"</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s2">"aug-cc-pvtz"</span><span class="p">,</span>
+                                <span class="n">method</span><span class="o">=</span><span class="s2">"hf"</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Electron IAM at fixed orientation (bracket units; multiply by 4/q^4 for the cross section):</span>
+<span class="sd">    elastic ``|sum_A (Z_A - f_A) exp(i q.R_A)|^2``, plus the atomic inelastic ``sum_A [S_A - f_A^2]``."""</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="n">_symbol</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">atom_numbers</span><span class="p">]</span>
+    <span class="n">zat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ELEMENTS</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">qvec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">qn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">qvec</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">uq</span><span class="p">,</span> <span class="n">inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">qn</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">,</span> <span class="n">tot</span> <span class="o">=</span> <span class="n">_atom_terms</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">uq</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">amp</span> <span class="o">=</span> <span class="n">zat</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">inv</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">])</span>     <span class="c1"># (natom, nq)</span>
+    <span class="n">phase</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"aq,aq-&gt;q"</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">coords</span> <span class="o">@</span> <span class="n">qvec</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+    <span class="n">el</span> <span class="o">=</span> <span class="p">(</span><span class="n">phase</span> <span class="o">*</span> <span class="n">phase</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">.</span><span class="n">real</span>
+    <span class="n">self_el</span> <span class="o">=</span> <span class="p">(</span><span class="n">amp</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"qvec"</span><span class="p">:</span> <span class="n">qvec</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">:</span> <span class="n">el</span><span class="p">,</span> <span class="s2">"molecular"</span><span class="p">:</span> <span class="n">el</span> <span class="o">-</span> <span class="n">self_el</span><span class="p">,</span> <span class="s2">"atomic"</span><span class="p">:</span> <span class="n">self_el</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">total</span><span class="p">:</span>
+        <span class="n">inel</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">tot</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">inv</span><span class="p">]</span> <span class="o">-</span> <span class="n">f</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">inv</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">inelastic</span><span class="o">=</span><span class="n">inel</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">el</span> <span class="o">+</span> <span class="n">inel</span><span class="p">,</span> <span class="n">atomic</span><span class="o">=</span><span class="n">self_el</span> <span class="o">+</span> <span class="n">inel</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="for_wavefunction">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.for_wavefunction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">for_wavefunction</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">aligned</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""IAM for the geometry of a :class:`~pyxscat.Wavefunction` (atoms taken from the adapter).</span>
+<span class="sd">    ``l=2`` gives the second Legendre moment (rotational form only)."""</span>
+    <span class="k">if</span> <span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"this Wavefunction carries no nuclear positions; call iam.scattering directly"</span><span class="p">)</span>
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">scattering_aligned</span> <span class="k">if</span> <span class="n">aligned</span> <span class="k">else</span> <span class="n">scattering</span>
+    <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="percent_difference">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.iam.percent_difference">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">percent_difference</span><span class="p">(</span><span class="n">molecular</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""100 (I_molecule - I_IAM) / I_IAM, the usual way of showing molecular effects."""</span>
+    <span class="k">return</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">molecular</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reference</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

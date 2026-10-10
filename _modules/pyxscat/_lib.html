@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyxscat._lib &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/better.css?v=bb9f1030" />
+    <script src="../../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/_modules/pyxscat/_lib.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxscat._lib</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+<span class="c1"># Copyright 2026 Andrés Moreno Carrascosa</span>
+<span class="sd">"""Loading of the compiled PyXSCAT library and the raw ctypes signatures."""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.ctypeslib</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndpointer</span>
+
+<span class="n">_here</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_find_library</span><span class="p">():</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PYXSCAT_LIB"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">env</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">env</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_here</span><span class="p">,</span> <span class="s2">"libpyxscat.*"</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">hits</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+            <span class="s2">"The compiled PyXSCAT library was not found next to the Python package. "</span>
+            <span class="s2">"Run `make` in the repository root, or set PYXSCAT_LIB to its path."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">hits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+<span class="n">_dbl</span> <span class="o">=</span> <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"F_CONTIGUOUS"</span><span class="p">)</span>
+<span class="n">_int</span> <span class="o">=</span> <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"F_CONTIGUOUS"</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="n">_find_library</span><span class="p">())</span>
+<span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>                       <span class="c1"># typically a missing compiler runtime library</span>
+    <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"The PyXSCAT library could not be loaded (</span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">). If it was built with Intel ifx/ifort, "</span>
+        <span class="s2">"load the oneAPI environment (`source /opt/intel/oneapi/setvars.sh` or `module load intel`; with "</span>
+        <span class="s2">"conda's ifx: `export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH`) "</span>
+        <span class="s2">"so that the OpenMP runtime libiomp5 is found; with gfortran, make sure its runtime "</span>
+        <span class="s2">"(libgfortran, libgomp) is on the library path."</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_two_electron_j0</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_two_electron_j0</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>             <span class="c1"># nprim, ncontr, nq</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                               <span class="c1"># x, y, z, ga</span>
+    <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span>                         <span class="c1"># l, m, n, group, contr</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                                           <span class="c1"># coeff, q</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                                         <span class="c1"># mode</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span>                                      <span class="c1"># dm2 (or NULL)</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                                           <span class="c1"># da, db</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span>                     <span class="c1"># wc, wx</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span>       <span class="c1"># mode 3: nkc, Ac(k,i,j), Bc(k,i,j)  (k fastest)</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span>       <span class="c1">#         nkx, Ax, Bx</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span>                                      <span class="c1">#         dgemm function pointer (or NULL)</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span>    <span class="c1"># cutoffcentre, cutoffz, cutoffmd</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span>                                      <span class="c1"># screen_tol</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                                         <span class="c1"># lorder (0: j0, 2: j2 P2)</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                                         <span class="c1"># nthreads</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                                           <span class="c1"># res, stats</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span>                         <span class="c1"># ierr</span>
+<span class="p">]</span>
+
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_hermite_table</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="s2">"pyxscat_rdm12_bitwise_groups"</span><span class="p">):</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_rdm12_bitwise_groups</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_rdm12_bitwise_groups</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                     <span class="c1"># ndet, norb, nw</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>              <span class="c1"># alpha words (ndet, nw)</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>              <span class="c1"># beta words</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>            <span class="c1"># coefficients</span>
+        <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                                   <span class="c1"># nint, ng</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>              <span class="c1"># gstart (ng+1), 1-based</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>              <span class="c1"># grp (ndet), 1-based</span>
+        <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                                                 <span class="c1"># nnb</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>              <span class="c1"># nbstart (ng+1), 1-based</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>              <span class="c1"># nb (nnb), 1-based group numbers</span>
+        <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                                                 <span class="c1"># nthreads</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>            <span class="c1"># dm1</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>            <span class="c1"># dm2</span>
+        <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">)]</span>
+
+<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="s2">"pyxscat_rdm12_bitwise"</span><span class="p">):</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_rdm12_bitwise</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_rdm12_bitwise</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                     <span class="c1"># ndet, norb, nw (words per string)</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>              <span class="c1"># alpha words (ndet, nw)</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>              <span class="c1"># beta words</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>            <span class="c1"># coefficients</span>
+        <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                                                 <span class="c1"># nthreads</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>            <span class="c1"># dm1[p, q]</span>
+        <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"C_CONTIGUOUS"</span><span class="p">),</span>            <span class="c1"># dm2[p, q, r, s]</span>
+        <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span>                                 <span class="c1"># ierr</span>
+    <span class="p">]</span>
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_hermite_table</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">]</span>
+
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_pair_transform</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_pair_transform</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>             <span class="c1"># nprim, nao, nq</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                               <span class="c1"># x, y, z, ga</span>
+    <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span>                         <span class="c1"># l, m, n, group, contr</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                                           <span class="c1"># coeff, qv(3, nq)</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>                        <span class="c1"># screen, nthreads</span>
+    <span class="n">ndpointer</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="s2">"F_CONTIGUOUS"</span><span class="p">),</span>  <span class="c1"># f(nq, nao, nao)</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span>                         <span class="c1"># ierr</span>
+<span class="p">]</span>
+
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_electron_nucleus</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_electron_nucleus</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>             <span class="c1"># nprim, nao, nq</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                               <span class="c1"># x, y, z, ga</span>
+    <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span>                         <span class="c1"># l, m, n, group, contr</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                                           <span class="c1"># coeff, q</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                             <span class="c1"># natom, charges, positions (3, natom)</span>
+    <span class="n">_dbl</span><span class="p">,</span>                                                 <span class="c1"># dm1 (nao, nao)</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>          <span class="c1"># lorder, screen, nthreads</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span>                   <span class="c1"># res, ierr</span>
+<span class="p">]</span>
+
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_elastic_pairs</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_elastic_pairs</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>             <span class="c1"># nprim, nao, nq</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                               <span class="c1"># x, y, z, ga</span>
+    <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span> <span class="n">_int</span><span class="p">,</span>                         <span class="c1"># l, m, n, group, contr</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                                           <span class="c1"># coeff, q</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span>                                           <span class="c1"># da, db (nao, nao)</span>
+    <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span>          <span class="c1"># lorder, screen, nthreads</span>
+    <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span>             <span class="c1"># res, stats(2), ierr</span>
+<span class="p">]</span>
+
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_radial_series</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_radial_series</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">,</span> <span class="n">_dbl</span><span class="p">]</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_build_info</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_build_info</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">]</span>
+<span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>                       <span class="c1"># library built before this entry point existed</span>
+    <span class="k">pass</span>
+
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_max_threads</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span>
+<span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_max_threads</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">ERRORS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="s2">"empty basis or q grid"</span><span class="p">,</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="s2">"a two-particle density matrix is required for this calculation"</span><span class="p">,</span>
+    <span class="mi">3</span><span class="p">:</span> <span class="s2">"unknown density provider"</span><span class="p">,</span>
+    <span class="mi">4</span><span class="p">:</span> <span class="s2">"angular momentum too high for the quartet kernel (4 l_max + 3 &gt; 32; tested up to h functions)"</span><span class="p">,</span>
+    <span class="mi">5</span><span class="p">:</span> <span class="s2">"primitive shells (groups) must be numbered 1..ng and be contiguous"</span><span class="p">,</span>
+    <span class="mi">6</span><span class="p">:</span> <span class="s2">"contracted-function index out of range"</span><span class="p">,</span>
+    <span class="mi">7</span><span class="p">:</span> <span class="s2">"all members of a primitive shell must share centre, exponent and angular momentum"</span><span class="p">,</span>
+    <span class="mi">8</span><span class="p">:</span> <span class="s2">"only the Legendre orders l = 0 and l = 2 are implemented"</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="blas_dgemm_pointer">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat._lib.blas_dgemm_pointer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">blas_dgemm_pointer</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Address of the BLAS ``dgemm`` SciPy ships (Fortran calling convention, 32-bit integers),</span>
+<span class="sd">    for the factored-density kernel; None when unavailable or when a quick check fails."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">cython_blas</span>
+        <span class="n">cap</span> <span class="o">=</span> <span class="n">cython_blas</span><span class="o">.</span><span class="n">__pyx_capi__</span><span class="p">[</span><span class="s2">"dgemm"</span><span class="p">]</span>
+        <span class="n">api</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pythonapi</span>
+        <span class="n">api</span><span class="o">.</span><span class="n">PyCapsule_GetName</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span>
+        <span class="n">api</span><span class="o">.</span><span class="n">PyCapsule_GetName</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctypes</span><span class="o">.</span><span class="n">py_object</span><span class="p">]</span>
+        <span class="n">api</span><span class="o">.</span><span class="n">PyCapsule_GetPointer</span><span class="o">.</span><span class="n">restype</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span>
+        <span class="n">api</span><span class="o">.</span><span class="n">PyCapsule_GetPointer</span><span class="o">.</span><span class="n">argtypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">ctypes</span><span class="o">.</span><span class="n">py_object</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">]</span>
+        <span class="n">ptr</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">PyCapsule_GetPointer</span><span class="p">(</span><span class="n">cap</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">PyCapsule_GetName</span><span class="p">(</span><span class="n">cap</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ptr</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1"># check the ABI on a small product</span>
+        <span class="n">proto</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">CFUNCTYPE</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span>
+                                 <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span>
+                                 <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">),</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span>
+                                 <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">),</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">),</span>
+                                 <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">))</span>
+        <span class="n">fn</span> <span class="o">=</span> <span class="n">proto</span><span class="p">(</span><span class="n">ptr</span><span class="p">)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">6.0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">12.0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s2">"F"</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        <span class="n">fn</span><span class="p">(</span><span class="sa">b</span><span class="s2">"T"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"N"</span><span class="p">,</span> <span class="n">i</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">i</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">i</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">d</span><span class="p">(</span><span class="mf">1.0</span><span class="p">),</span> <span class="n">a</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">i</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">b</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">i</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">d</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span> <span class="n">c</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">i</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">b</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">ptr</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<span class="n">DGEMM</span> <span class="o">=</span> <span class="n">blas_dgemm_pointer</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

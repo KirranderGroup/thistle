@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>pyxscat.interfaces: wavefunction adapters &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/better.css?v=bb9f1030" />
+    <script src="../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/api/interfaces.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Fortran kernels" href="../kernels.html" />
+    <link rel="prev" title="pyxscat: the kernels" href="pyxscat.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="pyxscat.html" title="Previous document">pyxscat: the kernels</a>
+        </li>
+        <li>
+          <a href="../kernels.html" title="Next document">Fortran kernels</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../index.html">THISTLE</a></li>
+      <li>
+        <a href="index.html">Python API</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-pyxscat.interfaces">
+<span id="pyxscat-interfaces-wavefunction-adapters"></span><h1>pyxscat.interfaces: wavefunction adapters<a class="headerlink" href="#module-pyxscat.interfaces" title="Link to this heading">¶</a></h1>
+<p>Adapters that turn the output of electronic structure packages into a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">pyxscat.Wavefunction</span></code> (basis set + density matrices).</p>
+<section id="module-pyxscat.interfaces.pyscf">
+<span id="pyxscat-interfaces-pyscf"></span><h2>pyxscat.interfaces.pyscf<a class="headerlink" href="#module-pyxscat.interfaces.pyscf" title="Link to this heading">¶</a></h2>
+<p>PySCF adapter: turns PySCF objects into a <code class="xref py py-class docutils literal notranslate"><span class="pre">pyxscat.Wavefunction</span></code>.</p>
+<p>The basis is taken from the <code class="docutils literal notranslate"><span class="pre">Mole</span></code> object in memory (no Molden file).  Spherical (pure) basis
+sets are handled by expressing the density matrices in the underlying Cartesian functions.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.pyscf.basis_from_mole">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.pyscf.</span></span><span class="sig-name descname"><span class="pre">basis_from_mole</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/pyscf.html#basis_from_mole"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.pyscf.basis_from_mole" title="Link to this definition">¶</a></dt>
+<dd><p>Cartesian <code class="xref py py-class docutils literal notranslate"><span class="pre">Basis</span></code> of a PySCF <code class="docutils literal notranslate"><span class="pre">Mole</span></code> (functions ordered as in <code class="docutils literal notranslate"><span class="pre">mol.cart</span> <span class="pre">=</span> <span class="pre">True</span></code>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.pyscf.from_density">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.pyscf.</span></span><span class="sig-name descname"><span class="pre">from_density</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mo_coeff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/pyscf.html#from_density"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.pyscf.from_density" title="Link to this definition">¶</a></dt>
+<dd><p>Wavefunction from spin-summed density matrices.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">mo_coeff</span></code> is given, <code class="docutils literal notranslate"><span class="pre">dm1</span></code> and <code class="docutils literal notranslate"><span class="pre">dm2</span></code> are in that molecular-orbital basis (as returned
+by PySCF’s <code class="docutils literal notranslate"><span class="pre">make_rdm1</span></code> / <code class="docutils literal notranslate"><span class="pre">make_rdm2</span></code> of post-HF methods); otherwise they are in the AO
+basis of <code class="docutils literal notranslate"><span class="pre">mol</span></code>.  <code class="docutils literal notranslate"><span class="pre">dm2</span></code> follows PySCF’s convention (chemists’ notation, trace N(N-1)).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.pyscf.from_scf">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.pyscf.</span></span><span class="sig-name descname"><span class="pre">from_scf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_dm2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/pyscf.html#from_scf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.pyscf.from_scf" title="Link to this definition">¶</a></dt>
+<dd><p>Closed-shell (RHF/RKS) wavefunction.  The mean-field two-electron term does not need the
+four-index array (see <code class="docutils literal notranslate"><span class="pre">pyxscat.mean_field</span></code>); set <code class="docutils literal notranslate"><span class="pre">with_dm2=True</span></code> to build it anyway.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.pyscf.from_cc">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.pyscf.</span></span><span class="sig-name descname"><span class="pre">from_cc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mycc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/pyscf.html#from_cc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.pyscf.from_cc" title="Link to this definition">¶</a></dt>
+<dd><p>CCSD wavefunction (unrelaxed lambda densities from PySCF).</p>
+<dl class="simple">
+<dt>factored</dt><dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code>: the two-particle density as a sum of 7 nocc^2 + 4 products of one-particle
+matrices (<a class="reference internal" href="pyxscat.html#module-pyxscat.ccsd" title="pyxscat.ccsd"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyxscat.ccsd</span></code></a>; memory 2 K nao^2 instead of nao^4, the kernels contract
+it directly, same numbers to 1e-13).  <code class="docutils literal notranslate"><span class="pre">False</span></code>: PySCF’s four-index array.  <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code>
+(default): factored beyond <code class="docutils literal notranslate"><span class="pre">FACTORED_ABOVE</span></code> basis functions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.pyscf.from_ci">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.pyscf.</span></span><span class="sig-name descname"><span class="pre">from_ci</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">myci</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/pyscf.html#from_ci"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.pyscf.from_ci" title="Link to this definition">¶</a></dt>
+<dd><p>CISD wavefunction.  <code class="docutils literal notranslate"><span class="pre">factored</span></code>: as in <a class="reference internal" href="#pyxscat.interfaces.pyscf.from_cc" title="pyxscat.interfaces.pyscf.from_cc"><code class="xref py py-func docutils literal notranslate"><span class="pre">from_cc()</span></code></a> (K = 4 nocc^2 + 2 products of
+one-particle matrices instead of the n^4 array; <a class="reference internal" href="pyxscat.html#pyxscat.ccsd.factored_rdm2_cisd" title="pyxscat.ccsd.factored_rdm2_cisd"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyxscat.ccsd.factored_rdm2_cisd()</span></code></a>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.pyscf.from_fci">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.pyscf.</span></span><span class="sig-name descname"><span class="pre">from_fci</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mo_coeff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">civec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nelec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/pyscf.html#from_fci"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.pyscf.from_fci" title="Link to this definition">¶</a></dt>
+<dd><p>Full CI wavefunction in the orbitals <code class="docutils literal notranslate"><span class="pre">mo_coeff[:,</span> <span class="pre">:norb]</span></code> (no frozen core).
+<code class="docutils literal notranslate"><span class="pre">factored</span></code>: as in <a class="reference internal" href="#pyxscat.interfaces.pyscf.from_casscf" title="pyxscat.interfaces.pyscf.from_casscf"><code class="xref py py-func docutils literal notranslate"><span class="pre">from_casscf()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.pyscf.from_fci_solver">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.pyscf.</span></span><span class="sig-name descname"><span class="pre">from_fci_solver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solver</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mo_coeff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/pyscf.html#from_fci_solver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.pyscf.from_fci_solver" title="Link to this definition">¶</a></dt>
+<dd><p>A standalone PySCF FCI or selected-CI solver after <code class="docutils literal notranslate"><span class="pre">kernel()</span></code> (<code class="docutils literal notranslate"><span class="pre">fci.FCI(mf)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">fci.selected_ci.SCI</span></code>).  PySCF does not keep the orbitals in the solver (only the
+integrals), so they are given: <code class="docutils literal notranslate"><span class="pre">mo_coeff</span></code> is the array or the SCF object.  <code class="docutils literal notranslate"><span class="pre">state</span></code>
+selects a root (0-based) when <code class="docutils literal notranslate"><span class="pre">nroots</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>; the densities come from the solver’s own
+<code class="docutils literal notranslate"><span class="pre">make_rdm12</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.pyscf.from_casscf">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.pyscf.</span></span><span class="sig-name descname"><span class="pre">from_casscf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/pyscf.html#from_casscf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.pyscf.from_casscf" title="Link to this definition">¶</a></dt>
+<dd><p>CASSCF/CASCI wavefunction; for state-averaged calculations pick the root with <code class="docutils literal notranslate"><span class="pre">state</span></code>.</p>
+<dl class="simple">
+<dt>factored</dt><dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code>: the 2RDM as products of one-particle matrices (core-core and core-active
+blocks from the core and active 1RDMs, the active block diagonalised as a (pq) x (rs)
+matrix, at most n_act (n_act + 1) / 2 + 3 terms; <a class="reference internal" href="pyxscat.html#pyxscat.ci.embed_core" title="pyxscat.ci.embed_core"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyxscat.ci.embed_core()</span></code></a>), never
+the n_AO^4 array.  <code class="docutils literal notranslate"><span class="pre">False</span></code>: the four-index array over the core and active orbitals,
+transformed to AOs.
+<code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> (default): factored beyond <code class="docutils literal notranslate"><span class="pre">FACTORED_ABOVE</span></code> basis functions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.interfaces.molden">
+<span id="pyxscat-interfaces-molden"></span><h2>pyxscat.interfaces.molden<a class="headerlink" href="#module-pyxscat.interfaces.molden" title="Link to this heading">¶</a></h2>
+<p>Molden files: basis set, geometry and molecular orbitals from any program that writes them
+(Molpro, Molcas/OpenMolcas, BAGEL, ORCA, PySCF, Psi4, …).</p>
+<p>The reader does not depend on any electronic structure package.  Spherical (pure) shells are
+expressed exactly in Cartesian functions, so the MO coefficients it returns refer to the
+Cartesian <a class="reference internal" href="pyxscat.html#pyxscat.basis.Basis" title="pyxscat.basis.Basis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Basis</span></code></a> it builds.</p>
+<section id="conventions-handled">
+<h3>Conventions handled<a class="headerlink" href="#conventions-handled" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[Atoms]</span> <span class="pre">AU</span></code> or <code class="docutils literal notranslate"><span class="pre">Angs</span></code>; Fortran <code class="docutils literal notranslate"><span class="pre">D</span></code> exponents.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[5D]</span></code>, <code class="docutils literal notranslate"><span class="pre">[5D7F]</span></code>, <code class="docutils literal notranslate"><span class="pre">[5D10F]</span></code>, <code class="docutils literal notranslate"><span class="pre">[7F]</span></code>, <code class="docutils literal notranslate"><span class="pre">[9G]</span></code> flags (default: Cartesian 6D/10F/15G).</p></li>
+<li><p>Molden component order: d xx yy zz xy xz yz;  f xxx yyy zzz xyy xxy xxz xzz yzz yyz xyz;
+g xxxx yyyy zzzz xxxy xxxz yyyx yyyz zzzx zzzy xxyy xxzz yyzz xxyz yyxz zzxy;
+spherical m = 0, +1, -1, +2, -2, …</p></li>
+<li><p>Contraction coefficients refer to normalised primitives; the contracted function is
+renormalised.</p></li>
+<li><p>Cartesian components of d, f, g shells are normalised either each to one (<code class="docutils literal notranslate"><span class="pre">&quot;unit&quot;</span></code>) or all
+with the factor of the x^l component (<code class="docutils literal notranslate"><span class="pre">&quot;axis&quot;</span></code>).  Programs differ; with the default
+<code class="docutils literal notranslate"><span class="pre">cart_norm=&quot;auto&quot;</span></code> the convention that makes the occupied MOs orthonormal is chosen.</p></li>
+</ul>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.solid_harmonic">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molden.</span></span><span class="sig-name descname"><span class="pre">solid_harmonic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#solid_harmonic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.solid_harmonic" title="Link to this definition">¶</a></dt>
+<dd><p>Real solid harmonic of degree l and order m as {(lx, ly, lz): coefficient} (unnormalised,
+Molden/Helgaker sign convention: d+1 = xz, d-1 = yz, d+2 = x^2-y^2, d-2 = xy).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molden.</span></span><span class="sig-name descname"><span class="pre">MoldenData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mo_coeff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mo_occ</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mo_energy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mo_spin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mo_sym</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cart_norm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_to_cart</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#MoldenData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Contents of a Molden file, with orbitals expressed in the Cartesian <code class="docutils literal notranslate"><span class="pre">basis</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>basis</strong> (<a class="reference internal" href="pyxscat.html#pyxscat.basis.Basis" title="pyxscat.basis.Basis"><em>Basis</em></a>)</p></li>
+<li><p><strong>atom_numbers</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>coords</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>mo_coeff</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>mo_occ</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>mo_energy</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>mo_spin</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>mo_sym</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>)</p></li>
+<li><p><strong>cart_norm</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>)</p></li>
+<li><p><strong>file_to_cart</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.basis">
+<span class="sig-name descname"><span class="pre">basis</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="pyxscat.html#pyxscat.basis.Basis" title="pyxscat.basis.Basis"><span class="pre">Basis</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.basis" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.atom_numbers">
+<span class="sig-name descname"><span class="pre">atom_numbers</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.atom_numbers" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.coords">
+<span class="sig-name descname"><span class="pre">coords</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.coords" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.mo_coeff">
+<span class="sig-name descname"><span class="pre">mo_coeff</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.mo_coeff" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.mo_occ">
+<span class="sig-name descname"><span class="pre">mo_occ</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.mo_occ" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.mo_energy">
+<span class="sig-name descname"><span class="pre">mo_energy</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.mo_energy" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.mo_spin">
+<span class="sig-name descname"><span class="pre">mo_spin</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.mo_spin" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.mo_sym">
+<span class="sig-name descname"><span class="pre">mo_sym</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.mo_sym" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.cart_norm">
+<span class="sig-name descname"><span class="pre">cart_norm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.cart_norm" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.file_to_cart">
+<span class="sig-name descname"><span class="pre">file_to_cart</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.file_to_cart" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.nelec">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">nelec</span></span><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.nelec" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.density">
+<span class="sig-name descname"><span class="pre">density</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#MoldenData.density"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.density" title="Link to this definition">¶</a></dt>
+<dd><p>One-particle density matrix sum_i occ_i C_i C_i^T (spin-summed unless spin is given).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.MoldenData.wavefunction">
+<span class="sig-name descname"><span class="pre">wavefunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dm1_mo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm2_mo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orbitals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Molden'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#MoldenData.wavefunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.MoldenData.wavefunction" title="Link to this definition">¶</a></dt>
+<dd><p>Build a <code class="xref py py-class docutils literal notranslate"><span class="pre">Wavefunction</span></code>.</p>
+<p>Without arguments the 1RDM is built from the occupations in the file (enough for
+elastic scattering and for the mean-field total).  Correlated densities in the MO basis
+(e.g. from a CI vector) are passed as <code class="docutils literal notranslate"><span class="pre">dm1_mo</span></code> / <code class="docutils literal notranslate"><span class="pre">dm2_mo</span></code>; <code class="docutils literal notranslate"><span class="pre">orbitals</span></code> selects the
+MO columns they refer to (default: the first <code class="docutils literal notranslate"><span class="pre">dm1_mo.shape[0]</span></code>).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.read_molden">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molden.</span></span><span class="sig-name descname"><span class="pre">read_molden</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cart_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#read_molden"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.read_molden" title="Link to this definition">¶</a></dt>
+<dd><p>Read a Molden file.  Returns <a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData" title="pyxscat.interfaces.molden.MoldenData"><code class="xref py py-class docutils literal notranslate"><span class="pre">MoldenData</span></code></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reorder=&quot;auto&quot;</span></code> puts Molpro orbitals (<code class="docutils literal notranslate"><span class="pre">Sym=</span> <span class="pre">n.1</span></code> labels) back in Molpro’s internal order,
+the order its CI vectors use; <code class="docutils literal notranslate"><span class="pre">reorder=False</span></code> keeps the file order.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.overlap_matrix">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molden.</span></span><span class="sig-name descname"><span class="pre">overlap_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#overlap_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.overlap_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>Overlap matrix of the contracted functions of <code class="docutils literal notranslate"><span class="pre">basis</span></code> (pure numpy, closed form).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.check_orbitals">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molden.</span></span><span class="sig-name descname"><span class="pre">check_orbitals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#check_orbitals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.check_orbitals" title="Link to this definition">¶</a></dt>
+<dd><p>Largest deviation of the MOs from orthonormality (a diagnostic for the reader).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.from_molden">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molden.</span></span><span class="sig-name descname"><span class="pre">from_molden</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cart_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#from_molden"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.from_molden" title="Link to this definition">¶</a></dt>
+<dd><p>Single-determinant / natural-orbital wavefunction from the occupations in a Molden file.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molden.scf_energy">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molden.</span></span><span class="sig-name descname"><span class="pre">scf_energy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cart_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npoints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molden.html#scf_energy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molden.scf_energy" title="Link to this definition">¶</a></dt>
+<dd><p>Energy of the single determinant (or natural-orbital 1RDM, Hartree-Fock-like) defined by the
+occupations in a Molden file, with exact integrals from PySCF.</p>
+<p>Used to validate a program’s Molden conventions: for an SCF Molden file the result must equal
+the program’s SCF energy.  It matches only if the basis, the contraction normalisation, the
+Cartesian/spherical conversion, the component order and every sign are read correctly.
+Closed-shell (or spin-summed restricted) files only.  Returns (energy, fit_residual).</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.interfaces.molcas">
+<span id="pyxscat-interfaces-molcas"></span><h2>pyxscat.interfaces.molcas<a class="headerlink" href="#module-pyxscat.interfaces.molcas" title="Link to this heading">¶</a></h2>
+<p>(Open)Molcas RASSCF/CASSCF wavefunctions: CI vector from the output file, orbitals from the
+Molden file written by the same run (<code class="docutils literal notranslate"><span class="pre">*.rasscf.molden</span></code>).</p>
+<p>The RASSCF input must print the full CI vector, <code class="docutils literal notranslate"><span class="pre">PRWF</span> <span class="pre">=</span> <span class="pre">-1</span></code> (or a threshold small enough
+for the precision you need).  Molcas prints the coefficients with five decimals; the vector is
+renormalised after reading.  Only calculations without point-group symmetry (C1) are supported
+so far.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pyxscat.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">molcas</span>
+<span class="n">wf</span> <span class="o">=</span> <span class="n">molcas</span><span class="o">.</span><span class="n">from_rasscf</span><span class="p">(</span><span class="s2">"molcas.log"</span><span class="p">,</span> <span class="s2">"molcas.rasscf.molden"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molcas.read_rasscf_output">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molcas.</span></span><span class="sig-name descname"><span class="pre">read_rasscf_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molcas.html#read_rasscf_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molcas.read_rasscf_output" title="Link to this definition">¶</a></dt>
+<dd><p>Parse a RASSCF output.  Returns a dict with the orbital spaces, spin, and for every root
+printed: the CSF strings, coefficients, energy and natural occupations.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molcas.rasscf_rdms">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molcas.</span></span><span class="sig-name descname"><span class="pre">rasscf_rdms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molcas.html#rasscf_rdms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molcas.rasscf_rdms" title="Link to this definition">¶</a></dt>
+<dd><p>Spin-summed 1- and 2-RDMs (MO basis: closed shells, then active orbitals).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molcas.from_rasscf">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molcas.</span></span><span class="sig-name descname"><span class="pre">from_rasscf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molden</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cart_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molcas.html#from_rasscf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molcas.from_rasscf" title="Link to this definition">¶</a></dt>
+<dd><p>Wavefunction (basis + 1RDM + 2RDM) of a RASSCF/CASSCF root.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molcas.has_mrci">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molcas.</span></span><span class="sig-name descname"><span class="pre">has_mrci</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molcas.html#has_mrci"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molcas.has_mrci" title="Link to this definition">¶</a></dt>
+<dd><p>True if the output holds an MRCI section with printed CI coefficients.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molcas.read_mrci_output">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molcas.</span></span><span class="sig-name descname"><span class="pre">read_mrci_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molcas.html#read_mrci_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molcas.read_mrci_output" title="Link to this definition">¶</a></dt>
+<dd><p>Parse the MRCI (uncontracted multireference SDCI / ACPF) section of an OpenMolcas output
+run with <code class="docutils literal notranslate"><span class="pre">THRPrint</span> <span class="pre">=</span> <span class="pre">0.0</span></code> (the complete CI vector printed).</p>
+<p>Returns a dict: <code class="docutils literal notranslate"><span class="pre">nfrozen</span></code> (orbitals frozen at the integral transformation, doubly occupied
+and not shown), <code class="docutils literal notranslate"><span class="pre">norb_ci</span></code> (correlated orbitals = inactive + active + virtual), <code class="docutils literal notranslate"><span class="pre">nelec</span></code>
+(correlated electrons), <code class="docutils literal notranslate"><span class="pre">spin</span></code> (2S+1), and <code class="docutils literal notranslate"><span class="pre">states</span></code> {k: dict(energy, csfs, coeffs)} where
+each CSF is <code class="docutils literal notranslate"><span class="pre">(orbitals,</span> <span class="pre">step)</span></code>: the 1-based orbital indices (within the symmetry; with
+<code class="docutils literal notranslate"><span class="pre">Group</span> <span class="pre">=</span> <span class="pre">NoSym</span></code> these are global) in the order of the spin coupling (virtual, inactive,
+active), and the step string over them (<code class="docutils literal notranslate"><span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">u</span></code>, <code class="docutils literal notranslate"><span class="pre">d</span></code>, <code class="docutils literal notranslate"><span class="pre">2</span></code>).  Orbitals not listed are
+empty.  Only <code class="docutils literal notranslate"><span class="pre">NoSym</span></code> runs are supported (one irrep).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molcas.mrci_rdms">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molcas.</span></span><span class="sig-name descname"><span class="pre">mrci_rdms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'external'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molcas.html#mrci_rdms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molcas.mrci_rdms" title="Link to this definition">¶</a></dt>
+<dd><p>Spin-summed 1- and 2-RDMs of one MRCI state in the MO basis (frozen orbitals, then the
+correlated ones, as numbered by Molcas).  The CSFs are expanded in determinants, the
+determinant bits placed on the orbital indices, and the RDMs built over the correlated
+orbitals (inactive + active + virtual, any number): <code class="docutils literal notranslate"><span class="pre">method=&quot;external&quot;</span></code> (default) uses
+the at-most-two-electrons-in-the-virtuals structure (<a class="reference internal" href="pyxscat.html#pyxscat.ci.make_rdm12_external" title="pyxscat.ci.make_rdm12_external"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyxscat.ci.make_rdm12_external()</span></code></a>),
+any other value the general builders of <a class="reference internal" href="pyxscat.html#pyxscat.ci.make_rdm12" title="pyxscat.ci.make_rdm12"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyxscat.ci.make_rdm12()</span></code></a>.  The frozen
+orbitals are added as a doubly occupied core.  <code class="docutils literal notranslate"><span class="pre">factored=True</span></code> returns a FactoredDM2
+(feasible up to ~80 orbitals in all: beyond that the eigendecomposition of the active
+block is too large, keep the four-index array).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molcas.from_mrci">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molcas.</span></span><span class="sig-name descname"><span class="pre">from_mrci</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molden</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cart_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molcas.html#from_mrci"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molcas.from_mrci" title="Link to this definition">¶</a></dt>
+<dd><p>Wavefunction (basis + 1RDM + 2RDM) of an OpenMolcas MRCI state.  <code class="docutils literal notranslate"><span class="pre">molden</span></code> is the
+RASSCF Molden file of the same run (the orbitals MOTRA transformed).</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.interfaces.molpro">
+<span id="pyxscat-interfaces-molpro"></span><h2>pyxscat.interfaces.molpro<a class="headerlink" href="#module-pyxscat.interfaces.molpro" title="Link to this heading">¶</a></h2>
+<p>Molpro MULTI (CASSCF/MCSCF) wavefunctions: CI vectors from the output, orbitals from a
+Molden file written after the MULTI step (<code class="docutils literal notranslate"><span class="pre">put,molden,file.mld</span></code>).</p>
+<dl class="simple">
+<dt>Requirements on the Molpro input:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gprint,civector</span></code> and <code class="docutils literal notranslate"><span class="pre">config,det</span></code> inside <code class="docutils literal notranslate"><span class="pre">{multi</span> <span class="pre">...}</span></code> (determinant printout:
+strings of 2/a/b/0 over the active orbitals);</p></li>
+<li><p>no point-group symmetry (<code class="docutils literal notranslate"><span class="pre">symmetry,nosym</span></code>);</p></li>
+<li><p>the Molden file must hold the orbitals the CI vector refers to (the MULTI orbitals that
+<code class="docutils literal notranslate"><span class="pre">put,molden</span></code> writes right after the MULTI step).</p></li>
+</ul>
+</dd>
+</dl>
+<p>Molpro writes each determinant with the creation operators in orbital order
+(1alpha 1beta 2alpha …); the phase to the alpha-first convention of <a class="reference internal" href="pyxscat.html#module-pyxscat.ci" title="pyxscat.ci"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyxscat.ci</span></code></a> is
+applied on reading (verified: the energies of all states are reproduced to 1e-8 Hartree).</p>
+<p>Molpro prints CI coefficients with eight decimals and only those above its print threshold.
+Older versions default to 0.05, which can drop several per cent of the wavefunction: add
+<code class="docutils literal notranslate"><span class="pre">gthresh,printci=0</span></code> to the input.  A truncated vector triggers a warning (its printed weight
+is stored as <code class="docutils literal notranslate"><span class="pre">printed_weight</span></code>); each vector is renormalised after reading.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pyxscat.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">molpro</span>
+<span class="n">wf</span> <span class="o">=</span> <span class="n">molpro</span><span class="o">.</span><span class="n">from_multi</span><span class="p">(</span><span class="s2">"lif.out"</span><span class="p">,</span> <span class="s2">"lif.mld"</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molpro.read_multi_output">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molpro.</span></span><span class="sig-name descname"><span class="pre">read_multi_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molpro.html#read_multi_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molpro.read_multi_output" title="Link to this definition">¶</a></dt>
+<dd><p>Parse the last MULTI block of a Molpro output.</p>
+<p>Returns a dict with <code class="docutils literal notranslate"><span class="pre">nclosed</span></code>, <code class="docutils literal notranslate"><span class="pre">nactive</span></code>, <code class="docutils literal notranslate"><span class="pre">nactive_electrons</span></code>, <code class="docutils literal notranslate"><span class="pre">ms2</span></code> (2 S from the
+spin label) and <code class="docutils literal notranslate"><span class="pre">states</span></code>: {state number (1-based): {“dets”: [(a, b)], “coeffs”, “energy”}}.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molpro.read_punch">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molpro.</span></span><span class="sig-name descname"><span class="pre">read_punch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nclosed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molpro.html#read_punch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molpro.read_punch" title="Link to this definition">¶</a></dt>
+<dd><p>CI vectors from a Molpro punch file (<code class="docutils literal notranslate"><span class="pre">punch,file.pun</span></code>).</p>
+<p>Older Molpro versions write the MULTI CI vector to the punch file with seven decimals and a
+much lower threshold than the output printout, so it is the better source when the output
+vector is truncated.  The punch file does not record the closed-shell count; it is taken from
+<code class="docutils literal notranslate"><span class="pre">nclosed</span></code>, or from a Molpro <code class="docutils literal notranslate"><span class="pre">output</span></code>, or from the electron count of the <code class="docutils literal notranslate"><span class="pre">molden</span></code> file
+(sum of its occupations).  Returns the same dict as <a class="reference internal" href="#pyxscat.interfaces.molpro.read_multi_output" title="pyxscat.interfaces.molpro.read_multi_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_multi_output()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molpro.multi_rdms">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molpro.</span></span><span class="sig-name descname"><span class="pre">multi_rdms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molpro.html#multi_rdms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molpro.multi_rdms" title="Link to this definition">¶</a></dt>
+<dd><p>Spin-summed 1- and 2-RDMs of one MULTI state (MO basis: closed shells, then active).
+<code class="docutils literal notranslate"><span class="pre">factored=True</span></code>: the 2RDM as a FactoredDM2 (see <a class="reference internal" href="pyxscat.html#pyxscat.ci.embed_core" title="pyxscat.ci.embed_core"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyxscat.ci.embed_core()</span></code></a>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molpro.transition_dm1">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molpro.</span></span><span class="sig-name descname"><span class="pre">transition_dm1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_b</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molpro.html#transition_dm1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molpro.transition_dm1" title="Link to this definition">¶</a></dt>
+<dd><p>Spin-summed transition 1-RDM &lt;a|E_pq|b&gt; between two MULTI states (MO basis).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molpro.check_molden_consistency">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molpro.</span></span><span class="sig-name descname"><span class="pre">check_molden_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molpro.html#check_molden_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molpro.check_molden_consistency" title="Link to this definition">¶</a></dt>
+<dd><p>Largest difference between the state-averaged active 1RDM built from the printed CI
+vectors and the occupations in the Molden file (natural orbitals).  Large values mean the CI
+vector and the Molden orbitals do not refer to the same orbitals (or the printout is
+truncated).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.molpro.from_multi">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.molpro.</span></span><span class="sig-name descname"><span class="pre">from_multi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molden</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cart_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">punch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nclosed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/molpro.html#from_multi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.molpro.from_multi" title="Link to this definition">¶</a></dt>
+<dd><p>Wavefunction (basis + 1RDM + 2RDM) of one MULTI state.</p>
+<p><code class="docutils literal notranslate"><span class="pre">punch</span></code>: take the CI vector from this punch file instead of the output printout (more
+determinants and digits in older Molpro versions).  <code class="docutils literal notranslate"><span class="pre">output</span></code> may then be None.
+<code class="docutils literal notranslate"><span class="pre">factored</span></code>: keep the 2RDM as products of one-particle matrices (no n_AO^4 array); “auto”
+beyond <code class="docutils literal notranslate"><span class="pre">pyxscat.core.FACTORED_ABOVE</span></code> basis functions.</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.interfaces.deck">
+<span id="pyxscat-interfaces-deck"></span><h2>pyxscat.interfaces.deck<a class="headerlink" href="#module-pyxscat.interfaces.deck" title="Link to this heading">¶</a></h2>
+<p>Read the HDF5 “deck” of thistle-dev (KirranderGroup/thistle-dev, schema v1).</p>
+<p>A deck holds a primitive Cartesian basis, molecular orbitals over the primitives (<code class="docutils literal notranslate"><span class="pre">mos/mmod</span></code>,
+contraction and normalisation included), the geometry, the q grid and cutoffs (<code class="docutils literal notranslate"><span class="pre">params</span></code>), and
+the density in one of two representations (attribute <code class="docutils literal notranslate"><span class="pre">rdm_mode</span></code>):</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">MO</span></code>  <code class="docutils literal notranslate"><span class="pre">rdm/onerdm_mo</span></code> and <code class="docutils literal notranslate"><span class="pre">rdm/mo2rdm</span></code> in the orbital basis (chemists’ notation, trace</dt><dd><p>N(N-1), PySCF’s convention).  Here every primitive becomes its own function and the
+densities are transformed with <code class="docutils literal notranslate"><span class="pre">mmod</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">AO</span></code>  <code class="docutils literal notranslate"><span class="pre">rdm/gamma_ao</span></code> (total) or <code class="docutils literal notranslate"><span class="pre">rdm/onerdm_ao</span></code> (elastic) over contracted functions,</dt><dd><p>with <code class="docutils literal notranslate"><span class="pre">basis/contr</span></code> and <code class="docutils literal notranslate"><span class="pre">contraction/coeffs</span></code> defining them: exactly pyxscat’s Basis.
+Without a one-particle density (total decks) it follows from the two-particle one,
+D = sum_rs Gamma[:, :, r, s] S_rs / (N - 1), with N(N - 1) = sum Gamma S S.</p>
+</dd>
+</dl>
+<p>Arrays were written in Fortran order; read back from Python they come with reversed axes,
+which is harmless here: the 1RDM is symmetric and the 2RDM is invariant under reversing all
+four indices.  Checked against the five test decks of thistle-dev to 4e-13 (with the deck’s
+cutoffcentre); see benchmarks/thistle_dev_crosscheck.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.deck.is_deck">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.deck.</span></span><span class="sig-name descname"><span class="pre">is_deck</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/deck.html#is_deck"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.deck.is_deck" title="Link to this definition">¶</a></dt>
+<dd><p>True for an HDF5 file with the attributes of a thistle-dev deck.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.deck.read">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.deck.</span></span><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/deck.html#read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.deck.read" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(Wavefunction,</span> <span class="pre">info)</span></code> from a deck; <code class="docutils literal notranslate"><span class="pre">info</span></code> holds the q grid, cutoffs, observable,
+states and the representation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.interfaces.deck.write">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.interfaces.deck.</span></span><span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoffcentre</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoffz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoffmd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">states</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">typec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scattering_out.dat'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_gb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/interfaces/deck.html#write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.interfaces.deck.write" title="Link to this definition">¶</a></dt>
+<dd><p>Write a wavefunction as a thistle-dev deck (HDF5 schema v1, AO representation), the
+input of its Fortran and Julia engines.</p>
+<dl class="simple">
+<dt>observable</dt><dd><p><code class="docutils literal notranslate"><span class="pre">&quot;total&quot;</span></code> writes the two-particle density (<code class="docutils literal notranslate"><span class="pre">rdm/gamma_ao</span></code>, chemists’ notation, trace
+N(N-1)); <code class="docutils literal notranslate"><span class="pre">&quot;elastic&quot;</span></code> the one-particle density (<code class="docutils literal notranslate"><span class="pre">rdm/onerdm_ao</span></code>).</p>
+</dd>
+<dt>q</dt><dd><p>the q grid for the deck’s <code class="docutils literal notranslate"><span class="pre">params</span></code> (bohr^-1, evenly spaced; default 1e-10 to 10, 200
+points).  <code class="docutils literal notranslate"><span class="pre">cutoffcentre</span></code> defaults to thistle-dev’s 0.01 (THISTLE itself uses the exact
+limit), so that both codes compute the same numbers.</p>
+</dd>
+</dl>
+<p>The deck format holds the four-index array: a factored density is expanded here, up to
+<code class="docutils literal notranslate"><span class="pre">max_gb</span></code> gigabytes.  The orbitals in <code class="docutils literal notranslate"><span class="pre">mos</span></code> are natural orbitals of the 1RDM.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="thistle.html">thistle: the simple interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyxscat.html">pyxscat: the kernels</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pyxscat.interfaces: wavefunction adapters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">pyxscat.interfaces: wavefunction adapters</a><ul>
+<li><a class="reference internal" href="#module-pyxscat.interfaces.pyscf">pyxscat.interfaces.pyscf</a><ul>
+<li><a class="reference internal" href="#pyxscat.interfaces.pyscf.basis_from_mole"><code class="docutils literal notranslate"><span class="pre">basis_from_mole()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.pyscf.from_density"><code class="docutils literal notranslate"><span class="pre">from_density()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.pyscf.from_scf"><code class="docutils literal notranslate"><span class="pre">from_scf()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.pyscf.from_cc"><code class="docutils literal notranslate"><span class="pre">from_cc()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.pyscf.from_ci"><code class="docutils literal notranslate"><span class="pre">from_ci()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.pyscf.from_fci"><code class="docutils literal notranslate"><span class="pre">from_fci()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.pyscf.from_fci_solver"><code class="docutils literal notranslate"><span class="pre">from_fci_solver()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.pyscf.from_casscf"><code class="docutils literal notranslate"><span class="pre">from_casscf()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.interfaces.molden">pyxscat.interfaces.molden</a><ul>
+<li><a class="reference internal" href="#conventions-handled">Conventions handled</a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.solid_harmonic"><code class="docutils literal notranslate"><span class="pre">solid_harmonic()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData"><code class="docutils literal notranslate"><span class="pre">MoldenData</span></code></a><ul>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.basis"><code class="docutils literal notranslate"><span class="pre">MoldenData.basis</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.atom_numbers"><code class="docutils literal notranslate"><span class="pre">MoldenData.atom_numbers</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.coords"><code class="docutils literal notranslate"><span class="pre">MoldenData.coords</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.mo_coeff"><code class="docutils literal notranslate"><span class="pre">MoldenData.mo_coeff</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.mo_occ"><code class="docutils literal notranslate"><span class="pre">MoldenData.mo_occ</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.mo_energy"><code class="docutils literal notranslate"><span class="pre">MoldenData.mo_energy</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.mo_spin"><code class="docutils literal notranslate"><span class="pre">MoldenData.mo_spin</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.mo_sym"><code class="docutils literal notranslate"><span class="pre">MoldenData.mo_sym</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.cart_norm"><code class="docutils literal notranslate"><span class="pre">MoldenData.cart_norm</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.file_to_cart"><code class="docutils literal notranslate"><span class="pre">MoldenData.file_to_cart</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.nelec"><code class="docutils literal notranslate"><span class="pre">MoldenData.nelec</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.density"><code class="docutils literal notranslate"><span class="pre">MoldenData.density()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.MoldenData.wavefunction"><code class="docutils literal notranslate"><span class="pre">MoldenData.wavefunction()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.read_molden"><code class="docutils literal notranslate"><span class="pre">read_molden()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.overlap_matrix"><code class="docutils literal notranslate"><span class="pre">overlap_matrix()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.check_orbitals"><code class="docutils literal notranslate"><span class="pre">check_orbitals()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.from_molden"><code class="docutils literal notranslate"><span class="pre">from_molden()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molden.scf_energy"><code class="docutils literal notranslate"><span class="pre">scf_energy()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.interfaces.molcas">pyxscat.interfaces.molcas</a><ul>
+<li><a class="reference internal" href="#pyxscat.interfaces.molcas.read_rasscf_output"><code class="docutils literal notranslate"><span class="pre">read_rasscf_output()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molcas.rasscf_rdms"><code class="docutils literal notranslate"><span class="pre">rasscf_rdms()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molcas.from_rasscf"><code class="docutils literal notranslate"><span class="pre">from_rasscf()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molcas.has_mrci"><code class="docutils literal notranslate"><span class="pre">has_mrci()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molcas.read_mrci_output"><code class="docutils literal notranslate"><span class="pre">read_mrci_output()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molcas.mrci_rdms"><code class="docutils literal notranslate"><span class="pre">mrci_rdms()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molcas.from_mrci"><code class="docutils literal notranslate"><span class="pre">from_mrci()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.interfaces.molpro">pyxscat.interfaces.molpro</a><ul>
+<li><a class="reference internal" href="#pyxscat.interfaces.molpro.read_multi_output"><code class="docutils literal notranslate"><span class="pre">read_multi_output()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molpro.read_punch"><code class="docutils literal notranslate"><span class="pre">read_punch()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molpro.multi_rdms"><code class="docutils literal notranslate"><span class="pre">multi_rdms()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molpro.transition_dm1"><code class="docutils literal notranslate"><span class="pre">transition_dm1()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molpro.check_molden_consistency"><code class="docutils literal notranslate"><span class="pre">check_molden_consistency()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.molpro.from_multi"><code class="docutils literal notranslate"><span class="pre">from_multi()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.interfaces.deck">pyxscat.interfaces.deck</a><ul>
+<li><a class="reference internal" href="#pyxscat.interfaces.deck.is_deck"><code class="docutils literal notranslate"><span class="pre">is_deck()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.deck.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.interfaces.deck.write"><code class="docutils literal notranslate"><span class="pre">write()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+<form class="search" action="../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="pyxscat.html" title="Previous document">pyxscat: the kernels</a>
+        </li>
+        <li>
+          <a href="../kernels.html" title="Next document">Fortran kernels</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../index.html">THISTLE</a></li>
+      <li>
+        <a href="index.html">Python API</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

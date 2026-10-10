@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyxscat.selftest &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/better.css?v=bb9f1030" />
+    <script src="../../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/_modules/pyxscat/selftest.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxscat.selftest</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+<span class="c1"># Copyright 2026 Andrés Moreno Carrascosa</span>
+<span class="sd">"""A one-minute check of an installation: every kernel against exact sum rules and against an</span>
+<span class="sd">independent route, on water/6-31G (PySCF), plus the build information needed in a bug report.</span>
+
+<span class="sd">    thistle selftest            (or: python -m pyxscat.selftest)</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<div class="viewcode-block" id="build_info">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.selftest.build_info">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_info</span><span class="p">():</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">._lib</span><span class="w"> </span><span class="kn">import</span> <span class="n">lib</span><span class="p">,</span> <span class="n">_find_library</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">create_string_buffer</span><span class="p">(</span><span class="mi">2048</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_build_info</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span>
+        <span class="n">comp</span> <span class="o">=</span> <span class="n">buf</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">errors</span><span class="o">=</span><span class="s2">"replace"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">comp</span> <span class="o">=</span> <span class="s2">"unknown (library predates pyxscat_build_info)"</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"library"</span><span class="p">:</span> <span class="n">_find_library</span><span class="p">(),</span> <span class="s2">"compiler"</span><span class="p">:</span> <span class="n">comp</span><span class="p">,</span> <span class="s2">"threads"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_max_threads</span><span class="p">()),</span>
+            <span class="s2">"OMP_NUM_THREADS"</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"OMP_NUM_THREADS"</span><span class="p">,</span> <span class="s2">"unset"</span><span class="p">),</span>
+            <span class="s2">"python"</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"numpy"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span> <span class="s2">"platform"</span><span class="p">:</span> <span class="n">platform</span><span class="o">.</span><span class="n">platform</span><span class="p">()}</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_checks</span><span class="p">():</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">pyscf</span><span class="w"> </span><span class="kn">import</span> <span class="n">gto</span><span class="p">,</span> <span class="n">scf</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">aligned</span> <span class="k">as</span> <span class="n">al</span><span class="p">,</span> <span class="n">core</span><span class="p">,</span> <span class="n">electron</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyscf</span> <span class="k">as</span> <span class="n">xp</span>
+
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">gto</span><span class="o">.</span><span class="n">M</span><span class="p">(</span><span class="n">atom</span><span class="o">=</span><span class="s2">"O 0.05 0.02 0.1173; H 0 0.7572 -0.4692; H 0 -0.7572 -0.4692"</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s2">"6-31g"</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">mf</span> <span class="o">=</span> <span class="n">scf</span><span class="o">.</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">conv_tol</span><span class="o">=</span><span class="mf">1e-11</span><span class="p">)</span>
+    <span class="n">wf</span> <span class="o">=</span> <span class="n">xp</span><span class="o">.</span><span class="n">from_scf</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">with_dm2</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>                       <span class="c1"># explicit Hartree-Fock 2RDM as well</span>
+    <span class="n">b</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">nelec</span><span class="p">)</span>
+    <span class="n">q0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">])</span>
+    <span class="n">rel</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">-</span> <span class="n">r</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">r</span><span class="p">),</span> <span class="mf">1e-300</span><span class="p">)))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">lebedev</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.integrate</span><span class="w"> </span><span class="kn">import</span> <span class="n">lebedev_rule</span>
+        <span class="n">xyz</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">lebedev_rule</span><span class="p">(</span><span class="mi">131</span><span class="p">)</span>
+        <span class="n">nn</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">xyz</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">w</span> <span class="o">/</span> <span class="n">w</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">wt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">w</span><span class="p">))</span> <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mf">1.5</span> <span class="o">*</span> <span class="n">nn</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">w</span> <span class="o">@</span> <span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">qq</span> <span class="o">*</span> <span class="n">nn</span><span class="p">)</span> <span class="o">*</span> <span class="n">wt</span><span class="p">)</span> <span class="k">for</span> <span class="n">qq</span> <span class="ow">in</span> <span class="n">q</span><span class="p">])</span>
+
+    <span class="k">yield</span> <span class="s2">"elastic I(0) = N^2 (pair route)"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">d</span><span class="p">),</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span><span class="p">),</span> <span class="mf">1e-10</span>
+    <span class="k">yield</span> <span class="s2">"elastic I(0) = N^2 (quartet route)"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"quartets"</span><span class="p">),</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span><span class="p">),</span> <span class="mf">1e-8</span>
+    <span class="k">yield</span> <span class="s2">"explicit 2RDM: I2(0) = N(N-1)"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">two_electron</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">),</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span> <span class="mf">1e-8</span>
+    <span class="k">yield</span> <span class="s2">"mean field: I2(0) = N(N-1)"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">mean_field</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">d</span><span class="p">),</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span> <span class="mf">1e-8</span>
+    <span class="k">yield</span> <span class="s2">"exchange(0) = -N"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">exchange</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">d</span><span class="p">),</span> <span class="o">-</span><span class="n">n</span><span class="p">),</span> <span class="mf">1e-8</span>
+    <span class="n">ref_el</span> <span class="o">=</span> <span class="n">lebedev</span><span class="p">(</span><span class="k">lambda</span> <span class="n">qv</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">al</span><span class="o">.</span><span class="n">form_factor</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">qv</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s2">"elastic, pair route vs fixed-orientation average"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">d</span><span class="p">),</span> <span class="n">ref_el</span><span class="p">),</span> <span class="mf">1e-9</span>
+    <span class="k">yield</span> <span class="s2">"elastic, quartet route vs fixed-orientation average"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"quartets"</span><span class="p">),</span>
+                                                                       <span class="n">ref_el</span><span class="p">),</span> <span class="mf">1e-8</span>
+    <span class="n">ref_ex</span> <span class="o">=</span> <span class="n">lebedev</span><span class="p">(</span><span class="k">lambda</span> <span class="n">qv</span><span class="p">:</span> <span class="n">al</span><span class="o">.</span><span class="n">exchange</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">qv</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+    <span class="k">yield</span> <span class="s2">"exchange vs fixed-orientation average"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">exchange</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">d</span><span class="p">),</span> <span class="n">ref_ex</span><span class="p">),</span> <span class="mf">1e-8</span>
+    <span class="n">mfq</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">mean_field</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s2">"explicit 2RDM (mode 1) vs on-the-fly mean field (mode 2)"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">two_electron</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">),</span> <span class="n">mfq</span><span class="p">),</span> <span class="mf">1e-9</span>
+    <span class="k">yield</span> <span class="s2">"one thread vs all threads (2RDM)"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">two_electron</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                                                  <span class="n">core</span><span class="o">.</span><span class="n">two_electron</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">)),</span> <span class="mf">1e-11</span>
+    <span class="n">ref2</span> <span class="o">=</span> <span class="n">lebedev</span><span class="p">(</span><span class="k">lambda</span> <span class="n">qv</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">al</span><span class="o">.</span><span class="n">form_factor</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">qv</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s2">"j2 elastic, pair route vs projection"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">ref2</span><span class="p">),</span> <span class="mf">1e-9</span>
+    <span class="k">yield</span> <span class="s2">"j2 elastic, quartet route vs projection"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"quartets"</span><span class="p">),</span> <span class="n">ref2</span><span class="p">),</span> <span class="mf">1e-8</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">ci</span>
+    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+    <span class="n">strs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">__import__</span><span class="p">(</span><span class="s2">"itertools"</span><span class="p">)</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span> <span class="mi">4</span><span class="p">)]</span>
+    <span class="n">dets</span> <span class="o">=</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">strs</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">strs</span><span class="p">]</span>
+    <span class="n">cv</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dets</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dets</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">)</span>
+    <span class="n">dd</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">make_rdm12</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">dets</span><span class="p">,</span> <span class="n">cv</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"dense"</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">yield</span> <span class="s2">"2RDM from determinants: bitwise (Fortran) vs dense"</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ci</span><span class="o">.</span><span class="n">make_rdm12</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">dets</span><span class="p">,</span> <span class="n">cv</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"bitwise"</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dd</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="mf">1e-12</span>
+    <span class="k">yield</span> <span class="s2">"2RDM from determinants: sparse vs dense"</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ci</span><span class="o">.</span><span class="n">make_rdm12</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">dets</span><span class="p">,</span> <span class="n">cv</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"sparse"</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">dd</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="mf">1e-12</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="s2">"electron-nucleus(0) = Z N"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">electron</span><span class="o">.</span><span class="n">electron_nucleus</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q0</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span><span class="p">),</span> <span class="n">z</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">n</span><span class="p">),</span> <span class="mf">1e-10</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_file_checks</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Sum rules for a user's own calculation, separating the Python side (reading, RDMs) from</span>
+<span class="sd">    the Fortran kernels."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">thistle</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">th</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">core</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.interfaces.molden</span><span class="w"> </span><span class="kn">import</span> <span class="n">overlap_matrix</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">th</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">wf</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">wf</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">nelec</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">overlap_matrix</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">)</span>
+    <span class="n">rel</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">r</span><span class="p">)</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+    <span class="k">yield</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">] Python: tr(D S) = N"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ij,ji-&gt;"</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">s</span><span class="p">),</span> <span class="n">n</span><span class="p">),</span> <span class="mf">1e-6</span>
+    <span class="k">yield</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">] Fortran: elastic I(0) = N^2"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="n">n</span> <span class="o">*</span> <span class="n">n</span><span class="p">),</span> <span class="mf">1e-6</span>
+    <span class="k">if</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tr2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ijkl,ij,kl-&gt;"</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">] Python: sum Gamma S S = N(N-1)"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">tr2</span><span class="p">,</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span> <span class="mf">1e-6</span>
+        <span class="n">i2</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">two_electron</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">yield</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">] Fortran: I2(0) = sum Gamma S S"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">i2</span><span class="p">,</span> <span class="n">tr2</span><span class="p">),</span> <span class="mf">1e-8</span>
+        <span class="n">i2b</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">two_electron</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">yield</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">] Fortran: I2(0), one thread vs all"</span><span class="p">,</span> <span class="n">rel</span><span class="p">(</span><span class="n">i2b</span><span class="p">,</span> <span class="n">i2</span><span class="p">),</span> <span class="mf">1e-11</span>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.selftest.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">argv</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">if</span> <span class="n">argv</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"THISTLE / pyxscat self-test"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">build_info</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">k</span><span class="si">:</span><span class="s2">16s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">failed</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">checks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">_checks</span><span class="p">())</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">argv</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">argv</span><span class="p">:</span>
+            <span class="n">checks</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">_file_checks</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">tol</span> <span class="ow">in</span> <span class="n">checks</span><span class="p">:</span>
+            <span class="n">ok</span> <span class="o">=</span> <span class="n">err</span> <span class="o">&lt;=</span> <span class="n">tol</span>
+            <span class="n">failed</span> <span class="o">+=</span> <span class="ow">not</span> <span class="n">ok</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="s1">'PASS'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'FAIL'</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">58s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">err</span><span class="si">:</span><span class="s2">9.1e</span><span class="si">}</span><span class="s2">  (tolerance </span><span class="si">{</span><span class="n">tol</span><span class="si">:</span><span class="s2">.0e</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  cannot run the checks: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2"> (install with pip install '.[test]')"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">2</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="si">{</span><span class="s1">'all checks passed'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">failed</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">failed</span><span class="si">}</span><span class="s1"> check(s) FAILED'</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Please send this whole output with the bug report."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">failed</span> <span class="k">else</span> <span class="mi">0</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

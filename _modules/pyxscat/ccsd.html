@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyxscat.ccsd &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/better.css?v=bb9f1030" />
+    <script src="../../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/_modules/pyxscat/ccsd.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxscat.ccsd</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+<span class="c1"># Copyright 2026 Andrés Moreno Carrascosa</span>
+<span class="c1"># Parts derived from PySCF (pyscf/cc/ccsd_rdm.py), Copyright 2014-2021 The PySCF Developers,</span>
+<span class="c1"># Apache License 2.0; see NOTICE.</span>
+<span class="sd">"""The CCSD two-particle density as a sum of products, without the four-index array.</span>
+
+<span class="sd">PySCF's ``make_rdm2`` builds the full nmo^4 (then nao^4) tensor, several copies of it: a</span>
+<span class="sd">molecule of 114 basis functions already needs 6 GB.  The density has structure, though: every</span>
+<span class="sd">block of the cumulant carries occupied indices except the virtual-virtual-virtual-virtual</span>
+<span class="sd">one, and that one is exactly a sum over occupied pairs of products,</span>
+
+<span class="sd">    Gamma_abcd (vvvv) = sum_ij lambda2_ij,ac tau_ij,bd  (+ permutations),  tau = t2 + t1 t1,</span>
+
+<span class="sd">so the whole density can be written as :class:`pyxscat.core.FactoredDM2`,</span>
+
+<span class="sd">    Gamma[mu,nu,la,si] = sum_k Ac_k[mu,nu] Bc_k[la,si] + sum_k Ax_k[mu,la] Bx_k[nu,si],</span>
+
+<span class="sd">with K = 7 nocc^2 + 4 terms: memory 2 K nao^2 instead of nao^4 (benzene/cc-pVDZ: 0.6 GB</span>
+<span class="sd">against 1.35 GB for the array alone; 500 functions, 40 occupied: 45 GB against 360 GB).  The</span>
+<span class="sd">scattering kernels contract such a density directly (kernel mode 3).</span>
+
+<span class="sd">The terms reproduce PySCF's ``ccsd_rdm._make_rdm2`` (with the one-particle terms, in</span>
+<span class="sd">chemists' notation, trace N(N-1)) exactly when contracted with any kernel that is symmetric</span>
+<span class="sd">under the 8 index permutations, which all scattering kernels are; the intermediates of</span>
+<span class="sd">passes 1 and 2 of PySCF's ``_gamma2_outcore`` (BSD licence, Q. Sun et al.) are built here in</span>
+<span class="sd">memory (they are at most nocc^2 nvir^2), its pass 3 (the nvir^4 and nocc nvir^3 blocks) is</span>
+<span class="sd">replaced by the factorisation.  Checked against ``make_rdm2`` to 1e-13 (tests/test_ccsd_factored.py).</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FactoredDM2</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_intermediates</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""doooo, dooov, dovov, doovv, dovvo (as PySCF defines them) and the pass-1 intermediates</span>
+<span class="sd">    mvOOv, mvoOV, mvv.  A transcription of passes 1-2 of pyscf.cc.ccsd_rdm._gamma2_outcore."""</span>
+    <span class="n">einsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span>
+    <span class="n">nocc</span><span class="p">,</span> <span class="n">nvir</span> <span class="o">=</span> <span class="n">t1</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">pvOOv</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ikca,jkcb-&gt;aijb"</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">moo</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"dljd-&gt;jl"</span><span class="p">,</span> <span class="n">pvOOv</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="n">mvv</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"blld-&gt;db"</span><span class="p">,</span> <span class="n">pvOOv</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="n">gooov</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"kc,cija-&gt;jkia"</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">pvOOv</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">mvOOv</span> <span class="o">=</span> <span class="n">pvOOv</span>
+    <span class="n">pvoOV</span> <span class="o">=</span> <span class="o">-</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ikca,jkbc-&gt;aijb"</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">t2</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">t2</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">pvoOV</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ikac,jkbc-&gt;aijb"</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">moo</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"dljd-&gt;jl"</span><span class="p">,</span> <span class="n">pvoOV</span><span class="p">)</span>
+    <span class="n">mvv</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"blld-&gt;db"</span><span class="p">,</span> <span class="n">pvoOV</span><span class="p">)</span>
+    <span class="n">gooov</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"jc,cika-&gt;jkia"</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">pvoOV</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">mvoOV</span> <span class="o">=</span> <span class="n">pvoOV</span>
+    <span class="n">mia</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"kc,ikac-&gt;ia"</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">t2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"kc,ikca-&gt;ia"</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">t2</span><span class="p">)</span>
+    <span class="n">mab</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"kc,kb-&gt;cb"</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span>
+    <span class="n">mij</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"kc,jc-&gt;jk"</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span> <span class="o">+</span> <span class="n">moo</span> <span class="o">*</span> <span class="mf">.5</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ia,jb-&gt;ijab"</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span> <span class="o">+</span> <span class="n">t2</span>
+    <span class="n">goooo</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ijab,klab-&gt;ijkl"</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">*</span> <span class="mf">.5</span>
+    <span class="n">doooo</span> <span class="o">=</span> <span class="n">goooo</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">goooo</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">gooov</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ji,ka-&gt;jkia"</span><span class="p">,</span> <span class="o">-</span><span class="mf">.5</span> <span class="o">*</span> <span class="n">moo</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span>
+    <span class="n">gooov</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"la,jkil-&gt;jkia"</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">t1</span><span class="p">,</span> <span class="n">goooo</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gooov</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ib,jkba-&gt;jkia"</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gooov</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"jkba,ib-&gt;jkia"</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dooov</span> <span class="o">=</span> <span class="n">gooov</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">gooov</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">goovv</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ia,jb-&gt;ijab"</span><span class="p">,</span> <span class="n">mia</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span>
+    <span class="n">tmpoovv</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ijkl,klab-&gt;ijab"</span><span class="p">,</span> <span class="n">goooo</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">tmpoovv</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"jk,ikab-&gt;ijab"</span><span class="p">,</span> <span class="n">mij</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">tmpoovv</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"cb,ijac-&gt;ijab"</span><span class="p">,</span> <span class="n">mab</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">tmpoovv</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"bd,ijad-&gt;ijab"</span><span class="p">,</span> <span class="n">mvv</span> <span class="o">*</span> <span class="mf">.5</span><span class="p">,</span> <span class="n">tau</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">tmpoovv</span> <span class="o">+=</span> <span class="mf">.5</span> <span class="o">*</span> <span class="n">tau</span>
+    <span class="n">tmpoovv</span> <span class="o">+=</span> <span class="mf">.5</span> <span class="o">*</span> <span class="n">l2</span>
+    <span class="n">goovv</span> <span class="o">+=</span> <span class="n">tmpoovv</span>
+    <span class="n">gOvvO</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"kiac,jc,kb-&gt;iabj"</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">gOvvO</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"aijb-&gt;iabj"</span><span class="p">,</span> <span class="n">pvOOv</span><span class="p">)</span>
+    <span class="n">govVO</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ia,jb-&gt;iabj"</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">t1</span><span class="p">)</span>
+    <span class="n">govVO</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ikac,jc,kb-&gt;iabj"</span><span class="p">,</span> <span class="n">l2</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">govVO</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"aijb-&gt;iabj"</span><span class="p">,</span> <span class="n">pvoOV</span><span class="p">)</span>
+    <span class="n">dovvo</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">govVO</span> <span class="o">+</span> <span class="n">gOvvO</span>
+    <span class="n">doovv</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">gOvvO</span> <span class="o">-</span> <span class="n">govVO</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">tau2</span> <span class="o">=</span> <span class="n">tau</span> <span class="o">-</span> <span class="n">t2</span> <span class="o">*</span> <span class="mf">.5</span>
+    <span class="n">goovv</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"dlib,jlda-&gt;ijab"</span><span class="p">,</span> <span class="n">pvOOv</span><span class="p">,</span> <span class="n">tau2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">goovv</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"dlia,jldb-&gt;ijab"</span><span class="p">,</span> <span class="n">pvoOV</span><span class="p">,</span> <span class="n">tau2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">goovv</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"dlia,jlbd-&gt;ijab"</span><span class="p">,</span> <span class="n">pvoOV</span> <span class="o">+</span> <span class="n">pvOOv</span> <span class="o">*</span> <span class="mf">.5</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dovov</span> <span class="o">=</span> <span class="n">goovv</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">goovv</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">doooo</span><span class="o">=</span><span class="n">doooo</span><span class="p">,</span> <span class="n">dooov</span><span class="o">=</span><span class="n">dooov</span><span class="p">,</span> <span class="n">dovov</span><span class="o">=</span><span class="n">dovov</span><span class="p">,</span> <span class="n">doovv</span><span class="o">=</span><span class="n">doovv</span><span class="p">,</span> <span class="n">dovvo</span><span class="o">=</span><span class="n">dovvo</span><span class="p">,</span>
+                <span class="n">mvOOv</span><span class="o">=</span><span class="n">mvOOv</span><span class="p">,</span> <span class="n">mvoOV</span><span class="o">=</span><span class="n">mvoOV</span><span class="p">,</span> <span class="n">mvv</span><span class="o">=</span><span class="n">mvv</span><span class="p">,</span> <span class="n">tau</span><span class="o">=</span><span class="n">tau</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="factored_rdm2">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.ccsd.factored_rdm2">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">factored_rdm2</span><span class="p">(</span><span class="n">mycc</span><span class="p">,</span> <span class="n">t1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">t2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dm1</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""CCSD spin-summed two-particle density as a :class:`~pyxscat.core.FactoredDM2` in the</span>
+<span class="sd">    molecular-orbital basis of ``mycc`` (all orbitals, frozen ones included; chemists'</span>
+<span class="sd">    notation, trace N(N-1), the same contraction values as ``mycc.make_rdm2()``).</span>
+
+<span class="sd">    ``dm1``: the MO one-particle density (``mycc.make_rdm1()`` by default).  The amplitudes</span>
+<span class="sd">    default to those stored in ``mycc`` (``solve_lambda`` is run if needed).</span>
+<span class="sd">    """</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">mycc</span><span class="o">.</span><span class="n">t1</span> <span class="k">if</span> <span class="n">t1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">t1</span>
+    <span class="n">t2</span> <span class="o">=</span> <span class="n">mycc</span><span class="o">.</span><span class="n">t2</span> <span class="k">if</span> <span class="n">t2</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">t2</span>
+    <span class="k">if</span> <span class="n">l1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">l2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">mycc</span><span class="o">.</span><span class="n">l1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">mycc</span><span class="o">.</span><span class="n">l2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mycc</span><span class="o">.</span><span class="n">solve_lambda</span><span class="p">()</span>
+        <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span> <span class="o">=</span> <span class="n">mycc</span><span class="o">.</span><span class="n">l1</span><span class="p">,</span> <span class="n">mycc</span><span class="o">.</span><span class="n">l2</span>
+    <span class="k">if</span> <span class="n">dm1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dm1</span> <span class="o">=</span> <span class="n">mycc</span><span class="o">.</span><span class="n">make_rdm1</span><span class="p">()</span>
+    <span class="n">nmo</span> <span class="o">=</span> <span class="n">mycc</span><span class="o">.</span><span class="n">mo_occ</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">mycc</span><span class="o">.</span><span class="n">get_frozen_mask</span><span class="p">()</span>
+    <span class="n">act</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+    <span class="n">nocc_act</span> <span class="o">=</span> <span class="n">t1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">occ_act</span><span class="p">,</span> <span class="n">vir_act</span> <span class="o">=</span> <span class="n">act</span><span class="p">[:</span><span class="n">nocc_act</span><span class="p">],</span> <span class="n">act</span><span class="p">[</span><span class="n">nocc_act</span><span class="p">:]</span>
+    <span class="n">occ_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">mycc</span><span class="o">.</span><span class="n">mo_occ</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_build</span><span class="p">(</span><span class="n">nmo</span><span class="p">,</span> <span class="n">occ_all</span><span class="p">,</span> <span class="n">occ_act</span><span class="p">,</span> <span class="n">vir_act</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm1</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build</span><span class="p">(</span><span class="n">nmo</span><span class="p">,</span> <span class="n">occ_all</span><span class="p">,</span> <span class="n">occ</span><span class="p">,</span> <span class="n">vir</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">):</span>
+    <span class="n">nocc</span><span class="p">,</span> <span class="n">nvir</span> <span class="o">=</span> <span class="n">t1</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">_intermediates</span><span class="p">(</span><span class="n">t1</span><span class="p">,</span> <span class="n">t2</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">)</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="s2">"tau"</span><span class="p">]</span>
+    <span class="n">zero</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nmo</span><span class="p">,</span> <span class="n">nmo</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">ov</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>                      <span class="c1"># an (nocc_act, nvir_act) block into an nmo x nmo matrix</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">occ</span><span class="p">,</span> <span class="n">vir</span><span class="p">)]</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">vv</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">vir</span><span class="p">,</span> <span class="n">vir</span><span class="p">)]</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">oo</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">occ</span><span class="p">,</span> <span class="n">occ</span><span class="p">)]</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">e_pair</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>               <span class="c1"># e_i e_j^T</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">occ</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">occ</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">e_vec</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>                <span class="c1"># e_i v^T with v over the active virtuals</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">occ</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">vir</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="c1"># ---- one-particle part: 4 P (D - P) Coulomb, -2 P (D - P) exchange, P = occupied projector</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">P</span><span class="p">[</span><span class="n">occ_all</span><span class="p">,</span> <span class="n">occ_all</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">DP</span> <span class="o">=</span> <span class="n">dm1</span> <span class="o">-</span> <span class="n">P</span>
+    <span class="n">ac</span><span class="p">,</span> <span class="n">bc</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">bx</span> <span class="o">=</span> <span class="p">[</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">P</span><span class="p">],</span> <span class="p">[</span><span class="n">DP</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">P</span><span class="p">],</span> <span class="p">[</span><span class="n">DP</span><span class="p">]</span>
+
+    <span class="c1"># ---- cumulant blocks with two occupied indices (weight 4 each: the four images of each</span>
+    <span class="c1">#      block in the full tensor are related by symmetries of the kernel)</span>
+    <span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="s2">"mvoOV"</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="s2">"mvOOv"</span><span class="p">],</span> <span class="n">l2</span><span class="p">,</span> <span class="n">t2</span>          <span class="c1"># M[a,k,i,c], N[a,k,i,b], L[j,i,b,c], T[j,i,b,c]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nocc</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nocc</span><span class="p">):</span>
+            <span class="c1"># Coulomb with A = e_i e_j^T: doovv (vv), doooo (oo), dooov (ov)</span>
+            <span class="n">ac</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">e_pair</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span>
+            <span class="n">bc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="s2">"doovv"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="o">+</span> <span class="n">oo</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="s2">"doooo"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="o">+</span> <span class="n">ov</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="s2">"dooov"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]))</span>
+            <span class="c1"># exchange with A = e_i e_j^T: dovov[i,a,j,b] on (a,b); dovvo[i,a,b,j] on (a,b)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">e_pair</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span>
+            <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="s2">"dovov"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+</span> <span class="n">X</span><span class="p">[</span><span class="s2">"dovvo"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">j</span><span class="p">]))</span>
+            <span class="c1"># exchange, vvvv block: A = lambda2_ij on (a, y), B = tau_ij - 1/2 tau_ij^T on (x, z)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">vv</span><span class="p">(</span><span class="n">l2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]))</span>
+            <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="n">tau</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">tau</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+            <span class="c1"># ---- ovvv block: dovvv[i,a,b,c] = 2 g[b,i,c,a] - g[b,i,a,c] with g = gvovv ----</span>
+            <span class="c1"># (1) -sum_d gvvvv[a',d,b',c'] t1[i',d]: A[i',a'] = (t1 lambda2_jk^T)[i',a'], B = tau_jk</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ov</span><span class="p">(</span><span class="n">t1</span> <span class="o">@</span> <span class="n">l2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+            <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">tau</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="mf">8.0</span> <span class="o">*</span> <span class="n">tau</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+            <span class="c1"># (2),(3),(7): A = e_i (t1_k)^T  [here k -&gt; j]</span>
+            <span class="n">ac</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_vec</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">t1</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+            <span class="n">bc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="o">-</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">M</span><span class="p">[:,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="mf">8.0</span> <span class="o">*</span> <span class="n">N</span><span class="p">[:,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_vec</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">t1</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+            <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="mf">8.0</span> <span class="o">*</span> <span class="n">M</span><span class="p">[:,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span> <span class="o">+</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">N</span><span class="p">[:,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span> <span class="o">+</span> <span class="mf">8.0</span> <span class="o">*</span> <span class="n">L</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">-</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">L</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]))</span>
+            <span class="c1"># (4): A = e_i (lambda1_j)^T, B = 8 t2_ji^T - 4 t2_ji</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_vec</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">l1</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+            <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="mf">8.0</span> <span class="o">*</span> <span class="n">T</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">-</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">T</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]))</span>
+    <span class="c1"># (5), (6): single terms with A = t1 (occupied x virtual)</span>
+    <span class="n">ac</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ov</span><span class="p">(</span><span class="n">t1</span><span class="p">))</span>
+    <span class="n">bc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="mf">8.0</span> <span class="o">*</span> <span class="n">l1</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">t1</span> <span class="o">+</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">X</span><span class="p">[</span><span class="s2">"mvv"</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ov</span><span class="p">(</span><span class="n">t1</span><span class="p">))</span>
+    <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="o">-</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">t1</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">l1</span> <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">X</span><span class="p">[</span><span class="s2">"mvv"</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">FactoredDM2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ac</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bc</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ax</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bx</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="contract_dense">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.ccsd.contract_dense">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">contract_dense</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">k4</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""sum Gamma K for a four-index or factored density (tests)."""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">FactoredDM2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"abcd,abcd-&gt;"</span><span class="p">,</span> <span class="n">g</span><span class="o">.</span><span class="n">dense</span><span class="p">(),</span> <span class="n">k4</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"abcd,abcd-&gt;"</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">k4</span><span class="p">))</span></div>
+
+
+
+<span class="c1"># ----------------------------------------------------------------------------------- CISD</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_cisd_intermediates</span><span class="p">(</span><span class="n">c0</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""doooo, dooov, dovov, doovv, dovvo of a CISD vector (as PySCF's cisd._gamma2_outcore)."""</span>
+    <span class="n">einsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span>
+    <span class="n">dovov</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">c0</span> <span class="o">*</span> <span class="n">c2</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-</span> <span class="n">c0</span> <span class="o">*</span> <span class="n">c2</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ijab,klab-&gt;ijkl"</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">doooo</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-</span> <span class="n">g</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mf">.5</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="o">-</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ia,klac-&gt;klic"</span><span class="p">,</span> <span class="n">c1</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dooov</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">g</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">c2</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">c2</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">doovv</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ia,kc-&gt;ikca"</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="o">-</span><span class="n">c1</span><span class="p">)</span>
+    <span class="n">doovv</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"kjcb,kica-&gt;jiab"</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">doovv</span> <span class="o">-=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ikcb,jkca-&gt;ijab"</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dovvo</span> <span class="o">=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ikac,jkbc-&gt;iabj"</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dovvo</span> <span class="o">+=</span> <span class="n">einsum</span><span class="p">(</span><span class="s2">"ia,kc-&gt;iack"</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">doooo</span><span class="o">=</span><span class="n">doooo</span><span class="p">,</span> <span class="n">dooov</span><span class="o">=</span><span class="n">dooov</span><span class="p">,</span> <span class="n">dovov</span><span class="o">=</span><span class="n">dovov</span><span class="p">,</span> <span class="n">doovv</span><span class="o">=</span><span class="n">doovv</span><span class="p">,</span> <span class="n">dovvo</span><span class="o">=</span><span class="n">dovvo</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="factored_rdm2_cisd">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.ccsd.factored_rdm2_cisd">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">factored_rdm2_cisd</span><span class="p">(</span><span class="n">myci</span><span class="p">,</span> <span class="n">civec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dm1</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""CISD spin-summed two-particle density as a :class:`~pyxscat.core.FactoredDM2` in the MO</span>
+<span class="sd">    basis of ``myci`` (all orbitals, frozen ones included; same contraction values as</span>
+<span class="sd">    ``myci.make_rdm2()``).  The structure is that of the CCSD density with lambda2 = tau = c2:</span>
+
+<span class="sd">        Gamma_abcd (vvvv) = sum_ij c2_ij,ac (c2_ij,bd - 1/2 c2_ij,db),</span>
+<span class="sd">        Gamma_iabc (ovvv) from 2 sum_j c1_ja c2_ji,bc,</span>
+
+<span class="sd">    K = 4 nocc^2 + 2 terms (with nocc active occupied orbitals)."""</span>
+    <span class="n">civec</span> <span class="o">=</span> <span class="n">myci</span><span class="o">.</span><span class="n">ci</span> <span class="k">if</span> <span class="n">civec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">civec</span>
+    <span class="n">nmo</span> <span class="o">=</span> <span class="n">myci</span><span class="o">.</span><span class="n">mo_occ</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">myci</span><span class="o">.</span><span class="n">get_frozen_mask</span><span class="p">()</span>
+    <span class="n">act</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+    <span class="n">c0</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span> <span class="o">=</span> <span class="n">myci</span><span class="o">.</span><span class="n">cisdvec_to_amplitudes</span><span class="p">(</span><span class="n">civec</span><span class="p">,</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">myci</span><span class="o">.</span><span class="n">nocc</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dm1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dm1</span> <span class="o">=</span> <span class="n">myci</span><span class="o">.</span><span class="n">make_rdm1</span><span class="p">(</span><span class="n">civec</span><span class="p">)</span>
+    <span class="n">nocc</span> <span class="o">=</span> <span class="n">c1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">occ</span><span class="p">,</span> <span class="n">vir</span> <span class="o">=</span> <span class="n">act</span><span class="p">[:</span><span class="n">nocc</span><span class="p">],</span> <span class="n">act</span><span class="p">[</span><span class="n">nocc</span><span class="p">:]</span>
+    <span class="n">occ_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">myci</span><span class="o">.</span><span class="n">mo_occ</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">_cisd_intermediates</span><span class="p">(</span><span class="n">c0</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">)</span>
+    <span class="n">dm1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm1</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="n">zero</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nmo</span><span class="p">,</span> <span class="n">nmo</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">ov</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">occ</span><span class="p">,</span> <span class="n">vir</span><span class="p">)]</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">vv</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">vir</span><span class="p">,</span> <span class="n">vir</span><span class="p">)]</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">oo</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">occ</span><span class="p">,</span> <span class="n">occ</span><span class="p">)]</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">e_pair</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">occ</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">occ</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">e_vec</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">out</span><span class="p">[</span><span class="n">occ</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">vir</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">;</span> <span class="k">return</span> <span class="n">out</span>
+
+    <span class="n">P</span> <span class="o">=</span> <span class="n">zero</span><span class="p">();</span> <span class="n">P</span><span class="p">[</span><span class="n">occ_all</span><span class="p">,</span> <span class="n">occ_all</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">DP</span> <span class="o">=</span> <span class="n">dm1</span> <span class="o">-</span> <span class="n">P</span>
+    <span class="n">ac</span><span class="p">,</span> <span class="n">bc</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">bx</span> <span class="o">=</span> <span class="p">[</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">P</span><span class="p">],</span> <span class="p">[</span><span class="n">DP</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">P</span><span class="p">],</span> <span class="p">[</span><span class="n">DP</span><span class="p">]</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">c1</span>                        <span class="c1"># the ovvv block has the CCSD form with t1 -&gt; 2 c1, l2 -&gt; c2</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nocc</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nocc</span><span class="p">):</span>
+            <span class="n">ac</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">e_pair</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span>
+            <span class="n">bc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="s2">"doovv"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="o">+</span> <span class="n">oo</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="s2">"doooo"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="o">+</span> <span class="n">ov</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="s2">"dooov"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">e_pair</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span>
+            <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="s2">"dovov"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:]</span> <span class="o">+</span> <span class="n">X</span><span class="p">[</span><span class="s2">"dovvo"</span><span class="p">][</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">j</span><span class="p">]))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">vv</span><span class="p">(</span><span class="n">c2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]))</span>
+            <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="n">c2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">c2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_vec</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">t1</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+            <span class="n">bx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vv</span><span class="p">(</span><span class="mf">8.0</span> <span class="o">*</span> <span class="n">c2</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">-</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">c2</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">FactoredDM2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ac</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bc</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ax</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bx</span><span class="p">))</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

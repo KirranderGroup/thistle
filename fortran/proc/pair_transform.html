@@ -1,0 +1,1244 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="The Fortran kernels of THISTLE, analytic X-ray and electron scattering integrals over Gaussian basis functions.">
+    <meta name="author" content="Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>pair_transform &ndash; PyXSCAT kernels</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">PyXSCAT kernels <small>0.2.0.dev0</small></a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>pair_transform
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 2.5% of total for procedures.">93 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/xs_pairft.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/xs_pairft.f90.html'>xs_pairft.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/xs_pairft.html'>xs_pairft</a></li>
+            <li class="breadcrumb-item active" aria-current="page">pair_transform</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-ng">ng</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-g">g</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-i~6">i</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-a~2">a</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-b">b</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-gi">gi</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-gj">gj</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-lmax">lmax</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-iq">iq</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-t~2">t</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-u">u</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-v">v</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-ca">ca</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-cb">cb</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-gstart">gstart</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-gcount">gcount</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-lg">lg</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-cmax">cmax</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-pi~3">pi</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-p~2">p</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-px">px</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-py">py</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-pz">pz</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-kab">kab</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-pref">pref</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-cc">cc</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-ex">ex</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-ey">ey</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-ez">ez</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-g0">g0</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-iqx">iqx</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-iqy">iqy</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-iqz">iqz</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-acc">acc</a>
+            <a class="list-group-item" href="../proc/pair_transform.html#variable-ci">ci</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/pair_transform.html#src">pair_transform</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine pair_transform(nprim, nao, nq, x, y, z, ga, l, m, n, group, contr, coeff, qv, screen, f, ierr)  
+</h2>
+    
+
+    <p>F(q, mu, nu) for every scattering vector qv(:, iq) and every pair of contracted functions,
+into the complex array f(nq, nao, nao).  Primitive-shell pairs whose Gaussian prefactor
+(times the largest coefficients) is below screen are skipped; ierr = 0 on success.</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nprim"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nprim</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nao"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nao</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nq"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nq</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-x"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>x</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>y</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-z"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>z</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ga"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ga</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-l"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>l</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-m"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>m</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-group"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>group</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-contr"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>contr</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coeff"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coeff</strong>(nprim)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-qv"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>qv</strong>(3,nq)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-screen"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>screen</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-f"></span>
+              complex(kind=dp),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>f</strong>(nq,nao,nao)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ng"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ng</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-g"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>g</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~6"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-a~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>a</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-b"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>b</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gi"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gi</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gj"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lmax"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>lmax</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iq"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>iq</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-t~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>t</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-u"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>u</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-v"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>v</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ca"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ca</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cb"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cb</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gstart"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>gstart</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gcount"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>gcount</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lg"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>lg</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cmax"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>cmax</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pi~3"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pi</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-p~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>p</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-px"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>px</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-py"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>py</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pz"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pz</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kab"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kab</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pref"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pref</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cc"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cc</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ex"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ex</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ey"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ey</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ez"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ez</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-g0"></span>
+              complex(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>g0</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iqx"></span>
+              complex(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>iqx</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iqy"></span>
+              complex(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>iqy</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-iqz"></span>
+              complex(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>iqz</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-acc"></span>
+              complex(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>acc</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ci"></span>
+              complex(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ci</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">    </span><span class="k">subroutine </span><span class="n">pair_transform</span><span class="p">(</span><span class="n">nprim</span><span class="p">,</span><span class="w"> </span><span class="n">nao</span><span class="p">,</span><span class="w"> </span><span class="n">nq</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">,</span><span class="w"> </span><span class="n">ga</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="n">contr</span><span class="p">,</span><span class="w"> </span><span class="n">coeff</span><span class="p">,</span><span class="w"> </span><span class="n">qv</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="n">screen</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">ierr</span><span class="p">)</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nprim</span><span class="p">,</span><span class="w"> </span><span class="n">nao</span><span class="p">,</span><span class="w"> </span><span class="n">nq</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">x</span><span class="p">(</span><span class="n">nprim</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="p">(</span><span class="n">nprim</span><span class="p">),</span><span class="w"> </span><span class="n">z</span><span class="p">(</span><span class="n">nprim</span><span class="p">),</span><span class="w"> </span><span class="n">ga</span><span class="p">(</span><span class="n">nprim</span><span class="p">),</span><span class="w"> </span><span class="n">coeff</span><span class="p">(</span><span class="n">nprim</span><span class="p">)</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">l</span><span class="p">(</span><span class="n">nprim</span><span class="p">),</span><span class="w"> </span><span class="n">m</span><span class="p">(</span><span class="n">nprim</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="p">(</span><span class="n">nprim</span><span class="p">),</span><span class="w"> </span><span class="n">group</span><span class="p">(</span><span class="n">nprim</span><span class="p">),</span><span class="w"> </span><span class="n">contr</span><span class="p">(</span><span class="n">nprim</span><span class="p">)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">qv</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">nq</span><span class="p">),</span><span class="w"> </span><span class="n">screen</span>
+<span class="w">        </span><span class="kt">complex</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">nq</span><span class="p">,</span><span class="w"> </span><span class="n">nao</span><span class="p">,</span><span class="w"> </span><span class="n">nao</span><span class="p">)</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ierr</span>
+
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ng</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">gi</span><span class="p">,</span><span class="w"> </span><span class="n">gj</span><span class="p">,</span><span class="w"> </span><span class="n">lmax</span><span class="p">,</span><span class="w"> </span><span class="n">iq</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ca</span><span class="p">,</span><span class="w"> </span><span class="n">cb</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">gstart</span><span class="p">(:),</span><span class="w"> </span><span class="n">gcount</span><span class="p">(:),</span><span class="w"> </span><span class="n">lg</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cmax</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pi</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">px</span><span class="p">,</span><span class="w"> </span><span class="n">py</span><span class="p">,</span><span class="w"> </span><span class="n">pz</span><span class="p">,</span><span class="w"> </span><span class="n">kab</span><span class="p">,</span><span class="w"> </span><span class="n">pref</span><span class="p">,</span><span class="w"> </span><span class="n">cc</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ex</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">ey</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">ez</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">        </span><span class="kt">complex</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">g0</span><span class="p">(:),</span><span class="w"> </span><span class="n">iqx</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">iqy</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">iqz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">acc</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">complex</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ci</span>
+
+<span class="w">        </span><span class="n">ierr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">        </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">0.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span>
+<span class="w">        </span><span class="n">pi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">acos</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0_dp</span><span class="p">)</span>
+<span class="w">        </span><span class="n">ci</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">0.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">)</span>
+<span class="w">        </span><span class="n">ng</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">maxval</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">            </span><span class="n">ierr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span><span class="w"> </span><span class="k">return</span>
+<span class="k">        end if</span>
+<span class="k">        do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">nprim</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">group</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">group</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">group</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">group</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                </span><span class="n">ierr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span><span class="w"> </span><span class="k">return</span>
+<span class="k">            end if</span>
+<span class="k">        end do</span>
+<span class="k">        allocate</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">ng</span><span class="p">),</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">ng</span><span class="p">),</span><span class="w"> </span><span class="n">lg</span><span class="p">(</span><span class="n">ng</span><span class="p">),</span><span class="w"> </span><span class="n">cmax</span><span class="p">(</span><span class="n">ng</span><span class="p">))</span>
+<span class="w">        </span><span class="n">gcount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">        </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nprim</span>
+<span class="w">            </span><span class="n">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">group</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gcount</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                </span><span class="n">gstart</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span>
+<span class="w">                </span><span class="n">lg</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">l</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end if</span>
+<span class="k">            </span><span class="n">gcount</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="k">end do</span>
+<span class="k">        do </span><span class="n">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ng</span>
+<span class="w">            </span><span class="n">cmax</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">maxval</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">coeff</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">g</span><span class="p">):</span><span class="n">gstart</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">+</span><span class="n">gcount</span><span class="p">(</span><span class="n">g</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+<span class="w">        </span><span class="k">end do</span>
+<span class="k">        </span><span class="n">lmax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">maxval</span><span class="p">(</span><span class="n">lg</span><span class="p">)</span>
+
+<span class="w">        </span><span class="c">! powers (i q)^t for every q</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">iqx</span><span class="p">(</span><span class="n">nq</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">lmax</span><span class="p">),</span><span class="w"> </span><span class="n">iqy</span><span class="p">(</span><span class="n">nq</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">lmax</span><span class="p">),</span><span class="w"> </span><span class="n">iqz</span><span class="p">(</span><span class="n">nq</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">lmax</span><span class="p">))</span>
+<span class="w">        </span><span class="n">iqx</span><span class="p">(:,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">;</span><span class="w"> </span><span class="n">iqy</span><span class="p">(:,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">;</span><span class="w"> </span><span class="n">iqz</span><span class="p">(:,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">        </span><span class="k">do </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">lmax</span>
+<span class="w">            </span><span class="n">iqx</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iqx</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ci</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">qv</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">            </span><span class="n">iqy</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iqy</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ci</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">qv</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">            </span><span class="n">iqz</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">iqz</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ci</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">qv</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">        </span><span class="k">end do</span>
+
+<span class="w">        </span><span class="c">! Threads split the primitive-shell pairs; several pairs feed the same contracted</span>
+<span class="w">        </span><span class="c">! element, so the accumulation into f is serialised (it is a small part of the work).</span>
+<span class="w">        </span><span class="c">!$OMP PARALLEL default(shared) private(gi, gj, a, b, p, px, py, pz, kab, pref, ex, ey, ez, &amp;</span>
+<span class="w">        </span><span class="c">!$OMP&amp; g0, acc, t, u, v, ca, cb, cc, iq)</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">ex</span><span class="p">(</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">lmax</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lmax</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lmax</span><span class="p">),</span><span class="w"> </span><span class="n">ey</span><span class="p">(</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">lmax</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lmax</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lmax</span><span class="p">),</span><span class="w"> </span><span class="n">ez</span><span class="p">(</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="n">lmax</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lmax</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lmax</span><span class="p">))</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">g0</span><span class="p">(</span><span class="n">nq</span><span class="p">),</span><span class="w"> </span><span class="n">acc</span><span class="p">(</span><span class="n">nq</span><span class="p">))</span>
+<span class="w">        </span><span class="c">!$OMP DO schedule(dynamic)</span>
+<span class="w">        </span><span class="k">do </span><span class="n">gi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ng</span>
+<span class="w">            </span><span class="k">do </span><span class="n">gj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gi</span><span class="p">,</span><span class="w"> </span><span class="n">ng</span>
+<span class="w">                </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gstart</span><span class="p">(</span><span class="n">gi</span><span class="p">);</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gstart</span><span class="p">(</span><span class="n">gj</span><span class="p">)</span>
+<span class="w">                </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ga</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ga</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="w">                </span><span class="n">kab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">exp</span><span class="p">(</span><span class="o">-</span><span class="n">ga</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">ga</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="n">p</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">((</span><span class="n">x</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">-</span><span class="n">x</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">-</span><span class="n">y</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">z</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">-</span><span class="n">z</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="w">                </span><span class="n">pref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">pi</span><span class="o">/</span><span class="n">p</span><span class="p">)</span><span class="o">**</span><span class="mf">1.5_dp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">kab</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pref</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">cmax</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">cmax</span><span class="p">(</span><span class="n">gj</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="mf">1.0_dp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kt">real</span><span class="p">(</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">),</span><span class="w"> </span><span class="n">dp</span><span class="p">))</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">screen</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">                </span><span class="n">px</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">ga</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">x</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ga</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">*</span><span class="n">x</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">p</span>
+<span class="w">                </span><span class="n">py</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">ga</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ga</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">p</span>
+<span class="w">                </span><span class="n">pz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">ga</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">z</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ga</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">*</span><span class="n">z</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">p</span>
+<span class="w">                </span><span class="k">call </span><span class="n">hermite_pair</span><span class="p">(</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">),</span><span class="w"> </span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">),</span><span class="w"> </span><span class="n">px</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">x</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">px</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">x</span><span class="p">(</span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">ex</span><span class="p">(</span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span><span class="o">+</span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">)))</span>
+<span class="w">                </span><span class="k">call </span><span class="n">hermite_pair</span><span class="p">(</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">),</span><span class="w"> </span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">),</span><span class="w"> </span><span class="n">py</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">y</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">py</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">y</span><span class="p">(</span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">ey</span><span class="p">(</span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span><span class="o">+</span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">)))</span>
+<span class="w">                </span><span class="k">call </span><span class="n">hermite_pair</span><span class="p">(</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">),</span><span class="w"> </span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">),</span><span class="w"> </span><span class="n">pz</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">z</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">pz</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">z</span><span class="p">(</span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">ez</span><span class="p">(</span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span><span class="o">+</span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gi</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">lg</span><span class="p">(</span><span class="n">gj</span><span class="p">)))</span>
+<span class="w">                </span><span class="k">do </span><span class="n">iq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nq</span>
+<span class="w">                    </span><span class="n">g0</span><span class="p">(</span><span class="n">iq</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pref</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">qv</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">iq</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">qv</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">iq</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">qv</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="n">iq</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mf">4.0_dp</span><span class="o">*</span><span class="n">p</span><span class="p">))</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                            </span><span class="o">*</span><span class="w"> </span><span class="nb">exp</span><span class="p">(</span><span class="n">ci</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">qv</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">iq</span><span class="p">)</span><span class="o">*</span><span class="n">px</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">qv</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">iq</span><span class="p">)</span><span class="o">*</span><span class="n">py</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">qv</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="n">iq</span><span class="p">)</span><span class="o">*</span><span class="n">pz</span><span class="p">))</span>
+<span class="w">                </span><span class="k">end do</span>
+<span class="k">                do </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gstart</span><span class="p">(</span><span class="n">gi</span><span class="p">),</span><span class="w"> </span><span class="n">gstart</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">gi</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                    </span><span class="k">do </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gstart</span><span class="p">(</span><span class="n">gj</span><span class="p">),</span><span class="w"> </span><span class="n">gstart</span><span class="p">(</span><span class="n">gj</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">gj</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                        </span><span class="n">cc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coeff</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">coeff</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="w">                        </span><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">0.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">)</span>
+<span class="w">                        </span><span class="k">do </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">l</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="w">                            </span><span class="k">do </span><span class="n">u</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="w">                                </span><span class="k">do </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="w">                                    </span><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">ex</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">l</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ey</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">m</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ez</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="p">(</span><span class="n">b</span><span class="p">)))</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                            </span><span class="o">*</span><span class="w"> </span><span class="n">iqx</span><span class="p">(:,</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">iqy</span><span class="p">(:,</span><span class="w"> </span><span class="n">u</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">iqz</span><span class="p">(:,</span><span class="w"> </span><span class="n">v</span><span class="p">)</span>
+<span class="w">                                </span><span class="k">end do</span>
+<span class="k">                            end do</span>
+<span class="k">                        end do</span>
+<span class="k">                        </span><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">g0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">cc</span>
+<span class="w">                        </span><span class="n">ca</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">contr</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w"> </span><span class="n">cb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">contr</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="w">                        </span><span class="c">!$OMP CRITICAL (pairft_acc)</span>
+<span class="w">                        </span><span class="n">f</span><span class="p">(:,</span><span class="w"> </span><span class="n">ca</span><span class="p">,</span><span class="w"> </span><span class="n">cb</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">(:,</span><span class="w"> </span><span class="n">ca</span><span class="p">,</span><span class="w"> </span><span class="n">cb</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">acc</span>
+<span class="w">                        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gi</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">gj</span><span class="p">)</span><span class="w"> </span><span class="n">f</span><span class="p">(:,</span><span class="w"> </span><span class="n">cb</span><span class="p">,</span><span class="w"> </span><span class="n">ca</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">(:,</span><span class="w"> </span><span class="n">cb</span><span class="p">,</span><span class="w"> </span><span class="n">ca</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">acc</span>
+<span class="w">                        </span><span class="c">!$OMP END CRITICAL (pairft_acc)</span>
+<span class="w">                    </span><span class="k">end do</span>
+<span class="k">                end do</span>
+<span class="k">            end do</span>
+<span class="k">        end do</span>
+<span class="w">        </span><span class="c">!$OMP END DO</span>
+<span class="w">        </span><span class="k">deallocate</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="n">ey</span><span class="p">,</span><span class="w"> </span><span class="n">ez</span><span class="p">,</span><span class="w"> </span><span class="n">g0</span><span class="p">,</span><span class="w"> </span><span class="n">acc</span><span class="p">)</span>
+<span class="w">        </span><span class="c">!$OMP END PARALLEL</span>
+<span class="w">    </span><span class="k">end subroutine </span><span class="n">pair_transform</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              PyXSCAT kernels
+ was developed by Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-10-10T12:31:04.207760+0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

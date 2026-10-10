@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Fortran kernels &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/better.css?v=bb9f1030" />
+    <script src="_static/documentation_options.js?v=130a53a1"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/kernels.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Status of the refactoring" href="STATUS.html" />
+    <link rel="prev" title="pyxscat.interfaces: wavefunction adapters" href="api/interfaces.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="api/interfaces.html" title="Previous document">pyxscat.interfaces: wavefunction adapters</a>
+        </li>
+        <li>
+          <a href="STATUS.html" title="Next document">Status of the refactoring</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="fortran-kernels">
+<h1>Fortran kernels<a class="headerlink" href="#fortran-kernels" title="Link to this heading">¶</a></h1>
+<p>The numerical work of THISTLE is done by ten Fortran modules in <code class="docutils literal notranslate"><span class="pre">src/fortran</span></code>, compiled by
+the top-level <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> into <code class="docutils literal notranslate"><span class="pre">python/pyxscat/libpyxscat.so</span></code> (<code class="docutils literal notranslate"><span class="pre">.dylib</span></code> on macOS).
+Python reaches them only through the <code class="docutils literal notranslate"><span class="pre">bind(C)</span></code> entry points of module <code class="docutils literal notranslate"><span class="pre">xs_capi</span></code>, whose
+ctypes signatures are declared in <a class="reference internal" href="api/pyxscat.html#module-pyxscat._lib" title="pyxscat._lib"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyxscat._lib</span></code></a>.</p>
+<p>The modules, their routines, arguments, source listings and the comments attached to them are
+documented by <a class="reference external" href="https://forddocs.readthedocs.io/">FORD</a>, built into this site:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="fortran/index.html">Fortran API reference (FORD)</a></p></li>
+</ul>
+<section id="modules">
+<h2>Modules<a class="headerlink" href="#modules" title="Link to this heading">¶</a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Contents</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">xs_hermite</span></code></p></td>
+<td><p>Hermite (McMurchie–Davidson) expansion coefficients for any angular momentum</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">xs_bessel_j0</span></code></p></td>
+<td><p>Spherical Bessel functions, derivatives and the recurrences of the j0 kernel</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">xs_p0</span></code></p></td>
+<td><p>Closed forms at coincident centres (h = 0) for j0, j1 and j2</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">xs_radial</span></code></p></td>
+<td><p>Radial functions j_n(x)/x^n and the Hermite radial coefficients, stable at any x</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">xs_kernel_j0</span></code></p></td>
+<td><p>Screened shell-quartet two-electron kernel; density providers (dense, mean-field, factored)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">xs_pairft</span></code></p></td>
+<td><p>Analytic Fourier transforms of basis-function pairs at fixed q vectors</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">xs_elastic</span></code></p></td>
+<td><p>Elastic scattering by density-weighted pairs</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">xs_nuclear</span></code></p></td>
+<td><p>Electron–nucleus integrals for electron scattering</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">xs_rdm</span></code></p></td>
+<td><p>Bitwise 1-RDM and 2-RDM builders from determinant expansions</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">xs_capi</span></code></p></td>
+<td><p>The C-compatible entry points called from Python</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="building-the-fortran-reference">
+<h2>Building the Fortran reference<a class="headerlink" href="#building-the-fortran-reference" title="Link to this heading">¶</a></h2>
+<p>FORD is run automatically by <code class="docutils literal notranslate"><span class="pre">conf.py</span></code> at the start of every Sphinx build (<code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code>
+in <code class="docutils literal notranslate"><span class="pre">docs/</span></code>) and writes to <code class="docutils literal notranslate"><span class="pre">docs/_ford/fortran</span></code>; Sphinx then copies that tree into the HTML
+output as <code class="docutils literal notranslate"><span class="pre">fortran/</span></code>.  Set <code class="docutils literal notranslate"><span class="pre">THISTLE_DOCS_SKIP_FORD=1</span></code> to skip it.  To run FORD on its own:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ford<span class="w"> </span>ford.md
+</pre></div>
+</div>
+</section>
+<section id="writing-the-fortran-comments">
+<h2>Writing the Fortran comments<a class="headerlink" href="#writing-the-fortran-comments" title="Link to this heading">¶</a></h2>
+<p>FORD only collects comments written with its markers.  The kernels use <code class="docutils literal notranslate"><span class="pre">!&gt;</span></code> on the lines
+<em>before</em> a module, procedure or variable; <code class="docutils literal notranslate"><span class="pre">!!</span></code> on the lines <em>after</em> a declaration also works
+(for arguments, for instance).  Plain <code class="docutils literal notranslate"><span class="pre">!</span></code> comments are shown in the source listings only, and
+ruler lines (<code class="docutils literal notranslate"><span class="pre">!</span> <span class="pre">-----</span></code>) between a <code class="docutils literal notranslate"><span class="pre">!&gt;</span></code> block and the declaration are ignored.  The text is
+Markdown, which has three consequences worth knowing:</p>
+<ul class="simple">
+<li><p>The first paragraph is the summary shown in the lists.</p></li>
+<li><p>Equations, tables and option lists are indented by at least four spaces after <code class="docutils literal notranslate"><span class="pre">!&gt;</span></code>
+(<code class="docutils literal notranslate"><span class="pre">!&gt;</span>&#160;&#160;&#160;&#160;&#160; <span class="pre">I2(q)</span> <span class="pre">=</span> <span class="pre">...</span></code>) with an empty <code class="docutils literal notranslate"><span class="pre">!&gt;</span></code> line before and after, so they are rendered
+verbatim as code blocks.  Prose at one space (<code class="docutils literal notranslate"><span class="pre">!&gt;</span> <span class="pre">text</span></code>) is wrapped as a paragraph.</p></li>
+<li><p>In prose, anything of the form <code class="docutils literal notranslate"><span class="pre">&lt;name</span> <span class="pre">...&gt;</span></code> is taken for an HTML tag and disappears, and a
+first line of the form <code class="docutils literal notranslate"><span class="pre">word:</span> <span class="pre">text</span></code> is taken for FORD metadata.  Put bra-kets in backticks
+(<code class="docutils literal notranslate"><span class="pre">`&lt;I|</span> <span class="pre">...</span> <span class="pre">|I&gt;`</span></code>) and start the block with a sentence.</p></li>
+</ul>
+<p>The project file is <code class="docutils literal notranslate"><span class="pre">docs/ford.md</span></code>.  FORD cannot extract the source listing of three
+one-statement functions with a kind-prefixed result (<code class="docutils literal notranslate"><span class="pre">ncum</span></code>, <code class="docutils literal notranslate"><span class="pre">dfact</span></code>,
+<code class="docutils literal notranslate"><span class="pre">upward_threshold</span></code>); their descriptions and interfaces are documented all the same.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Python API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Fortran kernels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#modules">Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-the-fortran-reference">Building the Fortran reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#writing-the-fortran-comments">Writing the Fortran comments</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Fortran kernels</a><ul>
+<li><a class="reference internal" href="#modules">Modules</a></li>
+<li><a class="reference internal" href="#building-the-fortran-reference">Building the Fortran reference</a></li>
+<li><a class="reference internal" href="#writing-the-fortran-comments">Writing the Fortran comments</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+<form class="search" action="search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="api/interfaces.html" title="Previous document">pyxscat.interfaces: wavefunction adapters</a>
+        </li>
+        <li>
+          <a href="STATUS.html" title="Next document">Status of the refactoring</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Status of the refactoring &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/better.css?v=bb9f1030" />
+    <script src="_static/documentation_options.js?v=130a53a1"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/STATUS.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Fortran kernels" href="kernels.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernels.html" title="Previous document">Fortran kernels</a>
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="status-of-the-refactoring">
+<h1>Status of the refactoring<a class="headerlink" href="#status-of-the-refactoring" title="Link to this heading">¶</a></h1>
+<section id="milestone-1-package-independent-kernel-4-october">
+<h2>Milestone 1: package-independent kernel (4 October)<a class="headerlink" href="#milestone-1-package-independent-kernel-4-october" title="Link to this heading">¶</a></h2>
+<p><strong>One kernel, called in memory.</strong> Rotationally averaged scattering is computed from a basis set
+and density matrices, called from Python through a C interface. There are no intermediate files.</p>
+<p><strong>Density providers.</strong></p>
+<ul class="simple">
+<li><p>Explicit 2RDM (any correlated method).</p></li>
+<li><p>Built on the fly from one-particle matrices: elastic, transition and coherent cross terms,
+exchange, and Hartree–Fock mean field.</p></li>
+</ul>
+<p><strong>Hermite coefficients by recurrence.</strong> Valid for any angular momentum; the overall limit (g
+functions) comes from the Bessel and h = 0 tables.</p>
+<p><strong>PySCF adapter.</strong> Basis taken from the <code class="docutils literal notranslate"><span class="pre">Mole</span></code> object, spherical basis sets included. Adapters
+for SCF, CCSD, CISD, FCI and CASSCF.</p>
+</section>
+<section id="milestone-2-other-packages-night-of-4-october">
+<h2>Milestone 2: other packages (night of 4 October)<a class="headerlink" href="#milestone-2-other-packages-night-of-4-october" title="Link to this heading">¶</a></h2>
+<p><strong>Molden reader (<code class="docutils literal notranslate"><span class="pre">interfaces.molden</span></code>).</strong> Pure numpy, no PySCF needed.</p>
+<ul class="simple">
+<li><p>Handles Angstrom and bohr geometries, <code class="docutils literal notranslate"><span class="pre">sp</span></code> shells, Fortran <code class="docutils literal notranslate"><span class="pre">D</span></code> exponents, and the
+<code class="docutils literal notranslate"><span class="pre">[5D]</span></code>/<code class="docutils literal notranslate"><span class="pre">[7F]</span></code>/<code class="docutils literal notranslate"><span class="pre">[9G]</span></code> flags with spherical d, f and g functions.</p></li>
+<li><p>Molden component order and signs are handled; general contractions written as separate
+shells are merged into shared primitive shells.</p></li>
+<li><p>Cartesian normalisation differs between programs. With the default (<code class="docutils literal notranslate"><span class="pre">cart_norm=&quot;auto&quot;</span></code>) the
+reader picks the convention that makes the MOs orthonormal.</p></li>
+<li><p>Checked by round trip through PySCF (cc-pVTZ and cc-pVQZ spherical up to g, 6-31G*
+Cartesian, def2-SVP). Density on a grid agrees to 1e-11 and the scattering to 1e-9.</p></li>
+<li><p>Checked on the three Molden files in <code class="docutils literal notranslate"><span class="pre">Scattering_eirik</span></code> (OpenMolcas CASSCF, a C5H6 file, a
+PySCF UHF file): MOs orthonormal to the printed precision, electron count exact.</p></li>
+</ul>
+<p><strong>CI vectors to RDMs (<code class="docutils literal notranslate"><span class="pre">pyxscat.ci</span></code>).</strong></p>
+<ul class="simple">
+<li><p>Spin-summed 1RDM and 2RDM from any determinant expansion; equal to PySCF FCI to 1e-13.</p></li>
+<li><p>GUGA CSF → determinant conversion (Molcas step strings <code class="docutils literal notranslate"><span class="pre">2ud0</span></code>), ported from the old reader
+with the reordering phase made explicit. Every CSF tested is a normalised S² eigenfunction
+for every M_S, and CSFs of one configuration are orthogonal.</p></li>
+<li><p>Core embedding of active-space RDMs; equal to PySCF CASCI densities to 1e-10.</p></li>
+</ul>
+<p><strong>OpenMolcas adapter (<code class="docutils literal notranslate"><span class="pre">interfaces.molcas</span></code>).</strong> Reads the RASSCF output (orbital spaces, spin,
+CI printout of every root, natural occupations) and the <code class="docutils literal notranslate"><span class="pre">.rasscf.molden</span></code> file. Validated on the
+stored CASSCF(8,8) run of C7H8 (1764 CSFs):</p>
+<ul class="simple">
+<li><p>The 1RDM is diagonal in the printed natural orbitals, with Molcas’ occupations to 5e-6.</p></li>
+<li><p>The converted vector is PySCF’s CASCI ground state in the same orbitals (overlap 0.999996;
+the deficit comes from the five printed decimals).</p></li>
+</ul>
+<p><strong>Command line (<code class="docutils literal notranslate"><span class="pre">pyxscat</span></code>).</strong> Molden alone (elastic, <code class="docutils literal notranslate"><span class="pre">hf_total</span></code>) or Molden plus Molcas output
+(all kinds, including <code class="docutils literal notranslate"><span class="pre">decompose</span></code>).</p>
+<p><strong>Tests.</strong> 66 run by default (about 2 min). Five more on the large ANO basis run with
+<code class="docutils literal notranslate"><span class="pre">PYXSCAT_SLOW=1</span></code>.</p>
+</section>
+<section id="milestone-3-aligned-molecules-night-of-4-october">
+<h2>Milestone 3: aligned molecules (night of 4 October)<a class="headerlink" href="#milestone-3-aligned-molecules-night-of-4-october" title="Link to this heading">¶</a></h2>
+<p><strong>New approach.</strong> The plane wave factorises, exp(iq·(r1−r2)) = exp(iq·r1) exp(−iq·r2), so
+fixed-orientation scattering never needs the four-index quartet loop. One Fortran routine
+(<code class="docutils literal notranslate"><span class="pre">xs_pairft.f90</span></code>) computes the analytic Fourier transforms of all basis-function products,
+F_μν(q), at any list of q vectors. Everything else is contraction with density matrices:</p>
+<ul class="simple">
+<li><p>elastic: |Σ D F|²</p></li>
+<li><p>two-electron: Σ Γ F F*, a single matrix product</p></li>
+<li><p>exchange and mean field: from the 1RDM, at O(n³) per q</p></li>
+</ul>
+<p>There is no Bessel expansion, so the close-centre problem does not arise here.</p>
+<p><strong>Python (<code class="docutils literal notranslate"><span class="pre">pyxscat.aligned</span></code>).</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pair_transform</span></code>, <code class="docutils literal notranslate"><span class="pre">form_factor</span></code>, <code class="docutils literal notranslate"><span class="pre">elastic</span></code> (also transition/mixed terms), <code class="docutils literal notranslate"><span class="pre">two_electron</span></code>,
+<code class="docutils literal notranslate"><span class="pre">exchange</span></code>, <code class="docutils literal notranslate"><span class="pre">mean_field</span></code>, <code class="docutils literal notranslate"><span class="pre">scattering</span></code>, <code class="docutils literal notranslate"><span class="pre">decompose</span></code>.</p></li>
+<li><p>Geometry helpers: <code class="docutils literal notranslate"><span class="pre">ewald_q</span></code> (Ewald sphere, beam along +z), <code class="docutils literal notranslate"><span class="pre">detector_q</span></code> (q-space detector
+image), <code class="docutils literal notranslate"><span class="pre">rotation_matrix</span></code> (zyz Euler angles) and <code class="docutils literal notranslate"><span class="pre">rotate_q</span></code> (lab → molecular frame).</p></li>
+<li><p>Command line: <code class="docutils literal notranslate"><span class="pre">--qvec</span> <span class="pre">file</span> <span class="pre">[--orientation</span> <span class="pre">α</span> <span class="pre">β</span> <span class="pre">γ]</span></code>.</p></li>
+</ul>
+<p><strong>Validation (14 tests).</strong></p>
+<ul class="simple">
+<li><p>Pair transforms equal PySCF’s <code class="docutils literal notranslate"><span class="pre">ft_aopair</span></code> (complex conjugate, since PySCF uses exp(−iq·r)) to
+1e-12, up to g functions. Spherical basis sets are checked through the form factor.</p></li>
+<li><p>Averaging the aligned elastic, exchange and CCSD two-electron terms over a 131-point Lebedev
+grid reproduces the rotationally averaged kernel to 1e-8. These are two independent code
+paths.</p></li>
+<li><p>Exact q = 0 limits; the explicit HF 2RDM equals the on-the-fly mean field; the decomposition
+sums to the total; Friedel symmetry I(q) = I(−q).</p></li>
+<li><p>Rotating q is equivalent to rotating the molecule and re-running SCF.</p></li>
+</ul>
+<p><strong>Speed.</strong> A 101×101 detector image of the C7H8 CASSCF wavefunction (ANO-L, full 2RDM, all
+terms of the decomposition) takes 7 s on 2 cores. Three rotationally averaged q points of the
+same system take about 3 minutes.</p>
+<p><strong>Not yet compared with Eirik’s aligned code.</strong> I have not run it, so I can’t yet say which bug
+it had. Reading it, the structure is the same (Hermite expansion at the pair centre, phase
+exp(iq·P)). It loops over all primitive quartets with no symmetry, with the 2RDM entering
+through the old Z1/Z2 factors scaled by 1/8, and the powers (iq)^t are built with a
+single-precision <code class="docutils literal notranslate"><span class="pre">(0,1.00)</span></code> constant. The q grids (<code class="docutils literal notranslate"><span class="pre">QCOORD3</span></code>, mode 4) are hard-coded. An input
+and output where it went wrong would let me pin it down.</p>
+</section>
+<section id="molpro-5-october">
+<h2>Molpro (5 October)<a class="headerlink" href="#molpro-5-october" title="Link to this heading">¶</a></h2>
+<p><strong>Molpro MULTI adapter (<code class="docutils literal notranslate"><span class="pre">interfaces.molpro</span></code>).</strong> Reads the CI vectors of all states from a MULTI
+run with <code class="docutils literal notranslate"><span class="pre">config,det</span></code> and <code class="docutils literal notranslate"><span class="pre">gprint,civector</span></code>, with orbitals from the Molden file written after
+MULTI. Also gives transition 1RDMs between states (<code class="docutils literal notranslate"><span class="pre">transition_dm1</span></code>, <code class="docutils literal notranslate"><span class="pre">ci.make_transition_rdm1</span></code>)
+for inelastic and coherent mixed terms. Command line: <code class="docutils literal notranslate"><span class="pre">--molpro-out</span> <span class="pre">file</span> <span class="pre">--root</span> <span class="pre">k</span></code>.</p>
+<p><strong>Determinant phase.</strong> Molpro orders the creation operators orbital by orbital (1α 1β 2α 2β …),
+while pyxscat uses all-α-first. Without the phase correction (<code class="docutils literal notranslate"><span class="pre">ci.interleaved_phase</span></code>) the state
+energies are off by 2–6 mEh; with it they agree to 1e-8.</p>
+<p><strong>Validation (<code class="docutils literal notranslate"><span class="pre">tests/test_molpro.py</span></code>).</strong> Test case: LiF from <code class="docutils literal notranslate"><span class="pre">Dropbox/PyXSCAT/src/EQ-Minimal</span></code>, a
+state-averaged CASSCF(6,4) over four singlets.</p>
+<ul class="simple">
+<li><p>The energies of all four states, rebuilt from our RDMs with PySCF integrals in the Molden
+orbitals, match Molpro to 2e-7.</p></li>
+<li><p>The state-averaged natural occupations are 1.75/1.75/1.75/0.75.</p></li>
+<li><p>The ground-state dipole and the transition dipoles ⟨1|x|3⟩, ⟨1|y|2⟩ and ⟨1|z|4⟩ match Molpro to
+1e-7, signs included.</p></li>
+<li><p>Fixed-orientation scattering has exact q = 0 limits, and the transition form factor vanishes
+at q = 0.</p></li>
+</ul>
+<p><strong>Still to do for Molpro.</strong></p>
+<ul class="simple">
+<li><p>The CSF printout (<code class="docutils literal notranslate"><span class="pre">/\</span></code> notation, the default without <code class="docutils literal notranslate"><span class="pre">config,det</span></code>) is not supported; Molpro’s
+CSF coupling convention would need checking.</p></li>
+<li><p>Point-group symmetry is not supported.</p></li>
+<li><p>MRCI is not covered. <code class="docutils literal notranslate"><span class="pre">MRCI_CI.dat</span></code> holds reference CSFs only; MRCI densities would have to come
+from Molpro’s density matrices instead.</p></li>
+</ul>
+</section>
+<section id="independent-atom-model-and-more-molpro-cases-5-october">
+<h2>Independent atom model and more Molpro cases (5 October)<a class="headerlink" href="#independent-atom-model-and-more-molpro-cases-5-october" title="Link to this heading">¶</a></h2>
+<p><strong>IAM (<code class="docutils literal notranslate"><span class="pre">pyxscat.iam</span></code>).</strong> Free spherical atoms at the nuclear positions, rotationally averaged
+(Debye formula) or at fixed orientation (<code class="docutils literal notranslate"><span class="pre">aligned=True</span></code>). It returns elastic, total, inelastic,
+atomic and interference parts.</p>
+<ul class="simple">
+<li><p><strong>Ab initio atoms:</strong> free-atom UHF (or CCSD for closed shells) in any PySCF basis, run through
+the same kernels as the molecule. Elastic and total.</p>
+<ul>
+<li><p>The form factor comes from the spherically averaged density, by a Lebedev average of the
+fixed-q transform; the atomic total from the rotationally averaged two-electron kernel.</p></li>
+</ul>
+</li>
+<li><p><strong>Tables:</strong> Waasmaier–Kirfel form factors through <code class="docutils literal notranslate"><span class="pre">xraydb</span></code>. Elastic only.</p></li>
+<li><p><strong>Validation (11 tests).</strong></p>
+<ul>
+<li><p>HF/aug-cc-pVQZ form factors of H, C, O, F, Ne and S agree with Waasmaier–Kirfel within 1 %
+of Z, and typically 0.1 %.</p></li>
+<li><p>A closed-shell atom reproduces its own IAM to 1e-8.</p></li>
+<li><p>The aligned IAM averaged over a Lebedev grid equals the Debye IAM to 1e-9.</p></li>
+<li><p>Water CCSD/aug-cc-pVTZ tends to the IAM at high q (within 0.5 % at q = 14 bohr⁻¹) and differs
+by several per cent at q ≈ 1.</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>First comparisons with the IAM</strong> (percent difference, total scattering, q = 1 bohr⁻¹):</p>
+<ul class="simple">
+<li><p>LiF ground state (Molpro SA-CASSCF): +16 %. It is ionic (Li⁺F⁻), which a neutral-atom model
+cannot describe.</p></li>
+<li><p>LiF state 4: −2 %, with the dipole reversed.</p></li>
+<li><p>H₂O CCSD: +6 %.</p></li>
+</ul>
+<p><strong>More Molpro.</strong></p>
+<ul class="simple">
+<li><p>The older printout format (<code class="docutils literal notranslate"><span class="pre">CI</span> <span class="pre">vector</span> <span class="pre">…</span> <span class="pre">TOTAL</span> <span class="pre">ENERGIES</span></code>) is read, as in the SF6, SF6⁺, SF6²⁺
+and He runs in Dropbox.</p></li>
+<li><p>These runs used Molpro’s default print threshold, so only 3–9 determinants of each vector were
+printed. The printed weight is 0.974 for SF6 CAS(6,6), 0.999 for SF6⁺ and 0.996 for SF6²⁺.</p></li>
+<li><p>Densities built from such printouts give energies 3–52 mEh above Molpro’s. <strong>Any earlier
+scattering computed from these printed vectors used truncated wavefunctions.</strong> The reader now
+warns, and <code class="docutils literal notranslate"><span class="pre">gthresh,printci=0</span></code> avoids the problem.</p></li>
+<li><p>The printed coefficients themselves are exact: their overlap with the PySCF CASCI eigenvector
+equals the printed weight, for singlet, doublet and triplet. So the phase convention holds for
+open shells and for the older format too.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">check_molden_consistency</span></code> compares the state-averaged 1RDM with the Molden occupations. It
+flags the MateoBottaro He run, where the CI vector and the Molden orbitals are in a different
+order (two near-degenerate active orbitals appear swapped).</p></li>
+</ul>
+</section>
+<section id="punch-files-orbital-order-molden-conventions-5-october-night">
+<h2>Punch files, orbital order, Molden conventions (5 October, night)<a class="headerlink" href="#punch-files-orbital-order-molden-conventions-5-october-night" title="Link to this heading">¶</a></h2>
+<p><strong>Molpro punch files</strong> (<code class="docutils literal notranslate"><span class="pre">molpro.read_punch</span></code>, <code class="docutils literal notranslate"><span class="pre">from_multi(...,</span> <span class="pre">punch=...)</span></code>, command line
+<code class="docutils literal notranslate"><span class="pre">--molpro-punch</span></code>).</p>
+<ul class="simple">
+<li><p>Older Molpro versions write the MULTI CI vector to the <code class="docutils literal notranslate"><span class="pre">.pun</span></code> file with seven decimals and a
+low threshold.</p></li>
+<li><p>For the SF6, SF6⁺ and SF6²⁺ runs the punch files hold 120–299 determinants (weight 1.0000000).
+The state energies rebuilt from them match Molpro to 3e-9 Eh, compared with 3–52 mEh off from
+the output printout.</p></li>
+<li><p>The closed-shell count is not in the punch file. It comes from the output, from <code class="docutils literal notranslate"><span class="pre">nclosed</span></code>, or
+from the electron count of the Molden file.</p></li>
+</ul>
+<p><strong>Molpro orbital order.</strong> Molpro may write natural orbitals to the Molden file out of its
+internal order: the He run lists <code class="docutils literal notranslate"><span class="pre">Sym=</span> <span class="pre">1.1</span> <span class="pre">2.1</span> <span class="pre">6.1</span> <span class="pre">3.1</span> <span class="pre">4.1</span> <span class="pre">5.1</span> <span class="pre">…</span></code>. The CI vector refers to the
+internal order, so the Molden reader now restores it from the <code class="docutils literal notranslate"><span class="pre">n.1</span></code> labels (<code class="docutils literal notranslate"><span class="pre">reorder=&quot;auto&quot;</span></code>).
+With this fix the two He state energies match Molpro to 5e-9 Eh; read in file order they were 33
+and 43 mEh off. This was the cause of the “orbitals out of step” flag.</p>
+<p><strong>Molden conventions check (<code class="docutils literal notranslate"><span class="pre">molden.scf_energy</span></code>).</strong></p>
+<ul class="simple">
+<li><p>Rebuilds the SCF energy from a Molden file with exact integrals. It equals the program’s SCF
+energy only if the basis, normalisation, spherical → Cartesian conversion, component order and
+signs are all read correctly.</p></li>
+<li><p>Passes to 1e-12 on PySCF files (spherical up to g, Cartesian).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">benchmarks/molden_conventions/</span></code> has water/cc-pVTZ HF inputs for OpenMolcas, BAGEL and Molpro,
+plus <code class="docutils literal notranslate"><span class="pre">check.py</span></code>, to confirm each program’s conventions.</p></li>
+<li><p>None of the Molden files in Dropbox or the code folders uses spherical d or f functions: Molpro
+writes Cartesian functions, and the one Molcas file has no d functions. So the spherical path is
+so far verified only on PySCF output.</p></li>
+</ul>
+</section>
+<section id="j2-second-legendre-moment-5-october-night">
+<h2>j2: second Legendre moment (5 October, night)<a class="headerlink" href="#j2-second-legendre-moment-5-october-night" title="Link to this heading">¶</a></h2>
+<p><strong>What the old code computes.</strong> Eirik’s j2 modes evaluate
+Σ Γ ⟨j₂(q r₁₂) Y₂₀(r̂₁₂)⟩, the l = 2 Legendre component of the scattering about the molecular z
+axis. They use their own expansion of the derivatives of j₂(qh)(3h_z² − h²)/h² (<code class="docutils literal notranslate"><span class="pre">rrdj2a/b</span></code>,
+<code class="docutils literal notranslate"><span class="pre">BesselDeriv2j</span></code>, <code class="docutils literal notranslate"><span class="pre">bessels2rr</span></code>) and a j2 table of coincident-centre limits. Only the elastic mode
+(8) was active; the total mode (7) is commented out in the driver.</p>
+<p><strong>New implementation.</strong> The j2 kernel follows from the j0 one by Hobson’s theorem: the operator
+3∂²_z − ∇² acting on j₀(qr) gives (3z² − r²) times a radial factor, so
+j₂(qr) P₂(cos θ) = [3 ∂²_z j₀(qr) + q² j₀(qr)] / 2q².</p>
+<ul class="simple">
+<li><p>So the existing j0 quartet kernel only carries two extra z-derivatives: Hermite index v + 2
+for distant pairs, and the h = 0 limits for coincident ones.</p></li>
+<li><p>The h = 0 limits are now a closed formula for any order, replacing the hard-coded table
+(limited to L + M + N ≤ 16).</p></li>
+<li><p>All density providers work: total, elastic, exchange, mean field, decomposition, transition
+terms.</p></li>
+<li><p>Python: <code class="docutils literal notranslate"><span class="pre">l=2</span></code> in <code class="docutils literal notranslate"><span class="pre">scattering</span></code>, <code class="docutils literal notranslate"><span class="pre">decompose</span></code>, <code class="docutils literal notranslate"><span class="pre">elastic</span></code>, <code class="docutils literal notranslate"><span class="pre">two_electron</span></code>, <code class="docutils literal notranslate"><span class="pre">exchange</span></code>,
+<code class="docutils literal notranslate"><span class="pre">mean_field</span></code>, and in <code class="docutils literal notranslate"><span class="pre">iam.scattering</span></code>. Command line: <code class="docutils literal notranslate"><span class="pre">--legendre</span> <span class="pre">2</span></code>.</p></li>
+</ul>
+<p><strong>Normalisation.</strong> pyxscat uses Legendre normalisation, S₂(q) = Σ Γ ⟨j₂ P₂⟩. For molecules
+aligned along a lab axis,
+I(q, θ_q) = I₀(q) − 5 ⟨P₂(cos β)⟩ P₂(cos θ_q) S₂(q) + …. Eirik’s (Y₂₀) values are
+√(5/4π) S₂.</p>
+<p><strong>Validation (9 tests, <code class="docutils literal notranslate"><span class="pre">tests/test_j2.py</span></code>).</strong></p>
+<ul class="simple">
+<li><p><strong>Projection:</strong> the l = 2 kernel equals −⟨P₂(cos θ_q) I(q n̂)⟩ computed from the
+fixed-orientation code on a Lebedev grid. This holds for elastic, exchange and CCSD
+two-electron terms to 5e-8 (water, 6-31G*, spherical), across two independent code paths.</p></li>
+<li><p><strong>Eirik’s code:</strong> his elastic j2 (<code class="docutils literal notranslate"><span class="pre">elastic_integration_j2</span></code>), driven directly from Fortran,
+equals √(5/4π) × ours to 1e-6 relative.</p></li>
+<li><p><strong>IAM j2:</strong> S₂^IAM = Σ_{A≠B} f_A f_B j₂(qR_AB) P₂(cos θ_AB); atomic and inelastic parts vanish
+for spherical atoms. Two Ne atoms 14 bohr apart on an oblique axis reproduce it from the
+molecular code to 1e-6, both elastic and total. The analytic IAM j2 equals the P₂ projection of
+the aligned IAM to 1e-10.</p></li>
+<li><p><strong>Limits:</strong> a spherical atom gives S₂ = 0; S₂ ∝ q² at small q; the decomposition sums.</p></li>
+</ul>
+<p><strong>Small q.</strong> The formula divides by q². Below q ≈ 0.3 bohr⁻¹ the absolute error is about 1e-8,
+growing roughly as 1/q²; values below q = 1e-5 are set to zero.</p>
+</section>
+<section id="simple-interface-and-packaging-5-october-night">
+<h2>Simple interface and packaging (5 October, night)<a class="headerlink" href="#simple-interface-and-packaging-5-october-night" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">thistle</span></code> is a thin layer over <code class="docutils literal notranslate"><span class="pre">pyxscat</span></code> for people who do not want to touch density matrices
+or q units:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">th.load(x)</span></code> takes a PySCF object, a Molden file, an OpenMolcas output or a Molpro output or
+punch file, recognises it by content, and finds the companion Molden (and <code class="docutils literal notranslate"><span class="pre">.pun</span></code>) file by
+itself. Several Molden candidates in one folder is an error, not a guess.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Molecule.scattering</span> <span class="pre">/</span> <span class="pre">iam</span> <span class="pre">/</span> <span class="pre">anisotropy</span> <span class="pre">/</span> <span class="pre">detector</span></code> return <code class="docutils literal notranslate"><span class="pre">Result</span></code> / <code class="docutils literal notranslate"><span class="pre">DetectorImage</span></code>
+objects with <code class="docutils literal notranslate"><span class="pre">.plot()</span></code> and <code class="docutils literal notranslate"><span class="pre">.save()</span></code> (CSV whose first line records the provenance). q in
+1/Å by default, <code class="docutils literal notranslate"><span class="pre">unit=&quot;1/bohr&quot;</span></code> available.</p></li>
+<li><p>Orbitals-only input (Molden) gives elastic only. Total and inelastic only with the explicit
+option <code class="docutils literal notranslate"><span class="pre">--hf</span></code> / <code class="docutils literal notranslate"><span class="pre">--scf</span></code> (<code class="docutils literal notranslate"><span class="pre">hf</span> <span class="pre">=</span> <span class="pre">true</span></code>, <code class="docutils literal notranslate"><span class="pre">th.load(...,</span> <span class="pre">hf=True)</span></code>), which is refused unless the
+natural occupations (Löwdin) are 0 or 2. PySCF RHF objects are recognised by themselves.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">new</span> <span class="pre">|</span> <span class="pre">run</span> <span class="pre">|</span> <span class="pre">check</span> <span class="pre">|</span> <span class="pre">submit</span></code>: commented TOML template; <code class="docutils literal notranslate"><span class="pre">run</span></code> also takes a calculation
+file directly with <code class="docutils literal notranslate"><span class="pre">--state</span> <span class="pre">--qmax</span> <span class="pre">--iam</span> <span class="pre">--all-parts</span> <span class="pre">...</span></code>; <code class="docutils literal notranslate"><span class="pre">check</span></code> verifies orthonormality,
+SCF energy and I(0) = N²; <code class="docutils literal notranslate"><span class="pre">submit</span></code> writes a Slurm script (cd, setup lines, OMP threads) and
+sends it with <code class="docutils literal notranslate"><span class="pre">--now</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> (or the sdist <code class="docutils literal notranslate"><span class="pre">thistle-0.2.0.dev0.tar.gz</span></code>) compiles the Fortran through
+<code class="docutils literal notranslate"><span class="pre">make</span></code> from <code class="docutils literal notranslate"><span class="pre">setup.py</span></code>; the distribution is now called <code class="docutils literal notranslate"><span class="pre">thistle</span></code> and installs both the
+<code class="docutils literal notranslate"><span class="pre">thistle</span></code> and <code class="docutils literal notranslate"><span class="pre">pyxscat</span></code> commands. Tested from the sdist in a clean virtual environment.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/test_thistle.py</span></code> (17 tests). Full suite: 133 passed, 5 skipped.</p></li>
+</ul>
+<p>To decide: default q unit (1/Å) and the distribution name (<code class="docutils literal notranslate"><span class="pre">thistle</span></code>; the import name of the
+kernels stays <code class="docutils literal notranslate"><span class="pre">pyxscat</span></code>).</p>
+</section>
+<section id="comparison-with-thistle-dev-7-october">
+<h2>Comparison with thistle-dev (7 October)<a class="headerlink" href="#comparison-with-thistle-dev-7-october" title="Link to this heading">¶</a></h2>
+<p>Patrick Wang’s <code class="docutils literal notranslate"><span class="pre">KirranderGroup/thistle-dev</span></code> (private, beta “pythistle 1.0.0b1”) builds a
+distributable from the same legacy kernels (Eirik’s <code class="docutils literal notranslate"><span class="pre">Integrals.f90</span></code> MO path + Patrick’s dense-AO
+<code class="docutils literal notranslate"><span class="pre">TSj0groupsfast</span></code>), with a Julia engine and an HDF5 input “deck”. On its five test decks our
+kernels reproduce its reference curves to 4e-13 when run with its <code class="docutils literal notranslate"><span class="pre">cutoffcentre</span> <span class="pre">=</span> <span class="pre">0.01</span></code>; our exact
+default differs from them by 1.6e-5 (the coincident-centre approximation). Its open j₂ question
+(Eirik’s vs its Julia engine’s) is settled: Eirik’s is right. Its v1 scope is X-ray total and
+elastic; ours is a superset except the Julia engine, the HDF5 deck, and the generic PySCF
+<code class="docutils literal notranslate"><span class="pre">make_rdm12</span></code> route (DMRG-SCF, SHCI-SCF). Details and scripts: <code class="docutils literal notranslate"><span class="pre">benchmarks/thistle_dev_crosscheck/</span></code>.
+To ease the merge, <code class="docutils literal notranslate"><span class="pre">th.load(&quot;deck.h5&quot;)</span></code> now reads thistle-dev decks natively (orbital and dense-AO
+forms; <code class="docutils literal notranslate"><span class="pre">pyxscat.interfaces.deck</span></code>; <code class="docutils literal notranslate"><span class="pre">tests/test_deck.py</span></code>). Our code is on the branch
+<code class="docutils literal notranslate"><span class="pre">amc/thistle-core</span></code> of thistle-dev, in its own directory <code class="docutils literal notranslate"><span class="pre">thistle_core/</span></code>.</p>
+</section>
+<section id="ccsd-without-the-four-index-density-6-october">
+<h2>CCSD without the four-index density (6 October)<a class="headerlink" href="#ccsd-without-the-four-index-density-6-october" title="Link to this heading">¶</a></h2>
+<p>Checked first as asked: the CCSD route took PySCF’s full 2RDM, transformed it to the AO basis
+and read it in the kernel. Measured: water/cc-pVTZ 0.5 GB peak; benzene/cc-pVDZ (120 Cartesian
+functions) killed at 6 GB (the AO array alone is 1.35 GB, PySCF’s <code class="docutils literal notranslate"><span class="pre">make_rdm2</span></code> and the transform
+hold several copies). So anything beyond ~150 functions was out of reach.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pyxscat.ccsd.factored_rdm2</span></code>: the CCSD density as <code class="docutils literal notranslate"><span class="pre">FactoredDM2</span></code>, Σ_k A_k⊗B_k in Coulomb and
+exchange pairings, 7 n_occ² + 4 terms, from t₁, t₂, λ₁, λ₂ and the small PySCF intermediates;
+the n_vir⁴ and n_occ n_vir³ blocks are never formed. Every block of the MO density agrees
+with <code class="docutils literal notranslate"><span class="pre">make_rdm2</span></code> to 10⁻¹⁵; frozen core handled.</p></li>
+<li><p>Kernel mode 3 contracts the factored form: Coulomb terms in the canonical loop; exchange terms
+in a new pass ordered by the (μ,λ) shell pair with batches of shells, eight matrix products
+over k per batch (dgemm from SciPy through a function pointer, matmul fallback). Validated
+against mode 1 with random non-symmetric factors to 10⁻¹³ (l = 0, 2); all routes (rotational,
+j₂, fixed orientation, electrons) agree with the dense CCSD route to 10⁻¹³.</p></li>
+<li><p>The old <code class="docutils literal notranslate"><span class="pre">Total_scattering_optimized_ccsd.f90</span></code> had a factored cumulant too, but its
+<code class="docutils literal notranslate"><span class="pre">build_tau_ij</span></code> stops at the “dominant terms” (its own TODO) and was never validated; this
+one is complete.</p></li>
+<li><p>Timings (2 cores): water/cc-pVTZ 4.3 s (dense 2.2 s); benzene/cc-pVDZ 120 s in 2.4 GB (the
+integrals take 16 s; the exchange contraction dominates and is compute-bound in dgemm, so it
+scales with cores). Estimate for 500 functions / 40 occupied: ~45 GB of factors, tens of
+minutes on a 64-core node.</p></li>
+<li><p>Default: factored beyond 60 basis functions (<code class="docutils literal notranslate"><span class="pre">from_cc(mycc,</span> <span class="pre">factored=...)</span></code>).</p></li>
+<li><p>Memory rule: factors ≈ 112 (n_occ n_AO)² bytes. Estimates for dimethylpyrazine (29 occupied)
+on the 2 TB node: aug-cc-pVTZ (640 Cartesian functions) 39 GB of factors, ~1.7 h of
+scattering on 64 cores, PySCF CCSD ~300 GB; cc-pVQZ (840) 66 GB, ~5 h, CCSD ~870 GB (the
+practical maximum); aug-cc-pVQZ (1280) would need density-fitted CCSD (conventional vvvv
+storage 2.4–5 TB). Suggested headline CCSD calculation for the paper: aug-cc-pVTZ.</p></li>
+<li><p>Other programs’ CCSD amplitudes (Molpro, …) would need a reader to the same conventions
+(closed-shell t₁, t₂, λ₁, λ₂ in canonical orbitals); not written for lack of files.
+<code class="docutils literal notranslate"><span class="pre">tests/test_ccsd_factored.py</span></code> (9 tests); full suite 217 passed, 5 skipped.</p></li>
+</ul>
+</section>
+<section id="plotters-run-report-6-october">
+<h2>Plotters, run report (6 October)<a class="headerlink" href="#plotters-run-report-6-october" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">thistle.plotting</span></code>: a plotter per calculation (<code class="docutils literal notranslate"><span class="pre">scattering</span></code>, <code class="docutils literal notranslate"><span class="pre">versus_iam</span></code> with the % difference
+below, <code class="docutils literal notranslate"><span class="pre">sm</span></code>, <code class="docutils literal notranslate"><span class="pre">anisotropy</span></code>, <code class="docutils literal notranslate"><span class="pre">detector</span></code> for images and patterns, <code class="docutils literal notranslate"><span class="pre">detector_versus_iam</span></code> in three
+panels, <code class="docutils literal notranslate"><span class="pre">overlay</span></code> of several runs, <code class="docutils literal notranslate"><span class="pre">difference</span></code>), <code class="docutils literal notranslate"><span class="pre">read</span></code> for every file THISTLE writes (CSV,
+.dat, .npz, all round-trip to 10⁻¹¹) and <code class="docutils literal notranslate"><span class="pre">plot_file</span></code>; <code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">plot</span> <span class="pre">FILE</span> <span class="pre">[--iam</span> <span class="pre">FILE]</span></code>. Fixed
+colour per quantity (validated colour-blind-safe palette), provenance footer, identical curves
+drawn once (“elastic = hartree”), polar patterns triangulated along their rings (a Delaunay
+triangulation of co-circular points changed with the last digit), robust colour range for
+electron patterns (1/q⁴ at the centre).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">run</span></code> prints each step with its start time and duration, and at the end the time of
+every step and every file written (with its folder and a line on its contents); it also writes
+<code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_plots.py</span></code> (redraws every plot from the files, to edit) and <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_run.json</span></code>.</p></li>
+<li><p>Electrons on the polar grid: the default largest angle reaches the run’s q max (60° made no
+sense for fast electrons: q up to 1000 Å⁻¹).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/test_plotting.py</span></code> (4 tests); full suite 208 passed, 5 skipped.</p></li>
+</ul>
+</section>
+<section id="molpro-without-the-output-file-6-october">
+<h2>Molpro without the output file (6 October)<a class="headerlink" href="#molpro-without-the-output-file-6-october" title="Link to this heading">¶</a></h2>
+<p>A punch file and the Molden file are enough: <code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">run</span> <span class="pre">calc.pun</span></code> (or <code class="docutils literal notranslate"><span class="pre">th.load(&quot;calc.pun&quot;)</span></code>)
+gives the same RDMs as the output to 10⁻¹² (tested). New: when the named output is missing,
+the punch file of the same name is used (with a warning); a Molden file with <code class="docutils literal notranslate"><span class="pre">punch=</span></code> /
+<code class="docutils literal notranslate"><span class="pre">--punch</span></code> / <code class="docutils literal notranslate"><span class="pre">[input]</span> <span class="pre">punch</span> <span class="pre">=</span> <span class="pre">...</span></code> is read as the MULTI calculation; a Molden file alone with a
+punch file next to it warns that only the elastic scattering of the (state-averaged) density
+follows from it.</p>
+</section>
+<section id="rdms-from-long-determinant-expansions-6-october">
+<h2>2RDMs from long determinant expansions (6 October)<a class="headerlink" href="#rdms-from-long-determinant-expansions-6-october" title="Link to this heading">¶</a></h2>
+<p>The builder used so far (<code class="docutils literal notranslate"><span class="pre">ci.make_rdm12</span></code>) was the string-driven one: the CI vector embedded in
+the complete active space and Γ = ⟨E_qp Ψ|E_rs Ψ⟩ − δγ in one matrix product. It is exact and
+fast for CAS vectors (CAS(12,12), 8.5·10⁵ determinants, 1.6 s), but its cost and memory follow
+N_FCI, not the number of determinants given: a truncated or selected expansion in a large
+orbital space (MCCI, a printed threshold) was impossible (CAS(16,16): MemoryError for 1000
+determinants). Now:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">method=&quot;bitwise&quot;</span></code>: the determinant-pair algorithm of <code class="docutils literal notranslate"><span class="pre">twordm_jeremy.f90</span></code>, in Fortran with
+OpenMP (<code class="docutils literal notranslate"><span class="pre">src/fortran/xs_rdm.f90</span></code>): popcnt(ieor) screening, Slater–Condon phases from the
+bit strings, all spin cases, the Hermitian partner added at the end; up to 64 orbitals.
+Built with the hardware popcnt on x86-64 (<code class="docutils literal notranslate"><span class="pre">-mpopcnt</span></code>, ifx <code class="docutils literal notranslate"><span class="pre">-march=x86-64-v2</span></code>, this file
+only): without it the screening is 7× slower.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">method=&quot;sparse&quot;</span></code>: the same intermediates restricted to the determinants reached, linear in
+N_det, in memory-bounded passes (NumPy/SciPy).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">method=&quot;dense&quot;</span></code>: as before, now in blocks of β strings (memory ~ the CI vector).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> (default everywhere) picks the cheapest by a measured cost model.</p></li>
+</ul>
+<p>Timings (2 cores here): 27 orbitals, 12 electrons: CISD-like 22 429 determinants, bitwise
+0.4 s, sparse 1.4 s; 10⁵ random selected determinants, bitwise 2.9 s, sparse 9.0 s;
+4·10⁵: bitwise 264 s (pair loop), sparse 55 s. With 64 cores the pair loop is ≈ 30× faster.
+Validated against PySCF FCI and selected CI (27 orbitals) to 10⁻¹⁵, the three against each
+other up to 64 orbitals; <code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">selftest</span></code> now checks the Fortran builder too.
+<code class="docutils literal notranslate"><span class="pre">tests/test_rdm_builders.py</span></code> (22 tests); full suite 203 passed, 5 skipped.</p>
+</section>
+<section id="detector-grids-of-grid-f90-partially-aligned-ensembles-6-october">
+<h2>Detector grids of grid.f90; partially aligned ensembles (6 October)<a class="headerlink" href="#detector-grids-of-grid-f90-partially-aligned-ensembles-6-october" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pyxscat.grids</span></code>: the polar grid of <code class="docutils literal notranslate"><span class="pre">grid.f90</span></code>/<code class="docutils literal notranslate"><span class="pre">qgrid3d.f90</span></code> (<code class="docutils literal notranslate"><span class="pre">qcoord3</span></code>), point for point
+(<code class="docutils literal notranslate"><span class="pre">write_qgrid</span></code> gives a byte-identical <code class="docutils literal notranslate"><span class="pre">qgrid.dat</span></code>), q-grid files, photon and electron k₀. The
+original sources are kept in <code class="docutils literal notranslate"><span class="pre">benchmarks/legacy_grid/</span></code>. Note: <code class="docutils literal notranslate"><span class="pre">grid.f90</span></code>’s n2 = 73 means
+72 points per ring (plus q = 0).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Molecule.detector(grid=&quot;polar&quot;</span> <span class="pre">|</span> <span class="pre">file</span> <span class="pre">|</span> <span class="pre">array,</span> <span class="pre">...)</span></code> for one fixed orientation, returning a
+<code class="docutils literal notranslate"><span class="pre">DetectorPattern</span></code> (text output with columns qx qy qz |q| curves, as qgrid.dat).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Molecule.aligned_ensemble(axis,</span> <span class="pre">p2,</span> <span class="pre">grid=...)</span></code>: I = I₀ + 5⟨P₂⟩P₂(q̂·â)S₂ on any grid (sign as of 8 October), X-rays
+and electrons, I₀ and S₂ computed once per ring.</p></li>
+<li><p>Input files: <code class="docutils literal notranslate"><span class="pre">[detector]</span> <span class="pre">grid/theta_max/rings/azimuths/photon_kev</span></code>, new <code class="docutils literal notranslate"><span class="pre">[alignment]</span> <span class="pre">axis/p2/grid</span></code>; <code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">run</span> <span class="pre">...</span> <span class="pre">--orientation</span> <span class="pre">A</span> <span class="pre">B</span> <span class="pre">G</span> <span class="pre">|</span> <span class="pre">--align</span> <span class="pre">X</span> <span class="pre">Y</span> <span class="pre">Z</span> <span class="pre">--p2</span> <span class="pre">P</span> <span class="pre">--grid</span> <span class="pre">polar</span> <span class="pre">...</span></code>;
+<code class="docutils literal notranslate"><span class="pre">pyxscat</span> <span class="pre">...</span> <span class="pre">--polar-grid</span> <span class="pre">E0</span> <span class="pre">THSMAX</span> <span class="pre">N1</span> <span class="pre">N2</span></code>.</p></li>
+<li><p>Validation: the ensemble formula equals an explicit average of fixed-orientation patterns over
+the distribution 1 + 5⟨P₂⟩P₂(cos β) to 10⁻¹²–10⁻¹⁰ (X-ray elastic and HF total, electron
+elastic).</p></li>
+<li><p>The IAM on the same grids (<code class="docutils literal notranslate"><span class="pre">model=&quot;iam&quot;</span></code> in <code class="docutils literal notranslate"><span class="pre">detector</span></code> and <code class="docutils literal notranslate"><span class="pre">aligned_ensemble</span></code>; new
+fixed-orientation electron IAM), <code class="docutils literal notranslate"><span class="pre">th.compare</span></code> for patterns and images (% difference maps), and
+with <code class="docutils literal notranslate"><span class="pre">iam</span> <span class="pre">=</span> <span class="pre">true</span></code> the input files write <code class="docutils literal notranslate"><span class="pre">_detector_iam</span></code>, <code class="docutils literal notranslate"><span class="pre">_detector_vs_iam</span></code>, <code class="docutils literal notranslate"><span class="pre">_aligned_iam</span></code>,
+<code class="docutils literal notranslate"><span class="pre">_aligned_vs_iam</span></code>. First result: LiF SA-CASSCF at 10 keV on the 49 × 72 grid differs from the
+IAM by up to 25 % (fixed orientation, along the bond near q = 1.6 Å⁻¹, where the IAM has its
+interference minimum) and 21 % for ⟨P₂⟩ = 0.5. <code class="docutils literal notranslate"><span class="pre">tests/test_grids.py</span></code> (14 tests); full suite 181 passed, 5 skipped.</p></li>
+<li><p>Authors: Andrés Moreno Carrascosa, Mats Simmermacher, Nikola Zotev, Joseph Cooper, Patrick
+Yuheng Wang, Thomas Northey (pyproject, README, docs, source headers). Licence still open.</p></li>
+</ul>
+</section>
+<section id="tester-report-total-scattering-wrong-on-the-cluster-5-october-evening">
+<h2>Tester report: total scattering wrong on the cluster (5 October, evening)<a class="headerlink" href="#tester-report-total-scattering-wrong-on-the-cluster-5-october-evening" title="Link to this heading">¶</a></h2>
+<p>Report: LiF (Molpro test case), total(0) = 41.8 instead of 144 (elastic correct), “with ifx and
+with gfortran”. The same tarball gives 144 here (gfortran 13, 1-32 threads, latest NumPy/SciPy/
+PySCF in a fresh environment). Elastic goes through the new pair kernel, total through the
+quartet kernel, so the quartet kernel was wrong in that build.</p>
+<p>Likely mechanism for “the compiler makes no difference”: the Makefile rebuilt by file times
+only. Unpacking a tarball over an earlier build gives sources that look older than the existing
+objects, and changing FC did not trigger a rebuild, so the second “gfortran” install probably
+reused the ifx library (or objects from an older version, e.g. a 20×20 Bessel module next to
+a kernel compiled for 32×32, which corrupts exactly the quartet kernel and nothing else).</p>
+<p>Changes:</p>
+<ul class="simple">
+<li><p>The Makefile keeps a stamp of compiler, flags and a checksum of all sources and rebuilds
+everything when any of them changes; <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code> always starts with <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code>.</p></li>
+<li><p>The library reports the compiler and options it was built with (<code class="docutils literal notranslate"><span class="pre">pyxscat_build_info</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">selftest</span> <span class="pre">[files]</span></code>: build info, then every kernel against sum rules and against the
+fixed-orientation route (13 checks, ~2 s), and for given files the sum rules separately for the
+Python side (tr DS = N, Σ Γ S S = N(N−1)) and the Fortran side.</p></li>
+<li><p>The quartet kernel gathers the 2RDM block with explicit loops instead of a vector-subscripted
+section of a pointer array (in case ifx mishandles it in the OpenMP region).</p></li>
+<li><p>Regression test: LiF total(0) = elastic(0) = 144 through the interface.</p></li>
+</ul>
+<p><strong>Diagnosis (with the tester, on the cluster).</strong> The loaded library was ifx 2026.1.1 (conda),
+so the “gfortran” run had indeed reused it. Optimisation levels: -O0 and -O1 pass, -O2 and -O3
+fail (with fp-model fast or precise), -O3 -fp-model strict passes. Compiling one file at a time
+at -O1 with the rest at -O3: only <code class="docutils literal notranslate"><span class="pre">xs_hermite.f90</span></code> cures it. Its recurrence read
+<code class="docutils literal notranslate"><span class="pre">e(t-1,</span> <span class="pre">...)</span></code> under <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">(t</span> <span class="pre">&gt;</span> <span class="pre">0)</span></code> inside an OpenMP loop over a private automatic array, and ifx
+miscompiled that at -O2/-O3; gfortran 9-14 and a bounds-checked debug build are fine.</p>
+<p><strong>Fix.</strong> The Hermite recurrences (<code class="docutils literal notranslate"><span class="pre">hermite_table</span></code>, and <code class="docutils literal notranslate"><span class="pre">hermite_pair</span></code> used by the pair, transform
+and electron-nucleus kernels) now work on an array padded at t = -1 and t = 2 l_max + 2, so
+there are no guarded loads at all; <code class="docutils literal notranslate"><span class="pre">hermite_table</span></code> is no longer threaded (it is negligible).
+Confirmed on the cluster: ifx 2026.1.1 (conda-forge), Linux x86_64, default flags (-O3
+-fp-model precise), 64 threads: <code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">selftest</span></code> passes, and so do the LiF sum rules
+(I2(0) = Σ Γ S S to 8·10⁻¹¹, one thread vs 64 to 4·10⁻¹⁵).</p>
+</section>
+<section id="ready-for-testers-intel-compiler-5-october-evening">
+<h2>Ready for testers; Intel compiler (5 October, evening)<a class="headerlink" href="#ready-for-testers-intel-compiler-5-october-evening" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">FC=ifx</span></code> / <code class="docutils literal notranslate"><span class="pre">FC=ifx</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> (also ifort): <code class="docutils literal notranslate"><span class="pre">-O3</span> <span class="pre">-fPIC</span> <span class="pre">-qopenmp</span> <span class="pre">-fp-model</span> <span class="pre">precise</span></code>
+(value-safe floating point, since the tests compare routes to 1e-12), <code class="docutils literal notranslate"><span class="pre">-module</span> <span class="pre">build</span></code>, Intel
+runtime linked statically (<code class="docutils literal notranslate"><span class="pre">-static-intel</span></code>); <code class="docutils literal notranslate"><span class="pre">EXTRA=</span></code> adds flags (e.g. <code class="docutils literal notranslate"><span class="pre">-xHost</span></code>). FFLAGS and
+LDFLAGS from the environment (conda sets them for gfortran) are ignored; on the command line
+they replace the defaults.</p></li>
+<li><p>Not run with ifx: no Intel compiler can be installed in this environment. To reduce the risk,
+the sources now compile with <code class="docutils literal notranslate"><span class="pre">gfortran</span> <span class="pre">-std=f2018</span> <span class="pre">-pedantic</span></code> without line-length extensions
+(two declarations in the old Bessel module used a variable before declaring it, a GNU
+extension that ifx may reject; two lines were longer than 132 characters).</p></li>
+<li><p>Clearer errors: compiler not found (gfortran or oneAPI hint) and library not loadable (Intel
+OpenMP runtime hint).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/FOR_TESTERS.md</span></code>: install (gfortran or ifx), tests, own calculations, what to report.</p></li>
+</ul>
+</section>
+<section id="h-functions-5-october-afternoon">
+<h2>h functions (5 October, afternoon)<a class="headerlink" href="#h-functions-5-october-afternoon" title="Link to this heading">¶</a></h2>
+<p><strong>What limited us to g.</strong> Only the quartet kernel: the Bessel-derivative tables of the old
+module (<code class="docutils literal notranslate"><span class="pre">rrdj0</span></code>, <code class="docutils literal notranslate"><span class="pre">BesselDeriv</span></code>) had fixed 20×20 dimensions, and a quartet needs derivative
+orders up to 4 l_max + 2 (+2 for j₂), i.e. 23 for h. Everything written since (pair transforms,
+elastic pairs, electron–nucleus, the radial functions) is dimensioned from the basis, and the
+Hermite recurrences and the h = 0 closed form were already general.</p>
+<p><strong>Change.</strong> One parameter, <code class="docutils literal notranslate"><span class="pre">BDIM_MAX</span> <span class="pre">=</span> <span class="pre">32</span></code> in <code class="docutils literal notranslate"><span class="pre">xs_bessel_j0.f90</span></code> (room up to l = 7).</p>
+<p><strong>Checks</strong> (<code class="docutils literal notranslate"><span class="pre">tests/test_h_functions.py</span></code>, CO with an h shell on C; also CO with cc-pV5Z on C):</p>
+<ul class="simple">
+<li><p>PySCF input, pair transforms, elastic by pairs (l = 0 and 2) and electron–nucleus against the
+Lebedev route: 10⁻¹¹–10⁻¹⁴.</p></li>
+<li><p>Quartet kernel: elastic against the pair route 2·10⁻¹⁰, exchange against Lebedev 3·10⁻¹⁰;
+l = 2: 6·10⁻¹² (elastic), 10⁻⁸ (exchange, default screening).</p></li>
+<li><p>Cost: CO with cc-pV5Z on C (h, 5 q): elastic quartets 38 s, pairs 3.6 s.</p></li>
+</ul>
+<p><strong>Not covered.</strong> The Molden format stops at g (no agreed h ordering or normalisation), so
+Molden/Molcas/Molpro input cannot carry h shells; PySCF can.</p>
+</section>
+<section id="radial-functions-upward-and-downward-recurrences-combined-5-october-afternoon">
+<h2>Radial functions: upward and downward recurrences combined (5 October, afternoon)<a class="headerlink" href="#radial-functions-upward-and-downward-recurrences-combined-5-october-afternoon" title="Link to this heading">¶</a></h2>
+<p><strong>The p0 tables are still used</strong>, for h &lt; <code class="docutils literal notranslate"><span class="pre">cutoffcentre</span></code> = 10⁻¹⁰ bohr, i.e. in practice when the two
+pair centres coincide exactly (all four functions on one atom, or the same pair twice). Between
+10⁻¹⁰ and 10⁻⁴ bohr (the old threshold) the Bessel route is now used, because it is now exact
+there.</p>
+<p><strong>A mistake in the first version of the fix (corrected).</strong> <code class="docutils literal notranslate"><span class="pre">radial_series</span></code> used the upward
+recurrence wherever its error amplification looked small by a per-step estimate
+Π(2m+1)/x². That estimate is too optimistic: the minimal solution j_b loses to the dominant
+y_b at the rate (2b−1)(2b+1)/x² per order, so for orders above x the upward recurrence is
+unstable. Measured against 40-digit references: order 10 off by 4·10⁻⁶ at x = 2.4, order 14 by
+30 % at x = 3.4, order 18 by 5·10⁴ at x = 3.9. The tests did not catch it because the
+independent (Lebedev) checks used s/p/d bases, where orders stay low, and the high-l comparison
+was pairs against quartets, which shared the same routine.</p>
+<p><strong>Now:</strong> as in Miller’s method, both directions are combined: upward for b ≤ x, backward from a
+start chosen so the neglected minimal solution is below 10⁻¹⁷, matched at the junction; series +
+downward for x &lt; 1; pure upward only for x &gt; b_max + 1. Accuracy, orders ≤ 18, 10⁻³ ≤ x ≤ 10³:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>x range</p></th>
+<th class="head"><p>old <code class="docutils literal notranslate"><span class="pre">bessels0rr</span></code></p></th>
+<th class="head"><p>first fix</p></th>
+<th class="head"><p>now</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>10⁻³–0.1</p></td>
+<td><p>7·10⁻³ (orders ≤ 3 closed forms)</p></td>
+<td><p>10⁻¹⁵</p></td>
+<td><p>10⁻¹⁵</p></td>
+</tr>
+<tr class="row-odd"><td><p>0.1–1</p></td>
+<td><p>7·10⁻¹¹</p></td>
+<td><p>10⁻¹⁵</p></td>
+<td><p>10⁻¹⁵</p></td>
+</tr>
+<tr class="row-even"><td><p>1–10</p></td>
+<td><p>10⁻¹⁵</p></td>
+<td><p>up to 5·10⁴ (orders &gt; x)</p></td>
+<td><p>2·10⁻¹⁵</p></td>
+</tr>
+<tr class="row-odd"><td><p>10–300</p></td>
+<td><p>10⁻¹⁴</p></td>
+<td><p>10⁻¹⁵</p></td>
+<td><p>2·10⁻¹⁵</p></td>
+</tr>
+<tr class="row-even"><td><p>300–1000</p></td>
+<td><p>10² (Miller start capped at 500)</p></td>
+<td><p>10⁻¹⁵</p></td>
+<td><p>2·10⁻¹⁵</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">tests/test_radial.py</span></code> checks every order up to 18 against SciPy/series values for
+10⁻⁴ ≤ x ≤ 10³ and specifically the 1 &lt; x &lt; order region. With g functions (CO/cc-pVQZ)
+against the Lebedev route: elastic l = 0 7·10⁻¹⁵ (pairs) and 2·10⁻¹⁴ (quartets), exchange
+2·10⁻¹⁴; l = 2 3·10⁻¹² (pairs).</p>
+<p>Cost of doing it right: benzene/6-31G HF total, 41 q: 4.9 s (earlier executable 5.3 s); elastic
+timings in the table above were re-measured.</p>
+</section>
+<section id="j2-at-small-q-and-near-coincident-centres-fixed-5-october">
+<h2>j₂ at small q and near-coincident centres: fixed (5 October)<a class="headerlink" href="#j2-at-small-q-and-near-coincident-centres-fixed-5-october" title="Link to this heading">¶</a></h2>
+<p><strong>Cause.</strong> The quartet kernel (as the one-loop code before it) summed the radial functions with
+closed forms for j₁, j₂, j₃ (<code class="docutils literal notranslate"><span class="pre">bessels0rr</span></code>), e.g. h₁ = (sin x/x² − cos x/x)(q/h). For small
+x = qh these lose 2, 4, 6 powers of x to cancellation. Two symptoms: nearly coincident pair
+centres lost digits (hence <code class="docutils literal notranslate"><span class="pre">cutoffcentre</span></code>), and the j₂ moment, which divides by q² after
+Hobson’s combination, was wrong at small q (36 % at q = 0.01 bohr⁻¹ for water).</p>
+<p><strong>Fix.</strong> <code class="docutils literal notranslate"><span class="pre">radial_series</span></code> (in <code class="docutils literal notranslate"><span class="pre">xs_radial.f90</span></code>, shared with the pair and electron–nucleus
+kernels) evaluates Σ_b c_b q^{2b} j_b(qh)/(qh)^b stably for every qh: series + downward
+recurrence for x &lt; 1, upward recurrence where safe, Miller in between. The quartet kernel uses
+it instead of <code class="docutils literal notranslate"><span class="pre">bessels0rr</span></code>.</p>
+<p><strong>Result.</strong></p>
+<ul class="simple">
+<li><p>j₂ (exchange, CCSD two-electron, elastic) against the Lebedev projection: 10⁻¹¹ relative at
+q = 0.01 bohr⁻¹, 4·10⁻⁸ at 10⁻³ (before: 36 % and a factor 4700).</p></li>
+<li><p>j₀ near coincidence: the quartet kernel equals the exact pair route to 10⁻¹⁴ (before 2·10⁻¹⁰)
+and is exact even with no coincident branch at all, so <code class="docutils literal notranslate"><span class="pre">cutoffcentre</span></code> is now 10⁻¹⁰ (was 10⁻⁴).
+The pending “small-h expansion” is no longer needed.</p></li>
+<li><p>Cost: see the entry above (the first version of this fix had an unstable upward recurrence).</p></li>
+<li><p>All tests pass, and so do the slow large-basis tests (<code class="docutils literal notranslate"><span class="pre">PYXSCAT_SLOW=1</span></code>).</p></li>
+</ul>
+</section>
+<section id="elastic-scattering-by-density-weighted-pairs-5-october">
+<h2>Elastic scattering by density-weighted pairs (5 October)<a class="headerlink" href="#elastic-scattering-by-density-weighted-pairs-5-october" title="Link to this heading">¶</a></h2>
+<p><strong>Question: are we using the optimal routine?</strong> Yes for the general case: <code class="docutils literal notranslate"><span class="pre">xs_kernel_j0.f90</span></code> is
+the port of the newest one-loop kernel (<code class="docutils literal notranslate"><span class="pre">BigMemoryScattering/pipeline_pyrazine/</span> <span class="pre">Total_scattering_one_loop_opt.f90</span></code>, 25 Sept., contracted-shell quartets + screening tables),
+byte-identical to the copy the regression references were made with. Benzene/6-31G HF total,
+41 q, 2 threads: the original executable 5.2 s, ours 3.9 s; agreement 10⁻⁷ (its single-precision π).</p>
+<p><strong>But elastic was going through the total loop</strong>, at the cost of a total. Because D⊗D factorises,
+<code class="docutils literal notranslate"><span class="pre">xs_elastic.f90</span></code> folds the density into each primitive-shell pair (one Hermite charge
+distribution per pair) and sums over pairs of pairs with the closed-form Cartesian derivatives
+of the radial functions (a_{Ti} h^{T−2i} f_{n}). Rigorous q-dependent screening
+(|∂^{tuv} j₀| ≤ q^{t+u+v}), j_m(x)/x^m vectorised over q, exact at coincident centres.
+Now the default (<code class="docutils literal notranslate"><span class="pre">elastic(...,</span> <span class="pre">method=&quot;pairs&quot;)</span></code>); the quartet route stays available.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Elastic, 200 q, 2 threads</p></th>
+<th class="head"><p>pairs</p></th>
+<th class="head"><p>quartets</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>benzene / 6-31G</p></td>
+<td><p>9.8 s</p></td>
+<td><p>12.8 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>benzene / cc-pVDZ</p></td>
+<td><p>15.1 s</p></td>
+<td><p>25.6 s</p></td>
+</tr>
+<tr class="row-even"><td><p>benzene / aug-cc-pVDZ</p></td>
+<td><p>66 s</p></td>
+<td><p>132 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>CO / cc-pVQZ (7 q)</p></td>
+<td><p>0.57 s</p></td>
+<td><p>36 s</p></td>
+</tr>
+</tbody>
+</table>
+<p>Electron scattering (which needs the X-ray elastic term) and Molden-only runs benefit directly.</p>
+<p><strong>Accuracy findings.</strong></p>
+<ul class="simple">
+<li><p>Pairs agree with the Lebedev route to 10⁻¹¹ (l = 0 and 2, q from 10⁻³), with the quartet kernel
+to 10⁻⁹, and give I(0) = N² to machine precision (quartets: 2·10⁻¹⁰).</p></li>
+<li><p>Same tolerance, tighter screening: 10⁻⁹ instead of 1.5·10⁻⁶ (benzene/aug-cc-pVDZ).</p></li>
+<li><p>Eirik’s elastic j₂ (and our quartet kernel with his cutoffcentre = 0.01) is off by 2.5·10⁻⁴
+because near-coincident pair centres are treated as coincident; the pair route is exact. The
+test now checks both.</p></li>
+<li><p>The quartet kernel’s j₂ loses accuracy at very small q (Hobson’s cancellation, absolute error
+~10⁻¹⁰/q²): wrong at q ≤ 0.03 bohr⁻¹. Elastic j₂ is now exact; the exchange and two-electron j₂
+still go through the quartet kernel. Fix planned (direct j₂P₂ derivatives).</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">tests/test_elastic_pairs.py</span></code> (7 tests).</p>
+</section>
+<section id="electron-scattering-5-october">
+<h2>Electron scattering (5 October)<a class="headerlink" href="#electron-scattering-5-october" title="Link to this heading">¶</a></h2>
+<p><strong>Physics.</strong> First Born approximation, dσ/dΩ = 4/(a₀²q⁴) [I_nn − 2 I_ne + I_ee] (the bracket is
+the quantity of the earlier code, modes 5 and 6). The only new integrals are the
+electron–nucleus ones, Σ_A Z_A Σ D_μν ∫χ_μχ_ν j₀(q|r − R_A|).</p>
+<p><strong>Kernel (<code class="docutils literal notranslate"><span class="pre">xs_nuclear.f90</span></code>).</strong> Analytic: Hermite expansion at the pair centre, then the
+McMurchie–Davidson recursion for the Cartesian derivatives of j₀(q|h|) with the auxiliary
+functions f_n = (−q²)ⁿ j_n(qh)/(qh)ⁿ. j_n(x)/xⁿ by series (x &lt; 1), Miller (x ≤ n_max + 1) or
+upward recurrence, so nothing special happens at h = 0. j₂P₂ by Hobson. Density-weighted
+Hermite coefficients per shell pair, OpenMP over pairs. Benzene/cc-pVDZ, 200 q: 0.7 s (the X-ray
+elastic term takes 30 s), so electrons cost the same as X-rays.</p>
+<p><strong>Python.</strong> <code class="docutils literal notranslate"><span class="pre">pyxscat.electron</span></code>: <code class="docutils literal notranslate"><span class="pre">nucleus_nucleus</span></code>, <code class="docutils literal notranslate"><span class="pre">electron_nucleus</span></code>, <code class="docutils literal notranslate"><span class="pre">decompose</span></code>, <code class="docutils literal notranslate"><span class="pre">scattering</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cross_section</span></code>, <code class="docutils literal notranslate"><span class="pre">aligned</span></code> (|Z(q) − F(q)|² + inelastic at fixed orientation). Electron IAM in
+<code class="docutils literal notranslate"><span class="pre">pyxscat.iam</span></code> (Mott–Bethe amplitudes Z − f; atomic and molecular parts for sM). <code class="docutils literal notranslate"><span class="pre">pyxscat</span> <span class="pre">--probe</span> <span class="pre">electron</span></code> in the low-level command.</p>
+<p><strong>Interface.</strong> <code class="docutils literal notranslate"><span class="pre">probe=&quot;electron&quot;</span></code> in <code class="docutils literal notranslate"><span class="pre">scattering</span></code>, <code class="docutils literal notranslate"><span class="pre">iam</span></code>, <code class="docutils literal notranslate"><span class="pre">anisotropy</span></code> and <code class="docutils literal notranslate"><span class="pre">detector</span></code>; the
+cross section in Å²/sr (bohr²/sr with 1/bohr), NaN at q = 0; <code class="docutils literal notranslate"><span class="pre">energy_kev</span></code> for the relativistic
+γ² and the detector wavelength (<code class="docutils literal notranslate"><span class="pre">th.electron_wavelength</span></code>); <code class="docutils literal notranslate"><span class="pre">th.sm(result,</span> <span class="pre">iam)</span></code> for sM(s), with
+the IAM curve alongside. <code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">run</span> <span class="pre">...</span> <span class="pre">--electrons</span> <span class="pre">|</span> <span class="pre">--probe</span> <span class="pre">both</span> <span class="pre">--energy</span> <span class="pre">3000</span></code>;
+<code class="docutils literal notranslate"><span class="pre">probe</span> <span class="pre">=</span> <span class="pre">&quot;electron&quot;</span> <span class="pre">|</span> <span class="pre">&quot;both&quot;</span></code> in input files. Electron files are named <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;_electron_*</span></code>.</p>
+<p><strong>Validation (<code class="docutils literal notranslate"><span class="pre">tests/test_electron.py</span></code>, 11 tests; 4 more in <code class="docutils literal notranslate"><span class="pre">test_thistle.py</span></code>).</strong></p>
+<ul class="simple">
+<li><p>I_ne against the Lebedev average of Re[Z*(q)F(q)] from the analytic pair transforms, l = 0
+and 2, Cartesian cc-pVDZ and spherical cc-pVQZ (g functions), q to 12 bohr⁻¹: 10⁻¹⁰.</p></li>
+<li><p>Against the old code (<code class="docutils literal notranslate"><span class="pre">Integrals.f90</span></code>, <code class="docutils literal notranslate"><span class="pre">nuclei_electron_integration</span></code>, compiled here): 4·10⁻⁸,
+the single-precision π of the old code. Reference stored in <code class="docutils literal notranslate"><span class="pre">tests/data</span></code>.</p></li>
+<li><p>Mott–Bethe for one atom: elastic = (Z − f)², f² the X-ray elastic: 10⁻⁸.</p></li>
+<li><p>H atom against the exact [1 − 16/(4+q²)²]²: 2·10⁻⁴ (aug-cc-pV5Z).</p></li>
+<li><p>Water at small q: elastic bracket / q² → μ²/3 with PySCF’s dipole: 2·10⁻³.</p></li>
+<li><p>Fixed orientation averaged on a Lebedev grid = rotational, total/elastic/inelastic and l = 2.</p></li>
+</ul>
+<p><strong>Observation.</strong> For LiF (SA-CASSCF), sM(s) of the molecule departs strongly from the IAM between
+1 and 4 Å⁻¹: electron diffraction weighs the valence density through (Z − f)², so charge
+transfer shows far more than in X-ray scattering. PySCF’s own SA-CASSCF gives the same curve as
+the Molpro wavefunction, so this is physics, not the reader.</p>
+<p><strong>Description.</strong> <code class="docutils literal notranslate"><span class="pre">docs/THEORY.md</span></code> now gives the theory, the algorithms and the validation table
+(the basis for the paper’s methods section); the README opens with a feature overview.</p>
+</section>
+<section id="a-bug-in-the-old-elastic-j0-found-while-testing-j2">
+<h2>A bug in the old elastic j0 (found while testing j2)<a class="headerlink" href="#a-bug-in-the-old-elastic-j0-found-while-testing-j2" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">elastic_j0.f90</span></code> (all three old folders) calls the j1 Bessel sum <code class="docutils literal notranslate"><span class="pre">bessels1rr</span></code> instead of the j0
+one. The elastic j0 result is right only at q = 1 bohr⁻¹: for water HF/6-31G it is 70 % too high
+at q = 0.3 and off by 2e4 at q = 5. Details: <code class="docutils literal notranslate"><span class="pre">benchmarks/legacy/eirik_elastic_j0_bug.md</span></code>. Total
+scattering and elastic j2 are not affected.</p>
+</section>
+<section id="open-points-6-october">
+<h2>Open points (6 October)<a class="headerlink" href="#open-points-6-october" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Absolute Molcas energy.</strong> PySCF’s exact integrals give SCF and CASSCF energies about 24 mEh
+below the Molcas output; the input used <code class="docutils literal notranslate"><span class="pre">RICD</span></code>. A rerun without <code class="docutils literal notranslate"><span class="pre">ricd</span></code> settles it (the CI
+conversion is exact either way).</p></li>
+<li><p><strong>Spherical d/f conventions of OpenMolcas and BAGEL Molden files</strong>: untested (no such file
+yet); inputs in <code class="docutils literal notranslate"><span class="pre">benchmarks/molden_conventions/</span></code>.</p></li>
+<li><p><strong>Eirik’s aligned input</strong> that gave a wrong answer in the earlier code: to compare.</p></li>
+<li><p><strong>Cost with deeply contracted basis sets.</strong> The quartet kernel works on primitive shells
+(cost ~ N_prim^4): ANO-L on C7H8 (225 primitive shells) ~30 s per elastic curve on 2 cores.</p></li>
+<li><p><strong>ifx</strong>: tested by one user on one cluster; the <code class="docutils literal notranslate"><span class="pre">-march=x86-64-v2</span></code> flag for the bitwise RDM
+builder is not yet tested with ifx.</p></li>
+</ol>
+<p>(Done since the first list: electron scattering; coincident centres, through the stable radial
+functions; partial alignment; h functions; RDMs from long expansions.)</p>
+</section>
+<section id="cas-ci-densities-without-the-n4-array-7-october">
+<h2>CAS/CI densities without the n⁴ array (7 October)<a class="headerlink" href="#cas-ci-densities-without-the-n4-array-7-october" title="Link to this heading">¶</a></h2>
+<p>Question: does a large CI wavefunction (e.g. FCI) blow up the Python side of the 2RDM? Measured
+stage by stage (<code class="docutils literal notranslate"><span class="pre">benchmarks/ci_rdm_scaling</span></code>, 2 cores, 7 GB):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Stage</p></th>
+<th class="head"><p>Case</p></th>
+<th class="head"><p>Before</p></th>
+<th class="head"><p>Now</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>CI vector → active RDMs</p></td>
+<td><p>CAS(12,12), 8.5·10⁵ det.</p></td>
+<td><p>dense 2.7 s / 1.2 GB; sparse 37 s / 3.1 GB; bitwise 216 s / 0.2 GB</p></td>
+<td><p>unchanged (already compiled)</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>CAS(14,14), 1.2·10⁷ det.</p></td>
+<td><p>dense 39 s / 3.2 GB</p></td>
+<td><p>unchanged</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>FCI H₂O/6-31G, 1.7·10⁶ det.</p></td>
+<td><p>dense 4.9 s / 1.4 GB; sparse 94 s / 3.3 GB; bitwise ≈ 13 min (est.)</p></td>
+<td><p>unchanged</p></td>
+</tr>
+<tr class="row-odd"><td><p>embedding + MO→AO</p></td>
+<td><p>benzene CAS(6,6)/cc-pVDZ (120 AO)</p></td>
+<td><p>1.66 GB array, peak 5.9 GB, 8–10 s</p></td>
+<td><p>6 MB of factors, peak 0.14 GB, 0.03 s</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>benzene CAS(6,6)/cc-pVTZ (300 AO)</p></td>
+<td><p>65 GB array (&gt; 200 GB peak): impossible here</p></td>
+<td><p>39 MB, peak 0.33 GB, 0.1 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>kernel (30 q)</p></td>
+<td><p>cc-pVDZ</p></td>
+<td><p>19.5 s</p></td>
+<td><p>28 s (24 or 81 terms: the same)</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>cc-pVTZ</p></td>
+<td><p>—</p></td>
+<td><p>650 s</p></td>
+</tr>
+</tbody>
+</table>
+<p>So the CI → RDM step was not the problem (the active RDMs are tiny, n_act⁴); the wall was the
+four-index AO array that every CAS/CI route built afterwards (PySCF’s <code class="docutils literal notranslate"><span class="pre">make_rdm12</span></code> even over all
+MOs, virtuals included). Fixed by the factored embedding (THEORY §4), now the default beyond 60
+basis functions for Molpro, Molcas and PySCF CASSCF/CASCI/FCI; <code class="docutils literal notranslate"><span class="pre">factored=False</span></code> restores the
+array. Validated against the arrays to 10⁻¹⁴ (total), 10⁻¹⁰ (j₂), against PySCF’s own AO array,
+and through the existing Molpro/Molcas tests, which now run factored
+(<code class="docutils literal notranslate"><span class="pre">tests/test_factored_cas.py</span></code>). Also fixed: picking one root of a state-averaged PySCF
+calculation (the state-averaged solver needs <code class="docutils literal notranslate"><span class="pre">states_make_rdm12</span></code>).</p>
+<p>Remaining cost driver for very large active spaces: the CI vector itself (CAS(16,16) = 1.7·10⁸
+determinants, 1.3 GB per vector, plus the Python list of determinants when read from a file).</p>
+</section>
+<section id="first-cluster-run-7-october">
+<h2>First cluster run (7 October)<a class="headerlink" href="#first-cluster-run-7-october" title="Link to this heading">¶</a></h2>
+<p>Node of partition <code class="docutils literal notranslate"><span class="pre">lambda</span></code>: 2 × Intel Xeon Gold 6326 (Ice Lake, 2 × 16 cores, 2.9 GHz),
+gfortran 8.5 (Red Hat), Intel Python 3.12, NumPy 2.5.  Self-test passed; full suite with the slow
+cases: 233 passed in 6 min on 32 threads.  Scaling, benzene/cc-pVDZ (120 functions), 100 q:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>threads</p></th>
+<th class="head"><p>elastic (pair kernel)</p></th>
+<th class="head"><p>HF total (quartet kernel)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>20.3 s</p></td>
+<td><p>41.3 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>8</p></td>
+<td><p>2.61 s (7.8×)</p></td>
+<td><p>5.55 s (7.4×)</p></td>
+</tr>
+<tr class="row-even"><td><p>16</p></td>
+<td><p>1.34 s (15.1×)</p></td>
+<td><p>3.55 s (11.6×)</p></td>
+</tr>
+<tr class="row-odd"><td><p>32</p></td>
+<td><p>0.70 s (28.8×)</p></td>
+<td><p>2.88 s (14.3×)</p></td>
+</tr>
+</tbody>
+</table>
+<p>The quartet kernel stalled at ~14×: its OpenMP loop handed out one task per first shell
+index, 48 tasks of very unequal size (the largest 6.8 % of the work, so at most 14.7× however many
+threads).  A model of that schedule reproduces the measured speed-ups (7.7×, 13.0×, 14.8×).  Fixed:
+one task per shell pair (1176 here), largest first (merge sort on a cost estimate); the model now
+gives 32.0× on 32 threads.  Results unchanged to rounding (1e-14 relative; full suite passes).
+To be re-measured on the cluster.</p>
+</section>
+<section id="j2-sign-convention-i2-included-8-october">
+<h2>j₂ sign convention: i² included (8 October)<a class="headerlink" href="#j2-sign-convention-i2-included-8-october" title="Link to this heading">¶</a></h2>
+<p>At a collaborator’s request S₂ now carries the phase i² = −1 of the l = 2 term of the plane-wave
+expansion: S₂ = −Σ Γ⟨j₂P₂⟩, and I(q, θ_q) = I₀ + 5⟨P₂⟩P₂(cos θ_q)S₂ (all moments with plus signs;
+S₂ = ⟨I P₂⟩ = a₂/5 for perfect alignment).  One place (<code class="docutils literal notranslate"><span class="pre">core.lsign</span></code>) for the kernels; the IAM,
+electron (nucleus–nucleus, electron–nucleus) and aligned-ensemble formulas follow.  Every j₂ value
+written before this date is −1 times the new one.  Tests and references updated (Eirik’s Y₂₀ code:
+factor −√(5/4π)).</p>
+</section>
+<section id="mrci-8-october">
+<h2>MRCI (8 October)<a class="headerlink" href="#mrci-8-october" title="Link to this heading">¶</a></h2>
+<p>Internally contracted MRCI (Molpro) has no CI vector to export: the external part is expanded in
+contracted pair functions and the 2RDM is never formed; only the 1RDM (<code class="docutils literal notranslate"><span class="pre">dm</span></code> / natural orbitals)
+is available.  OpenMolcas’s MRCI is uncontracted (GUGA direct CI) and prints the complete vector
+with <code class="docutils literal notranslate"><span class="pre">THRPrint</span> <span class="pre">=</span> <span class="pre">0.0</span></code>: a reader (<code class="docutils literal notranslate"><span class="pre">interfaces.molcas.read_mrci_output</span></code>, <code class="docutils literal notranslate"><span class="pre">from_mrci</span></code>,
+<code class="docutils literal notranslate"><span class="pre">th.load</span></code> on the output) converts the CSFs (GUGA case numbers 0/1/2/3 → 0/u/d/2, coupling order
+virtual, inactive, active; the determinants reordered to increasing orbital index with the
+permutation sign) and builds the RDMs over the correlated orbitals with the determinant builders,
+adding the frozen orbitals as core.  Water/cc-pVDZ, CASSCF(6,5) reference, 50 034 CSFs: the MRCI
+energy from our RDMs reproduces Molcas’s to 8e-8 (the printed six decimals), the natural
+occupations to 1e-5; scattering factored vs array 2e-11 (<code class="docutils literal notranslate"><span class="pre">tests/test_molcas_mrci.py</span></code>,
+<code class="docutils literal notranslate"><span class="pre">examples/mrci/molcas_test</span></code>).</p>
+<p>Same day: the 64-orbital limit is gone (multiword bit strings in the Fortran pair kernel, shared
+accumulation with atomic updates when the RDM copies would exceed 2 GB), and
+<code class="docutils literal notranslate"><span class="pre">ci.make_rdm12_external</span></code> uses the ≤ 2-electrons-in-the-virtuals structure of MRCI/CISD-like
+expansions: grouped pair loop over coupling labels + the vvvv block by matrix products (THEORY
+§4).  Verified: water MRCI structured vs full loop 3e-14; the same vector with its virtuals
+spread over 120 orbitals (two words, atomic path) 9e-14; a CAS(10,8) vector on scattered
+orbitals of a 128-orbital space vs PySCF 2e-14.  The MRCI reader uses it by default, and the
+four-index array route (kernel mode 1) is kept beyond ~80 orbitals, where the factored embedding
+(eigendecomposition of the active block) is no longer feasible: pyridine MRCI/cc-pVTZ (260
+correlated orbitals) means a 36 GB MO array and a 65 GB AO array, for lambda-hmem.  Remaining
+cost for very large MRCI vectors: the CSF → determinant expansion and the grouping are in
+Python (~10 µs per determinant).  <code class="docutils literal notranslate"><span class="pre">examples/mrci</span></code>
+also has the Molpro input for what Molpro can give, and the selected-CI route (PySCF, explicit
+determinants, bitwise builder) for large active spaces.</p>
+</section>
+<section id="before-the-paper">
+<h2>Before the paper<a class="headerlink" href="#before-the-paper" title="Link to this heading">¶</a></h2>
+<p>Must have:</p>
+<ol class="arabic simple">
+<li><p>~~Licence~~ (Apache 2.0, done 7 October), public git repository, continuous integration (gfortran Linux/macOS, ifx), a
+release with a DOI (Zenodo).</p></li>
+<li><p>Performance on the cluster: thread scaling, basis-set scaling, comparison with the earlier
+code on the same machine (<code class="docutils literal notranslate"><span class="pre">benchmarks/cluster_check.py</span> <span class="pre">scaling</span></code> and a benchmark set).</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">paper/</span></code> folder: one script per figure and table, from inputs to the final plot.</p></li>
+<li><p>The application cases and the reproduction of published results of the earlier code.</p></li>
+<li><p>Open points 1-3 above.</p></li>
+</ol>
+<p>To do (7 October): j₂ about an arbitrary molecular axis. S₂ is now the moment about the
+molecular z axis of the input frame only (the laboratory axis is free); add a <code class="docutils literal notranslate"><span class="pre">molecular_axis</span></code>
+option or compute the full l = 2 tensor (five components, then any axis). See THEORY §6.</p>
+<p>Could have: MCCI reader, j1 terms, contracted screening in the quartet kernel (open point 4),
+BAGEL/NEXMD adapters. (Factored CCSD densities: done.)</p>
+</section>
+<section id="findings-in-the-existing-code">
+<h2>Findings in the existing code<a class="headerlink" href="#findings-in-the-existing-code" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Single-precision π.</strong> <code class="docutils literal notranslate"><span class="pre">Total_scattering_one_loop_opt.f90</span></code> computes π as <code class="docutils literal notranslate"><span class="pre">acos(-1.0000)</span></code>,
+which scales every result by 1 + 8.3e-8.</p></li>
+<li><p><strong>Old default switch-over distance.</strong> The old default (0.01 bohr) gives errors of about
+4e-6 for ordinary molecules; the new default (1e-4 bohr) gives below 1e-9.</p></li>
+<li><p><strong>Spin in the old Molcas reader.</strong> The old reader takes <code class="docutils literal notranslate"><span class="pre">int(float(S))</span></code> as M_S, which gives
+the wrong determinant count for doublets and other half-integer spins. The new
+<code class="docutils literal notranslate"><span class="pre">csf_to_determinants</span></code> takes 2M_S explicitly.</p></li>
+</ol>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Status of the refactoring</a></li>
+</ul>
+
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Status of the refactoring</a><ul>
+<li><a class="reference internal" href="#milestone-1-package-independent-kernel-4-october">Milestone 1: package-independent kernel (4 October)</a></li>
+<li><a class="reference internal" href="#milestone-2-other-packages-night-of-4-october">Milestone 2: other packages (night of 4 October)</a></li>
+<li><a class="reference internal" href="#milestone-3-aligned-molecules-night-of-4-october">Milestone 3: aligned molecules (night of 4 October)</a></li>
+<li><a class="reference internal" href="#molpro-5-october">Molpro (5 October)</a></li>
+<li><a class="reference internal" href="#independent-atom-model-and-more-molpro-cases-5-october">Independent atom model and more Molpro cases (5 October)</a></li>
+<li><a class="reference internal" href="#punch-files-orbital-order-molden-conventions-5-october-night">Punch files, orbital order, Molden conventions (5 October, night)</a></li>
+<li><a class="reference internal" href="#j2-second-legendre-moment-5-october-night">j2: second Legendre moment (5 October, night)</a></li>
+<li><a class="reference internal" href="#simple-interface-and-packaging-5-october-night">Simple interface and packaging (5 October, night)</a></li>
+<li><a class="reference internal" href="#comparison-with-thistle-dev-7-october">Comparison with thistle-dev (7 October)</a></li>
+<li><a class="reference internal" href="#ccsd-without-the-four-index-density-6-october">CCSD without the four-index density (6 October)</a></li>
+<li><a class="reference internal" href="#plotters-run-report-6-october">Plotters, run report (6 October)</a></li>
+<li><a class="reference internal" href="#molpro-without-the-output-file-6-october">Molpro without the output file (6 October)</a></li>
+<li><a class="reference internal" href="#rdms-from-long-determinant-expansions-6-october">2RDMs from long determinant expansions (6 October)</a></li>
+<li><a class="reference internal" href="#detector-grids-of-grid-f90-partially-aligned-ensembles-6-october">Detector grids of grid.f90; partially aligned ensembles (6 October)</a></li>
+<li><a class="reference internal" href="#tester-report-total-scattering-wrong-on-the-cluster-5-october-evening">Tester report: total scattering wrong on the cluster (5 October, evening)</a></li>
+<li><a class="reference internal" href="#ready-for-testers-intel-compiler-5-october-evening">Ready for testers; Intel compiler (5 October, evening)</a></li>
+<li><a class="reference internal" href="#h-functions-5-october-afternoon">h functions (5 October, afternoon)</a></li>
+<li><a class="reference internal" href="#radial-functions-upward-and-downward-recurrences-combined-5-october-afternoon">Radial functions: upward and downward recurrences combined (5 October, afternoon)</a></li>
+<li><a class="reference internal" href="#j2-at-small-q-and-near-coincident-centres-fixed-5-october">j₂ at small q and near-coincident centres: fixed (5 October)</a></li>
+<li><a class="reference internal" href="#elastic-scattering-by-density-weighted-pairs-5-october">Elastic scattering by density-weighted pairs (5 October)</a></li>
+<li><a class="reference internal" href="#electron-scattering-5-october">Electron scattering (5 October)</a></li>
+<li><a class="reference internal" href="#a-bug-in-the-old-elastic-j0-found-while-testing-j2">A bug in the old elastic j0 (found while testing j2)</a></li>
+<li><a class="reference internal" href="#open-points-6-october">Open points (6 October)</a></li>
+<li><a class="reference internal" href="#cas-ci-densities-without-the-n4-array-7-october">CAS/CI densities without the n⁴ array (7 October)</a></li>
+<li><a class="reference internal" href="#first-cluster-run-7-october">First cluster run (7 October)</a></li>
+<li><a class="reference internal" href="#j2-sign-convention-i2-included-8-october">j₂ sign convention: i² included (8 October)</a></li>
+<li><a class="reference internal" href="#mrci-8-october">MRCI (8 October)</a></li>
+<li><a class="reference internal" href="#before-the-paper">Before the paper</a></li>
+<li><a class="reference internal" href="#findings-in-the-existing-code">Findings in the existing code</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+<form class="search" action="search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="kernels.html" title="Previous document">Fortran kernels</a>
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

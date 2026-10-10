@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyxscat.interfaces.pyscf &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/better.css?v=bb9f1030" />
+    <script src="../../../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/_modules/pyxscat/interfaces/pyscf.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../../../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxscat.interfaces.pyscf</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+<span class="c1"># Copyright 2026 Andrés Moreno Carrascosa</span>
+<span class="sd">"""PySCF adapter: turns PySCF objects into a :class:`pyxscat.Wavefunction`.</span>
+
+<span class="sd">The basis is taken from the ``Mole`` object in memory (no Molden file).  Spherical (pure) basis</span>
+<span class="sd">sets are handled by expressing the density matrices in the underlying Cartesian functions.</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..basis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Basis</span><span class="p">,</span> <span class="n">cartesian_powers</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FACTORED_ABOVE</span><span class="p">,</span> <span class="n">Wavefunction</span><span class="p">,</span> <span class="n">transform_dm2</span> <span class="k">as</span> <span class="n">_transform4</span><span class="p">,</span> <span class="n">use_factored</span>
+
+<span class="c1"># libcint folds the angular normalisation of s and p functions into the Cartesian functions</span>
+<span class="n">_ANG</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mf">0.282094791773878143</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mf">0.488602511902919921</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="basis_from_mole">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.pyscf.basis_from_mole">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">basis_from_mole</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Cartesian :class:`Basis` of a PySCF ``Mole`` (functions ordered as in ``mol.cart = True``)."""</span>
+    <span class="n">shells</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ib</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">nbas</span><span class="p">):</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">bas_angular</span><span class="p">(</span><span class="n">ib</span><span class="p">))</span>
+        <span class="n">cs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">_libcint_ctr_coeff</span><span class="p">(</span><span class="n">ib</span><span class="p">))</span> <span class="o">*</span> <span class="n">_ANG</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">shells</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">mol</span><span class="o">.</span><span class="n">bas_coord</span><span class="p">(</span><span class="n">ib</span><span class="p">),</span> <span class="n">l</span><span class="p">,</span> <span class="n">mol</span><span class="o">.</span><span class="n">bas_exp</span><span class="p">(</span><span class="n">ib</span><span class="p">),</span> <span class="n">cs</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">Basis</span><span class="o">.</span><span class="n">from_shells</span><span class="p">(</span><span class="n">shells</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_to_cartesian</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Density matrices in mol's AO basis -&gt; Cartesian functions of basis_from_mole."""</span>
+    <span class="k">if</span> <span class="n">mol</span><span class="o">.</span><span class="n">cart</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">cart2sph_coeff</span><span class="p">(</span><span class="n">normalized</span><span class="o">=</span><span class="s2">"sp"</span><span class="p">)</span>          <span class="c1"># chi_sph = chi_cart @ c</span>
+    <span class="n">dm1</span> <span class="o">=</span> <span class="n">c</span> <span class="o">@</span> <span class="n">dm1</span> <span class="o">@</span> <span class="n">c</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">if</span> <span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dm2</span> <span class="o">=</span> <span class="n">_transform4</span><span class="p">(</span><span class="n">dm2</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>                      <span class="c1"># four-index array or FactoredDM2</span>
+    <span class="k">return</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span>
+
+
+<div class="viewcode-block" id="from_density">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.pyscf.from_density">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_density</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">""</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Wavefunction from spin-summed density matrices.</span>
+
+<span class="sd">    If ``mo_coeff`` is given, ``dm1`` and ``dm2`` are in that molecular-orbital basis (as returned</span>
+<span class="sd">    by PySCF's ``make_rdm1`` / ``make_rdm2`` of post-HF methods); otherwise they are in the AO</span>
+<span class="sd">    basis of ``mol``.  ``dm2`` follows PySCF's convention (chemists' notation, trace N(N-1)).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..core</span><span class="w"> </span><span class="kn">import</span> <span class="n">FactoredDM2</span>
+    <span class="n">dm1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dm2</span><span class="p">,</span> <span class="n">FactoredDM2</span><span class="p">):</span>
+        <span class="n">dm2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mo_coeff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mo_coeff</span><span class="p">)</span>
+        <span class="n">dm1</span> <span class="o">=</span> <span class="n">c</span> <span class="o">@</span> <span class="n">dm1</span> <span class="o">@</span> <span class="n">c</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">if</span> <span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dm2</span> <span class="o">=</span> <span class="n">_transform4</span><span class="p">(</span><span class="n">dm2</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+    <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span> <span class="o">=</span> <span class="n">_to_cartesian</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Wavefunction</span><span class="p">(</span><span class="n">basis_from_mole</span><span class="p">(</span><span class="n">mol</span><span class="p">),</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">nelec</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">nelectron</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                       <span class="n">atom_numbers</span><span class="o">=</span><span class="n">mol</span><span class="o">.</span><span class="n">atom_charges</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="n">coords</span><span class="o">=</span><span class="n">mol</span><span class="o">.</span><span class="n">atom_coords</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="from_scf">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.pyscf.from_scf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_scf</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">with_dm2</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Closed-shell (RHF/RKS) wavefunction.  The mean-field two-electron term does not need the</span>
+<span class="sd">    four-index array (see ``pyxscat.mean_field``); set ``with_dm2=True`` to build it anyway."""</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">mf</span><span class="o">.</span><span class="n">mol</span>
+    <span class="n">dm1</span> <span class="o">=</span> <span class="n">mf</span><span class="o">.</span><span class="n">make_rdm1</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">dm1</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"only closed-shell mean-field objects are supported so far"</span><span class="p">)</span>
+    <span class="n">dm2</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">with_dm2</span><span class="p">:</span>
+        <span class="n">dm2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"pq,rs-&gt;pqrs"</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm1</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ps,rq-&gt;pqrs"</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">from_density</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"SCF"</span><span class="p">)</span></div>
+
+
+
+
+
+<div class="viewcode-block" id="from_cc">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.pyscf.from_cc">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_cc</span><span class="p">(</span><span class="n">mycc</span><span class="p">,</span> <span class="n">factored</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""CCSD wavefunction (unrelaxed lambda densities from PySCF).</span>
+
+<span class="sd">    factored</span>
+<span class="sd">        ``True``: the two-particle density as a sum of 7 nocc^2 + 4 products of one-particle</span>
+<span class="sd">        matrices (:mod:`pyxscat.ccsd`; memory 2 K nao^2 instead of nao^4, the kernels contract</span>
+<span class="sd">        it directly, same numbers to 1e-13).  ``False``: PySCF's four-index array.  ``"auto"``</span>
+<span class="sd">        (default): factored beyond ``FACTORED_ABOVE`` basis functions.</span>
+<span class="sd">    """</span>
+    <span class="n">factored</span> <span class="o">=</span> <span class="n">use_factored</span><span class="p">(</span><span class="n">factored</span><span class="p">,</span> <span class="n">_nao</span><span class="p">(</span><span class="n">mycc</span><span class="o">.</span><span class="n">mol</span><span class="p">))</span>
+    <span class="n">dm1</span> <span class="o">=</span> <span class="n">mycc</span><span class="o">.</span><span class="n">make_rdm1</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">factored</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">ccsd</span>
+        <span class="n">dm2</span> <span class="o">=</span> <span class="n">ccsd</span><span class="o">.</span><span class="n">factored_rdm2</span><span class="p">(</span><span class="n">mycc</span><span class="p">,</span> <span class="n">dm1</span><span class="o">=</span><span class="n">dm1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dm2</span> <span class="o">=</span> <span class="n">mycc</span><span class="o">.</span><span class="n">make_rdm2</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">from_density</span><span class="p">(</span><span class="n">mycc</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="o">=</span><span class="n">mycc</span><span class="o">.</span><span class="n">mo_coeff</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"CCSD"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="from_ci">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.pyscf.from_ci">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_ci</span><span class="p">(</span><span class="n">myci</span><span class="p">,</span> <span class="n">factored</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""CISD wavefunction.  ``factored``: as in :func:`from_cc` (K = 4 nocc^2 + 2 products of</span>
+<span class="sd">    one-particle matrices instead of the n^4 array; :func:`pyxscat.ccsd.factored_rdm2_cisd`)."""</span>
+    <span class="n">dm1</span> <span class="o">=</span> <span class="n">myci</span><span class="o">.</span><span class="n">make_rdm1</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">use_factored</span><span class="p">(</span><span class="n">factored</span><span class="p">,</span> <span class="n">_nao</span><span class="p">(</span><span class="n">myci</span><span class="o">.</span><span class="n">mol</span><span class="p">)):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">ccsd</span>
+        <span class="n">dm2</span> <span class="o">=</span> <span class="n">ccsd</span><span class="o">.</span><span class="n">factored_rdm2_cisd</span><span class="p">(</span><span class="n">myci</span><span class="p">,</span> <span class="n">dm1</span><span class="o">=</span><span class="n">dm1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dm2</span> <span class="o">=</span> <span class="n">myci</span><span class="o">.</span><span class="n">make_rdm2</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">from_density</span><span class="p">(</span><span class="n">myci</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="o">=</span><span class="n">myci</span><span class="o">.</span><span class="n">mo_coeff</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"CISD"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="from_fci">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.pyscf.from_fci">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_fci</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="p">,</span> <span class="n">civec</span><span class="p">,</span> <span class="n">norb</span><span class="p">,</span> <span class="n">nelec</span><span class="p">,</span> <span class="n">factored</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Full CI wavefunction in the orbitals ``mo_coeff[:, :norb]`` (no frozen core).</span>
+<span class="sd">    ``factored``: as in :func:`from_casscf`."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">pyscf</span><span class="w"> </span><span class="kn">import</span> <span class="n">fci</span>
+    <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span> <span class="o">=</span> <span class="n">fci</span><span class="o">.</span><span class="n">direct_spin1</span><span class="o">.</span><span class="n">make_rdm12</span><span class="p">(</span><span class="n">civec</span><span class="p">,</span> <span class="n">norb</span><span class="p">,</span> <span class="n">nelec</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">use_factored</span><span class="p">(</span><span class="n">factored</span><span class="p">,</span> <span class="n">_nao</span><span class="p">(</span><span class="n">mol</span><span class="p">)):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">ci</span> <span class="k">as</span> <span class="n">_ci</span>
+        <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span> <span class="o">=</span> <span class="n">_ci</span><span class="o">.</span><span class="n">embed_core</span><span class="p">(</span><span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">factored</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">from_density</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mo_coeff</span><span class="p">)[:,</span> <span class="p">:</span><span class="n">norb</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"FCI"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="from_fci_solver">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.pyscf.from_fci_solver">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_fci_solver</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factored</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A standalone PySCF FCI or selected-CI solver after ``kernel()`` (``fci.FCI(mf)``,</span>
+<span class="sd">    ``fci.selected_ci.SCI``).  PySCF does not keep the orbitals in the solver (only the</span>
+<span class="sd">    integrals), so they are given: ``mo_coeff`` is the array or the SCF object.  ``state``</span>
+<span class="sd">    selects a root (0-based) when ``nroots &gt; 1``; the densities come from the solver's own</span>
+<span class="sd">    ``make_rdm12``."""</span>
+    <span class="n">mo</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mo_coeff</span><span class="p">,</span> <span class="s2">"mo_coeff"</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"a PySCF FCI solver does not keep its orbitals: "</span>
+                         <span class="s2">"load it with mo_coeff=mf (or the orbital array)"</span><span class="p">)</span>
+    <span class="n">ci</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">ci</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"several roots: choose one with `state`"</span><span class="p">)</span>
+        <span class="n">ci</span> <span class="o">=</span> <span class="n">ci</span><span class="p">[</span><span class="n">state</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">state</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"state </span><span class="si">{</span><span class="n">state</span><span class="si">}</span><span class="s2"> requested but the solver holds a single root"</span><span class="p">)</span>
+    <span class="n">norb</span><span class="p">,</span> <span class="n">nelec</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">norb</span><span class="p">,</span> <span class="n">solver</span><span class="o">.</span><span class="n">nelec</span>
+    <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">make_rdm12</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span> <span class="n">norb</span><span class="p">,</span> <span class="n">nelec</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">use_factored</span><span class="p">(</span><span class="n">factored</span><span class="p">,</span> <span class="n">_nao</span><span class="p">(</span><span class="n">solver</span><span class="o">.</span><span class="n">mol</span><span class="p">)):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">ci</span> <span class="k">as</span> <span class="n">_ci</span>
+        <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span> <span class="o">=</span> <span class="n">_ci</span><span class="o">.</span><span class="n">embed_core</span><span class="p">(</span><span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">factored</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">from_density</span><span class="p">(</span><span class="n">solver</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mo</span><span class="p">)[:,</span> <span class="p">:</span><span class="n">norb</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"FCI"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="from_casscf">
+<a class="viewcode-back" href="../../../api/interfaces.html#pyxscat.interfaces.pyscf.from_casscf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_casscf</span><span class="p">(</span><span class="n">mc</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factored</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""CASSCF/CASCI wavefunction; for state-averaged calculations pick the root with ``state``.</span>
+
+<span class="sd">    factored</span>
+<span class="sd">        ``True``: the 2RDM as products of one-particle matrices (core-core and core-active</span>
+<span class="sd">        blocks from the core and active 1RDMs, the active block diagonalised as a (pq) x (rs)</span>
+<span class="sd">        matrix, at most n_act (n_act + 1) / 2 + 3 terms; :func:`pyxscat.ci.embed_core`), never</span>
+<span class="sd">        the n_AO^4 array.  ``False``: the four-index array over the core and active orbitals,</span>
+<span class="sd">        transformed to AOs.</span>
+<span class="sd">        ``"auto"`` (default): factored beyond ``FACTORED_ABOVE`` basis functions.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">ci</span> <span class="k">as</span> <span class="n">_ci</span>
+    <span class="n">d1a</span><span class="p">,</span> <span class="n">d2a</span> <span class="o">=</span> <span class="n">_active_rdm12</span><span class="p">(</span><span class="n">mc</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">use_factored</span><span class="p">(</span><span class="n">factored</span><span class="p">,</span> <span class="n">_nao</span><span class="p">(</span><span class="n">mc</span><span class="o">.</span><span class="n">mol</span><span class="p">))</span>
+    <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span> <span class="o">=</span> <span class="n">_ci</span><span class="o">.</span><span class="n">embed_core</span><span class="p">(</span><span class="n">d1a</span><span class="p">,</span> <span class="n">d2a</span><span class="p">,</span> <span class="n">mc</span><span class="o">.</span><span class="n">ncore</span><span class="p">,</span> <span class="n">factored</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mc</span><span class="o">.</span><span class="n">mo_coeff</span><span class="p">)[:,</span> <span class="p">:</span><span class="n">mc</span><span class="o">.</span><span class="n">ncore</span> <span class="o">+</span> <span class="n">mc</span><span class="o">.</span><span class="n">ncas</span><span class="p">]</span>       <span class="c1"># core and active orbitals only</span>
+    <span class="k">return</span> <span class="n">from_density</span><span class="p">(</span><span class="n">mc</span><span class="o">.</span><span class="n">mol</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">mo_coeff</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"CASSCF"</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_active_rdm12</span><span class="p">(</span><span class="n">mc</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Active-space 1- and 2-RDMs (PySCF convention) of one root; state-averaged solvers return</span>
+<span class="sd">    every root through ``states_make_rdm12``."""</span>
+    <span class="n">ci</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">ci</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"state-averaged calculation: choose the root with `state`"</span><span class="p">)</span>
+        <span class="n">solver</span> <span class="o">=</span> <span class="n">mc</span><span class="o">.</span><span class="n">fcisolver</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">solver</span><span class="p">,</span> <span class="s2">"states_make_rdm12"</span><span class="p">):</span>
+            <span class="n">d1</span><span class="p">,</span> <span class="n">d2</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">states_make_rdm12</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span> <span class="n">mc</span><span class="o">.</span><span class="n">ncas</span><span class="p">,</span> <span class="n">mc</span><span class="o">.</span><span class="n">nelecas</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">d1</span><span class="p">[</span><span class="n">state</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">d2</span><span class="p">[</span><span class="n">state</span><span class="p">])</span>
+        <span class="n">ci</span> <span class="o">=</span> <span class="n">ci</span><span class="p">[</span><span class="n">state</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">state</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"state </span><span class="si">{</span><span class="n">state</span><span class="si">}</span><span class="s2"> requested but the calculation has a single root"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mc</span><span class="o">.</span><span class="n">fcisolver</span><span class="o">.</span><span class="n">make_rdm12</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span> <span class="n">mc</span><span class="o">.</span><span class="n">ncas</span><span class="p">,</span> <span class="n">mc</span><span class="o">.</span><span class="n">nelecas</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nao</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">mol</span><span class="o">.</span><span class="n">nao</span> <span class="k">if</span> <span class="n">mol</span><span class="o">.</span><span class="n">cart</span> <span class="k">else</span> <span class="n">mol</span><span class="o">.</span><span class="n">nao_cart</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="../../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

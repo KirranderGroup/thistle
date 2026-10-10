@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Testing THISTLE 0.2.0.dev0 &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/better.css?v=bb9f1030" />
+    <script src="_static/documentation_options.js?v=130a53a1"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/FOR_TESTERS.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="THISTLE: what is computed, and how" href="THEORY.html" />
+    <link rel="prev" title="THISTLE quick start" href="QUICKSTART.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="QUICKSTART.html" title="Previous document">THISTLE quick start</a>
+        </li>
+        <li>
+          <a href="THEORY.html" title="Next document">THISTLE: what is computed, and how</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="testing-thistle-0-2-0-dev0">
+<h1>Testing THISTLE 0.2.0.dev0<a class="headerlink" href="#testing-thistle-0-2-0-dev0" title="Link to this heading">¶</a></h1>
+<p><em>Authors: Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander.</em></p>
+<p>Thank you for trying the code. This is a development version: the numbers have been validated
+extensively (see <code class="docutils literal notranslate"><span class="pre">docs/THEORY.md</span></code>, section 5). It has been built and checked with gfortran 9-14
+and with Intel ifx 2026.1 (Linux x86_64, 64 threads); other compilers and platforms are untested. Problems with your
+compiler, platform or input files are exactly what we want to hear about.</p>
+<section id="install">
+<h2>1. Install<a class="headerlink" href="#install" title="Link to this heading">¶</a></h2>
+<p>Python 3.10 or newer and a Fortran compiler with OpenMP.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>tar<span class="w"> </span>xzf<span class="w"> </span>thistle-0.2.0.dev0.tar.gz
+<span class="nb">cd</span><span class="w"> </span>thistle-0.2.0.dev0
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>~/thistle-env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>~/thistle-env/bin/activate<span class="w">     </span><span class="c1"># recommended</span>
+
+pip<span class="w"> </span>install<span class="w"> </span><span class="s2">".[test]"</span><span class="w">                      </span><span class="c1"># gfortran (default)</span>
+<span class="c1"># or, with Intel oneAPI:</span>
+<span class="nb">source</span><span class="w"> </span>/opt/intel/oneapi/setvars.sh<span class="w">        </span><span class="c1"># or: module load intel</span>
+<span class="nv">FC</span><span class="o">=</span>ifx<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">".[test]"</span><span class="w">               </span><span class="c1"># FC=ifx EXTRA=-xHost ... optimises for this CPU</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pip</span></code> compiles the Fortran library during the install (look for <code class="docutils literal notranslate"><span class="pre">built</span> <span class="pre">...</span> <span class="pre">with</span> <span class="pre">gfortran/ifx</span></code>
+in <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-v</span></code> output). <code class="docutils literal notranslate"><span class="pre">[test]</span></code> also installs PySCF, SciPy, xraydb and pytest.</p>
+<p>No Intel compiler on the cluster and no root access? Install ifx for your user only with conda
+(Miniforge, if you have no conda yet):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-L<span class="w"> </span>-O<span class="w"> </span>https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+bash<span class="w"> </span>Miniforge3-Linux-x86_64.sh<span class="w"> </span>-b<span class="w"> </span>-p<span class="w"> </span><span class="nv">$HOME</span>/miniforge3<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span><span class="nv">$HOME</span>/miniforge3/bin/activate
+conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>thistle-ifx<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.12<span class="w"> </span>ifx_linux-64
+conda<span class="w"> </span>activate<span class="w"> </span>thistle-ifx
+ifx<span class="w"> </span>--version
+<span class="nv">FC</span><span class="o">=</span>ifx<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span><span class="s2">".[test]"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="nv">$CONDA_PREFIX</span>/lib:<span class="nv">$LD_LIBRARY_PATH</span><span class="w">     </span><span class="c1"># if importing pyxscat cannot find libiomp5</span>
+</pre></div>
+</div>
+<p>With ifx, keep the oneAPI environment loaded whenever you run THISTLE (the library needs the
+Intel OpenMP runtime, libiomp5). If Python reports <code class="docutils literal notranslate"><span class="pre">OMP:</span> <span class="pre">Error</span> <span class="pre">#15</span> <span class="pre">...</span> <span class="pre">already</span> <span class="pre">initialized</span></code>,
+two OpenMP runtimes were loaded; <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">KMP_DUPLICATE_LIB_OK=TRUE</span></code> is a workaround, and please
+report it.</p>
+</section>
+<section id="quick-check-seconds">
+<h2>2. Quick check (seconds)<a class="headerlink" href="#quick-check-seconds" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>thistle<span class="w"> </span>selftest<span class="w">                           </span><span class="c1"># build info + every kernel against sum rules and an independent route</span>
+thistle<span class="w"> </span>selftest<span class="w"> </span>my_calculation.out<span class="w">        </span><span class="c1"># the same sum rules for your own file (Python side and Fortran side)</span>
+</pre></div>
+</div>
+<p>The first lines say which compiler and flags built the library that Python actually loaded.
+If anything says FAIL, the full output of these two commands is the most useful bug report.</p>
+<p>To switch compiler, just reinstall (<code class="docutils literal notranslate"><span class="pre">FC=ifx</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> or <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code>): the build always
+starts from scratch, so a library from the other compiler or an older version is never reused.</p>
+</section>
+<section id="run-the-test-suite">
+<h2>3. Run the test suite<a class="headerlink" href="#run-the-test-suite" title="Link to this heading">¶</a></h2>
+<p>From the unpacked folder:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w">                        </span><span class="c1"># about 5 minutes, 217 tests, 5 skipped</span>
+<span class="nv">PYXSCAT_SLOW</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w">         </span><span class="c1"># adds the large-basis tests (about 10 minutes)</span>
+<span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>tests/test_elastic_pairs.py<span class="w">    </span><span class="c1"># thread-count check</span>
+</pre></div>
+</div>
+<p>Everything should pass. Several tests compare two independent routes to 10⁻⁹–10⁻¹², so a
+failure by a small margin with ifx (or on another CPU) is informative: please send the full
+pytest output.</p>
+<section id="comparing-builds-or-machines-and-parallel-scaling">
+<h3>Comparing builds or machines, and parallel scaling<a class="headerlink" href="#comparing-builds-or-machines-and-parallel-scaling" title="Link to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>benchmarks/cluster_check.py<span class="w"> </span>reference<span class="w"> </span>ifx.npz<span class="w">      </span><span class="c1"># every kernel and probe, ~20 s</span>
+<span class="c1"># ... reinstall with the other compiler (or on another machine), then:</span>
+python<span class="w"> </span>benchmarks/cluster_check.py<span class="w"> </span>reference<span class="w"> </span>gnu.npz
+python<span class="w"> </span>benchmarks/cluster_check.py<span class="w"> </span>compare<span class="w"> </span>ifx.npz<span class="w"> </span>gnu.npz<span class="w">  </span><span class="c1"># should agree to &lt; 1e-8</span>
+python<span class="w"> </span>benchmarks/cluster_check.py<span class="w"> </span>scaling<span class="w">                </span><span class="c1"># timings for 1, 2, 4, ... threads</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="try-it-on-your-own-calculations">
+<h2>4. Try it on your own calculations<a class="headerlink" href="#try-it-on-your-own-calculations" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>thistle<span class="w"> </span>run<span class="w"> </span>my_molpro.out<span class="w"> </span>--state<span class="w"> </span><span class="m">2</span><span class="w"> </span>--iam<span class="w">        </span><span class="c1"># Molpro MULTI output (config,det) + its Molden file</span>
+thistle<span class="w"> </span>run<span class="w"> </span>my_molpro.pun<span class="w"> </span>--state<span class="w"> </span><span class="m">2</span><span class="w">              </span><span class="c1"># or just the punch file + Molden file (no output)</span>
+thistle<span class="w"> </span>run<span class="w"> </span>my_molcas.log<span class="w"> </span>--all-parts<span class="w">            </span><span class="c1"># OpenMolcas RASSCF output + .rasscf.molden</span>
+thistle<span class="w"> </span>run<span class="w"> </span>scf.molden<span class="w"> </span>--hf<span class="w">                      </span><span class="c1"># closed-shell Hartree-Fock Molden file</span>
+thistle<span class="w"> </span>run<span class="w"> </span>my_molpro.out<span class="w"> </span>--electrons<span class="w"> </span>--iam<span class="w">      </span><span class="c1"># electron diffraction, with sM(s)</span>
+thistle<span class="w"> </span>check<span class="w"> </span>my.molden<span class="w"> </span>--scf-energy<span class="w"> </span>-76.0266<span class="w">    </span><span class="c1"># is the file read correctly?</span>
+thistle<span class="w"> </span>run<span class="w"> </span>my_molpro.out<span class="w"> </span>--orientation<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">90</span><span class="w"> </span><span class="m">0</span><span class="w"> </span>--grid<span class="w"> </span>polar<span class="w"> </span>--photon-kev<span class="w"> </span><span class="m">10</span><span class="w">   </span><span class="c1"># one orientation, grid.f90 grid</span>
+thistle<span class="w"> </span>run<span class="w"> </span>my_molpro.out<span class="w"> </span>--align<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">0</span><span class="w"> </span>--p2<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span>--grid<span class="w"> </span>qgrid.dat<span class="w">             </span><span class="c1"># aligned ensemble on your grid</span>
+</pre></div>
+</div>
+<p>or in Python (see <code class="docutils literal notranslate"><span class="pre">docs/QUICKSTART.md</span></code> and <code class="docutils literal notranslate"><span class="pre">examples/quickstart.py</span></code>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">thistle</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">th</span>
+<span class="n">mol</span> <span class="o">=</span> <span class="n">th</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"my_molpro.out"</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">mol</span><span class="o">.</span><span class="n">scattering</span><span class="p">(</span><span class="n">qmax</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="s2">"xray.png"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each run writes CSV tables and PNG plots, a <code class="docutils literal notranslate"><span class="pre">*_plots.py</span></code> script that redraws the plots from the
+files, and a <code class="docutils literal notranslate"><span class="pre">*_run.json</span></code> log; it ends by listing every file with the time of each step. The
+first line of each CSV records the input file, state, settings and version. <code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">plot</span> <span class="pre">FILE</span></code>
+redraws any result file (<code class="docutils literal notranslate"><span class="pre">--iam</span></code> for the comparison with the IAM).</p>
+</section>
+<section id="what-to-report">
+<h2>5. What to report<a class="headerlink" href="#what-to-report" title="Link to this heading">¶</a></h2>
+<p>Please send:</p>
+<ul class="simple">
+<li><p>the output of <code class="docutils literal notranslate"><span class="pre">thistle</span> <span class="pre">selftest</span></code> (it prints the compiler and options the library was built
+with, the thread count and the versions), and how you installed;</p></li>
+<li><p>the full output of any failing test or command;</p></li>
+<li><p>for your own calculations: the input files (or a small case that shows the problem) and what
+you expected, e.g. a curve from the earlier code;</p></li>
+<li><p>timings that look wrong, with <code class="docutils literal notranslate"><span class="pre">OMP_NUM_THREADS</span></code> and the number of cores.</p></li>
+</ul>
+<p>CCSD from PySCF beyond 60 basis functions uses a factored two-particle density (no n⁴ array;
+memory ≈ 112 (n_occ n_AO)² bytes), the same numbers to 10⁻¹³; <code class="docutils literal notranslate"><span class="pre">from_cc(mycc,</span> <span class="pre">factored=False)</span></code>
+forces the array for comparison.</p>
+<p>Known limits: Molden files stop at g functions (h works through PySCF); Molpro MULTI needs
+<code class="docutils literal notranslate"><span class="pre">config,det</span></code> and no point-group symmetry; Molcas needs the RASSCF CI printout. See the end of
+<code class="docutils literal notranslate"><span class="pre">docs/THEORY.md</span></code>.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Testing THISTLE 0.2.0.dev0</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#install">1. Install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-check-seconds">2. Quick check (seconds)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#run-the-test-suite">3. Run the test suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#try-it-on-your-own-calculations">4. Try it on your own calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-to-report">5. What to report</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Testing THISTLE 0.2.0.dev0</a><ul>
+<li><a class="reference internal" href="#install">1. Install</a></li>
+<li><a class="reference internal" href="#quick-check-seconds">2. Quick check (seconds)</a></li>
+<li><a class="reference internal" href="#run-the-test-suite">3. Run the test suite</a><ul>
+<li><a class="reference internal" href="#comparing-builds-or-machines-and-parallel-scaling">Comparing builds or machines, and parallel scaling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#try-it-on-your-own-calculations">4. Try it on your own calculations</a></li>
+<li><a class="reference internal" href="#what-to-report">5. What to report</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+<form class="search" action="search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="QUICKSTART.html" title="Previous document">THISTLE quick start</a>
+        </li>
+        <li>
+          <a href="THEORY.html" title="Next document">THISTLE: what is computed, and how</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">THISTLE</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyxscat.core &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/better.css?v=bb9f1030" />
+    <script src="../../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/_modules/pyxscat/core.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxscat.core</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+<span class="c1"># Copyright 2026 Andrés Moreno Carrascosa</span>
+<span class="sd">"""Scattering from a basis set and density matrices.</span>
+
+<span class="sd">Nothing in this module depends on an electronic structure package.  All density matrices are</span>
+<span class="sd">expressed in the contracted functions of the :class:`~pyxscat.basis.Basis` (atomic units; q in</span>
+<span class="sd">inverse bohr).  Conventions:</span>
+
+<span class="sd">* ``dm1[mu, nu]`` is the spin-summed one-particle density matrix,</span>
+<span class="sd">  rho(r) = sum dm1[mu, nu] chi_mu(r) chi_nu(r).</span>
+<span class="sd">* ``dm2[mu, nu, la, si]`` is the spin-summed two-particle density matrix in chemists' notation,</span>
+<span class="sd">  Gamma(r1, r2) = sum dm2[mu, nu, la, si] chi_mu(r1) chi_nu(r1) chi_la(r2) chi_si(r2),</span>
+<span class="sd">  normalised to N(N-1).  This is the convention of PySCF's ``make_rdm2``.</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">._lib</span><span class="w"> </span><span class="kn">import</span> <span class="n">lib</span><span class="p">,</span> <span class="n">ERRORS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">_lib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.basis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Basis</span>
+
+<span class="n">DEFAULTS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">cutoffcentre</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">cutoffz</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">,</span> <span class="n">cutoffmd</span><span class="o">=</span><span class="mf">1e-20</span><span class="p">,</span> <span class="n">screen_tol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span>
+<span class="n">Q_FLOOR</span> <span class="o">=</span> <span class="mf">1e-10</span>      <span class="c1"># the Bessel recurrences are evaluated at q &gt;= Q_FLOOR</span>
+
+
+<span class="n">FACTORED_ABOVE</span> <span class="o">=</span> <span class="mi">60</span>   <span class="c1"># basis functions: beyond this correlated 2RDMs are kept factored by default</span>
+
+
+<div class="viewcode-block" id="use_factored">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.use_factored">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">use_factored</span><span class="p">(</span><span class="n">factored</span><span class="p">,</span> <span class="n">nao</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Resolve a ``factored`` option ("auto", True, False) for a basis of ``nao`` functions."""</span>
+    <span class="k">if</span> <span class="n">factored</span> <span class="o">==</span> <span class="s2">"auto"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">nao</span> <span class="o">&gt;</span> <span class="n">FACTORED_ABOVE</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">factored</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="FactoredDM2">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.FactoredDM2">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FactoredDM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A two-particle density given as a sum of products of one-particle matrices,</span>
+
+<span class="sd">        Gamma[mu,nu,la,si] = sum_k Ac_k[mu,nu] Bc_k[la,si]  +  sum_k Ax_k[mu,la] Bx_k[nu,si]</span>
+
+<span class="sd">    (Coulomb and exchange pairings).  The kernels symmetrise over the 8 index permutations, so</span>
+<span class="sd">    only contractions with symmetric kernels are defined.  Memory 2 K n^2 instead of n^4: the</span>
+<span class="sd">    CCSD density of :func:`pyxscat.ccsd.factored_rdm2` has K = 7 nocc^2 + 4 terms.  Weights</span>
+<span class="sd">    are folded into the A matrices.  ``transform(c)`` changes the basis of every matrix</span>
+<span class="sd">    (M -&gt; c M c^T); ``dense()`` builds the four-index array (small systems only)."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ac</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_arr</span><span class="p">(</span><span class="n">ac</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_arr</span><span class="p">(</span><span class="n">bc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_arr</span><span class="p">(</span><span class="n">ax</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_arr</span><span class="p">(</span><span class="n">bx</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="p">{</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bx</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">size</span><span class="p">}</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">shape</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bx</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Ac/Bc and Ax/Bx must be (K, n, n) arrays over the same n"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nao</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_arr</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">a</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nao</span><span class="p">,)</span> <span class="o">*</span> <span class="mi">4</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nterms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nbytes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">nbytes</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bx</span><span class="p">))</span>
+
+<div class="viewcode-block" id="FactoredDM2.transform">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.FactoredDM2.transform">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Every matrix M -&gt; c M c^T (e.g. molecular orbitals -&gt; atomic orbitals), in chunks so</span>
+<span class="sd">        that the temporaries stay small."""</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mf">2e8</span> <span class="o">//</span> <span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))))</span>
+            <span class="k">for</span> <span class="n">k0</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">step</span><span class="p">):</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="n">k0</span><span class="p">:</span><span class="n">k0</span> <span class="o">+</span> <span class="n">step</span><span class="p">])</span>                 <span class="c1"># (chunk, p, j)</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">k0</span><span class="p">:</span><span class="n">k0</span> <span class="o">+</span> <span class="n">step</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">out</span>
+        <span class="k">return</span> <span class="n">FactoredDM2</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="p">),</span> <span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bc</span><span class="p">),</span> <span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">),</span> <span class="n">f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bx</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="FactoredDM2.dense">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.FactoredDM2.dense">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dense</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The four-index array (chemists' notation, 8-fold symmetrised)."""</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nao</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"kab,kcd-&gt;abcd"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">g</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"kac,kbd-&gt;abcd"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">symmetrize_dm2</span><span class="p">(</span><span class="n">g</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FactoredDM2.trace">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.FactoredDM2.trace">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""sum_{pq} Gamma[p,p,q,q] (= N(N-1) for a normalised density)."""</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"kaa,kcc-&gt;"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc</span><span class="p">))</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"kac,kac-&gt;"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bx</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">t</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_kernel_arrays</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""(nkc, Ac, Bc, nkx, Ax, Bx) in the layout the Fortran kernel reads (k fastest); the</span>
+<span class="sd">        Coulomb matrices symmetrised (allowed: the kernel is symmetric within each pair)."""</span>
+        <span class="n">kf</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">ac</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ac</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">bc</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bc</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ac</span><span class="p">),</span> <span class="n">kf</span><span class="p">(</span><span class="n">ac</span><span class="p">),</span> <span class="n">kf</span><span class="p">(</span><span class="n">bc</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">),</span> <span class="n">kf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="p">),</span> <span class="n">kf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bx</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Wavefunction">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.Wavefunction">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Wavefunction</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Everything the scattering kernels need: a basis, densities and the electron count.</span>
+<span class="sd">    ``dm2`` is the four-index array or a :class:`FactoredDM2`."""</span>
+
+    <span class="n">basis</span><span class="p">:</span> <span class="n">Basis</span>
+    <span class="n">dm1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">dm2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">nelec</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">atom_numbers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>      <span class="c1"># nuclear charges, for the IAM and electron scattering</span>
+    <span class="n">coords</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>            <span class="c1"># nuclear positions (bohr)</span></div>
+
+
+
+<div class="viewcode-block" id="symmetrize_dm2">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.symmetrize_dm2">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">symmetrize_dm2</span><span class="p">(</span><span class="n">dm2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Average a two-particle density matrix over its 8 index permutations.</span>
+
+<span class="sd">    The integrals are invariant under these permutations, so the scattering is unchanged; the</span>
+<span class="sd">    kernel loops over symmetry-unique quartets and needs the symmetric form.</span>
+<span class="sd">    """</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">dm2</span> <span class="k">if</span> <span class="n">inplace</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dm2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">+=</span> <span class="n">g</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">g</span> <span class="o">+=</span> <span class="n">g</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">g</span> <span class="o">+=</span> <span class="n">g</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">g</span> <span class="o">*=</span> <span class="mf">0.125</span>
+    <span class="k">return</span> <span class="n">g</span></div>
+
+
+
+<div class="viewcode-block" id="transform_dm2">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.transform_dm2">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">transform_dm2</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""g[pqrs] -&gt; sum_pqrs c[a,p] c[b,q] c[c,r] c[d,s] g[pqrs] (e.g. MO -&gt; AO), one index at a time</span>
+<span class="sd">    (a :class:`FactoredDM2` transforms its matrices instead)."""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">FactoredDM2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">g</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="lsign">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.lsign">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">lsign</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""i^l for even l: the phase of the l-th term of the plane-wave expansion</span>
+<span class="sd">    exp(i q.r) = sum_l (2l+1) i^l j_l(qr) P_l(q^.r^).  Every l-moment returned by pyxscat includes</span>
+<span class="sd">    it, so S2 = -sum Gamma &lt;j2 P2&gt;, and the moments add up with plus signs:</span>
+<span class="sd">    I(q, theta_q) = sum_l (2l+1) &lt;P_l(cos beta)&gt; P_l(cos theta_q) S_l(q)."""</span>
+    <span class="k">if</span> <span class="n">l</span> <span class="o">%</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"odd l is not implemented"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mf">1.0</span> <span class="k">if</span> <span class="p">(</span><span class="n">l</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="k">else</span> <span class="mf">1.0</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">da</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">wc</span><span class="p">,</span> <span class="n">wx</span><span class="p">,</span> <span class="n">nthreads</span><span class="p">,</span> <span class="n">return_stats</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">cut</span><span class="p">):</span>
+    <span class="n">opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">DEFAULTS</span><span class="p">)</span>
+    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cut</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown options: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cut</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">q</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"q must be a one-dimensional array of non-negative values"</span><span class="p">)</span>
+    <span class="n">qk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">Q_FLOOR</span><span class="p">))</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">nao</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s2">"F"</span><span class="p">)</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s2">"F"</span><span class="p">)</span>
+    <span class="n">ierr</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dm2</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dm2 must have shape </span><span class="si">{</span><span class="p">(</span><span class="n">n</span><span class="p">,)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">dm2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">dm2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>   <span class="c1"># 8-fold symmetric: memory order is irrelevant</span>
+        <span class="n">ptr</span> <span class="o">=</span> <span class="n">dm2</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ptr</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">nkc</span> <span class="o">=</span> <span class="n">nkx</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">pc</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
+    <span class="k">if</span> <span class="n">factors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">factors</span><span class="o">.</span><span class="n">nao</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the factored dm2 is over </span><span class="si">{</span><span class="n">factors</span><span class="o">.</span><span class="n">nao</span><span class="si">}</span><span class="s2"> functions, the basis has </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">nkc</span><span class="p">,</span> <span class="n">ac</span><span class="p">,</span> <span class="n">bc</span><span class="p">,</span> <span class="n">nkx</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">bx</span> <span class="o">=</span> <span class="n">factors</span><span class="o">.</span><span class="n">_kernel_arrays</span><span class="p">()</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="p">(</span><span class="n">ac</span><span class="p">,</span> <span class="n">bc</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">bx</span><span class="p">)</span>                                  <span class="c1"># alive during the call</span>
+        <span class="n">pc</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">keep</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">da</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">da_f</span> <span class="o">=</span> <span class="n">db_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s2">"F"</span><span class="p">)</span>       <span class="c1"># not referenced by the explicit-dm2 provider</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">da</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="ow">or</span> <span class="n">db</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"one-particle matrices must have shape </span><span class="si">{</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">da_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">da</span> <span class="o">+</span> <span class="n">da</span><span class="o">.</span><span class="n">T</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">db_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">db</span> <span class="o">+</span> <span class="n">db</span><span class="o">.</span><span class="n">T</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">lmn</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">lmn</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_two_electron_j0</span><span class="p">(</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">nprim</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]),</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">ga</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]),</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">basis</span><span class="o">.</span><span class="n">contr</span><span class="p">,</span> <span class="n">basis</span><span class="o">.</span><span class="n">coeff</span><span class="p">,</span> <span class="n">qk</span><span class="p">,</span>
+        <span class="n">mode</span><span class="p">,</span> <span class="n">ptr</span><span class="p">,</span> <span class="n">da_f</span><span class="p">,</span> <span class="n">db_f</span><span class="p">,</span> <span class="n">wc</span><span class="p">,</span> <span class="n">wx</span><span class="p">,</span> <span class="n">nkc</span><span class="p">,</span> <span class="n">pc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">nkx</span><span class="p">,</span> <span class="n">pc</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">pc</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">_lib</span><span class="o">.</span><span class="n">DGEMM</span> <span class="k">if</span> <span class="n">factors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">opts</span><span class="p">[</span><span class="s2">"cutoffcentre"</span><span class="p">],</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"cutoffz"</span><span class="p">],</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"cutoffmd"</span><span class="p">],</span> <span class="n">opts</span><span class="p">[</span><span class="s2">"screen_tol"</span><span class="p">],</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">nthreads</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">),</span> <span class="n">res</span><span class="p">,</span> <span class="n">stats</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">ierr</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">ierr</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"PyXSCAT kernel: "</span> <span class="o">+</span> <span class="n">ERRORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ierr</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"error </span><span class="si">{</span><span class="n">ierr</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">lsign</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">*</span> <span class="n">res</span>
+    <span class="k">if</span> <span class="n">return_stats</span><span class="p">:</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"shell_quartets"</span><span class="p">,</span> <span class="s2">"shell_quartets_computed"</span><span class="p">,</span> <span class="s2">"primitive_quartets"</span><span class="p">,</span> <span class="s2">"primitive_quartets_computed"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+
+<div class="viewcode-block" id="two_electron">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.two_electron">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">two_electron</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">dm2</span><span class="p">,</span> <span class="n">symmetrize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Two-electron part of the total scattering, ``sum Gamma &lt;ij|j0(q r12)|kr&gt;``.</span>
+
+<span class="sd">    Tends to N(N-1) at q = 0 and to zero at large q.  Set ``symmetrize=False`` only if ``dm2``</span>
+<span class="sd">    already has the full 8-fold permutational symmetry (saves one copy of the array).</span>
+
+<span class="sd">    ``l=2`` gives the second Legendre moment about the molecular z axis,</span>
+<span class="sd">    ``sum Gamma &lt;ij| j2(q r12) P2(cos theta_12) |kr&gt;`` (see :func:`scattering`).</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dm2</span><span class="p">,</span> <span class="n">FactoredDM2</span><span class="p">):</span>              <span class="c1"># sum of products: no four-index array at all</span>
+        <span class="k">return</span> <span class="n">_run</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">nthreads</span><span class="p">,</span> <span class="n">return_stats</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="n">factors</span><span class="o">=</span><span class="n">dm2</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">symmetrize_dm2</span><span class="p">(</span><span class="n">dm2</span><span class="p">)</span> <span class="k">if</span> <span class="n">symmetrize</span> <span class="k">else</span> <span class="n">dm2</span>
+    <span class="k">return</span> <span class="n">_run</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">nthreads</span><span class="p">,</span> <span class="n">return_stats</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="elastic">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.elastic">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">elastic</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">dm1_b</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"pairs"</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Rotationally averaged elastic scattering, ``&lt;|F(q)|^2&gt;``, from a one-particle density matrix.</span>
+
+<span class="sd">    With two different matrices this is the rotational average of F_a(q) F_b(q)^*, the building</span>
+<span class="sd">    block of coherent mixed and inelastic terms from transition densities.</span>
+
+<span class="sd">    method</span>
+<span class="sd">        ``"pairs"`` (default): the elastic pair density is a product, so the density is folded</span>
+<span class="sd">        into every primitive pair first and pairs of Hermite charge distributions are combined</span>
+<span class="sd">        (``xs_elastic.f90``).  Exact at coincident pair centres, rigorous q-dependent screening.</span>
+<span class="sd">        ``"quartets"``: the general shell-quartet kernel with the pair density built on the fly</span>
+<span class="sd">        (the one-loop algorithm; kept for comparison).</span>
+<span class="sd">    """</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">dm1</span> <span class="k">if</span> <span class="n">dm1_b</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dm1_b</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"quartets"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_run</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">db</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">nthreads</span><span class="p">,</span> <span class="n">return_stats</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">"pairs"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"method must be 'pairs' or 'quartets'"</span><span class="p">)</span>
+    <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cutoffs</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">DEFAULTS</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown options: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">screen</span> <span class="o">=</span> <span class="n">cutoffs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"screen_tol"</span><span class="p">,</span> <span class="n">DEFAULTS</span><span class="p">[</span><span class="s2">"screen_tol"</span><span class="p">])</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">q</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"q must be a one-dimensional array of non-negative values"</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">nao</span>
+    <span class="n">da</span><span class="p">,</span> <span class="n">dbb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">da</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="ow">or</span> <span class="n">dbb</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"one-particle matrices must have shape </span><span class="si">{</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"stable"</span><span class="p">)</span>             <span class="c1"># ascending q makes the q screening effective</span>
+    <span class="n">qs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="n">order</span><span class="p">])</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s2">"F"</span><span class="p">)</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s2">"F"</span><span class="p">)</span>
+    <span class="n">ierr</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">lmn</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">lmn</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_elastic_pairs</span><span class="p">(</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">nprim</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]),</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">ga</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]),</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">basis</span><span class="o">.</span><span class="n">contr</span><span class="p">,</span> <span class="n">basis</span><span class="o">.</span><span class="n">coeff</span><span class="p">,</span> <span class="n">qs</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">da</span> <span class="o">+</span> <span class="n">da</span><span class="o">.</span><span class="n">T</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">dbb</span> <span class="o">+</span> <span class="n">dbb</span><span class="o">.</span><span class="n">T</span><span class="p">)),</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">screen</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">nthreads</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">),</span> <span class="n">res</span><span class="p">,</span> <span class="n">stats</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">ierr</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">ierr</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"PyXSCAT elastic kernel: "</span> <span class="o">+</span> <span class="n">ERRORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ierr</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"error </span><span class="si">{</span><span class="n">ierr</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">out</span><span class="p">[</span><span class="n">order</span><span class="p">]</span> <span class="o">=</span> <span class="n">lsign</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">*</span> <span class="n">res</span>
+    <span class="k">if</span> <span class="n">return_stats</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="p">{</span><span class="s2">"pair_pairs"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s2">"pair_pairs_computed"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="mi">1</span><span class="p">])}</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="exchange">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.exchange">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">exchange</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Exchange part of the two-electron scattering of a closed-shell single determinant,</span>
+<span class="sd">    built from -1/2 D(1,2) D(2,1) without forming a four-index array."""</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_run</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">nthreads</span><span class="p">,</span> <span class="n">return_stats</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="mean_field">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.mean_field">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mean_field</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Two-electron scattering of the mean-field pair density D D - 1/2 D D (exact for</span>
+<span class="sd">    closed-shell Hartree-Fock), without forming a four-index array."""</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_run</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">nthreads</span><span class="p">,</span> <span class="n">return_stats</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="scattering">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.scattering">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scattering</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"total"</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Rotationally averaged X-ray scattering of a :class:`Wavefunction`.</span>
+
+<span class="sd">    kind</span>
+<span class="sd">        ``"total"``         N + two-electron term (needs ``wf.dm2`` and ``wf.nelec``)</span>
+<span class="sd">        ``"elastic"``       ``&lt;|F(q)|^2&gt;`` from ``wf.dm1``</span>
+<span class="sd">        ``"inelastic"``     total - elastic</span>
+<span class="sd">        ``"two_electron"``  the two-electron term alone</span>
+<span class="sd">        ``"hf_total"``      N + mean-field two-electron term from ``wf.dm1`` only</span>
+
+<span class="sd">    l</span>
+<span class="sd">        ``0`` (default): the isotropic signal, the average over all orientations.</span>
+<span class="sd">        ``2``: the second Legendre moment about the molecular z axis,</span>
+<span class="sd">        S2(q) = -sum Gamma &lt;j2(q r12) P2(cos theta_12)&gt; (the i^2 = -1 of the plane-wave expansion</span>
+<span class="sd">        included, see :func:`lsign`; S2 = &lt;I(q) P2(cos theta_q)&gt; for perfect alignment).  For molecules whose z axis is aligned</span>
+<span class="sd">        along a laboratory axis (free rotation about it), the signal at a scattering vector</span>
+<span class="sd">        making the angle theta_q with that axis is</span>
+
+<span class="sd">            I(q, theta_q) = I0(q) + 5 &lt;P2(cos beta)&gt; P2(cos theta_q) S2(q) + (l = 4, ...)</span>
+
+<span class="sd">        with &lt;P2(cos beta)&gt; the degree of alignment (1 for perfect alignment).  The isotropic</span>
+<span class="sd">        one-electron term N does not contribute at l = 2.</span>
+<span class="sd">    """</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">basis</span>
+    <span class="n">self_term</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">l</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"elastic"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"hf_total"</span><span class="p">:</span>
+        <span class="n">_need</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">nelec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"nelec"</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">l</span> <span class="k">else</span> <span class="n">wf</span><span class="o">.</span><span class="n">nelec</span>
+        <span class="k">return</span> <span class="n">n</span> <span class="o">+</span> <span class="n">mean_field</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"total"</span><span class="p">,</span> <span class="s2">"inelastic"</span><span class="p">,</span> <span class="s2">"two_electron"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">_need</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"dm2"</span><span class="p">)</span>
+    <span class="n">i2</span> <span class="o">=</span> <span class="n">two_electron</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"two_electron"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">i2</span>
+    <span class="n">_need</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">nelec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"nelec"</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">nelec</span> <span class="k">if</span> <span class="n">self_term</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">self_term</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"total"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i2</span>
+    <span class="k">return</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i2</span> <span class="o">-</span> <span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="decompose">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.core.decompose">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Split the total scattering into mean-field and correlation contributions.</span>
+
+<span class="sd">    Gamma = D D  -  1/2 D D (exchange)  +  Lambda (cumulant), so that</span>
+
+<span class="sd">        total = N + hartree + exchange + cumulant,     elastic = hartree.</span>
+
+<span class="sd">    Returns a dict of arrays over q.  The mean-field parts are built from the 1RDM on the fly;</span>
+<span class="sd">    only the full two-electron term uses the four-index array.  ``l=2``: the same split of the</span>
+<span class="sd">    second Legendre moment (see :func:`scattering`); its self term is zero.</span>
+<span class="sd">    """</span>
+    <span class="n">_need</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"dm2"</span><span class="p">)</span>
+    <span class="n">_need</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">nelec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"nelec"</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">basis</span>
+    <span class="n">hartree</span> <span class="o">=</span> <span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">exch</span> <span class="o">=</span> <span class="n">exchange</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">i2</span> <span class="o">=</span> <span class="n">two_electron</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">l</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">nelec</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"q"</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span>
+        <span class="s2">"self"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span>
+        <span class="s2">"hartree"</span><span class="p">:</span> <span class="n">hartree</span><span class="p">,</span>
+        <span class="s2">"exchange"</span><span class="p">:</span> <span class="n">exch</span><span class="p">,</span>
+        <span class="s2">"cumulant"</span><span class="p">:</span> <span class="n">i2</span> <span class="o">-</span> <span class="n">hartree</span> <span class="o">-</span> <span class="n">exch</span><span class="p">,</span>
+        <span class="s2">"two_electron"</span><span class="p">:</span> <span class="n">i2</span><span class="p">,</span>
+        <span class="s2">"elastic"</span><span class="p">:</span> <span class="n">hartree</span><span class="p">,</span>
+        <span class="s2">"total"</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i2</span><span class="p">,</span>
+        <span class="s2">"inelastic"</span><span class="p">:</span> <span class="n">n</span> <span class="o">+</span> <span class="n">i2</span> <span class="o">-</span> <span class="n">hartree</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_need</span><span class="p">(</span><span class="n">ok</span><span class="p">,</span> <span class="n">what</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ok</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"this calculation needs `</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">` in the Wavefunction"</span><span class="p">)</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

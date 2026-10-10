@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyxscat.electron &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/better.css?v=bb9f1030" />
+    <script src="../../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/_modules/pyxscat/electron.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyxscat.electron</h1><div class="highlight"><pre>
+<span></span><span class="c1"># SPDX-License-Identifier: Apache-2.0</span>
+<span class="c1"># Copyright 2026 Andrés Moreno Carrascosa</span>
+<span class="sd">"""Electron scattering (ultrafast electron diffraction, gas electron diffraction).</span>
+
+<span class="sd">In the first Born approximation a fast electron is scattered by the whole charge distribution</span>
+<span class="sd">of the molecule.  With Z(q) = sum_A Z_A exp(i q.R_A) the nuclear and F(q) the electronic form</span>
+<span class="sd">factor, the differential cross section is::</span>
+
+<span class="sd">    dsigma/dOmega = (4 / a0^2 q^4) [ &lt;|Z(q) - F(q)|^2&gt; + S_inel(q) ]</span>
+<span class="sd">                  = (4 / a0^2 q^4) [ I_nn - 2 I_ne + I_ee ],</span>
+
+<span class="sd">where I_ee is the total X-ray scattering (N + two-electron term) and::</span>
+
+<span class="sd">    I_nn(q) = sum_AB Z_A Z_B j0(q R_AB)                               nucleus-nucleus</span>
+<span class="sd">    I_ne(q) = sum_A Z_A int rho(r) j0(q |r - R_A|) dr                 electron-nucleus</span>
+<span class="sd">    elastic   I_nn - 2 I_ne + &lt;|F|^2&gt;</span>
+<span class="sd">    inelastic I_ee - &lt;|F|^2&gt;  (the same as for X-rays: the nuclei do not scatter inelastically)</span>
+
+<span class="sd">The functions here return the bracket [...] ("scattering in electron units", the quantity of the</span>
+<span class="sd">earlier code, 0 at q = 0 for a neutral molecule); :func:`cross_section` multiplies by 4/q^4.</span>
+<span class="sd">Relativistic beam electrons: multiply by gamma^2 = (1 + E/mc^2)^2.</span>
+
+<span class="sd">The electron-nucleus integrals are analytic (McMurchie-Davidson with the auxiliary functions</span>
+<span class="sd">(1/h d/dh)^n j0(qh)), in Fortran.  ``l=2`` gives the second Legendre moment about z, for</span>
+<span class="sd">aligned molecules: I(q, theta_q) = I0 + 5 &lt;P2&gt; P2(cos theta_q) I2, as for X-rays.</span>
+
+<span class="sd">q in bohr^-1, coordinates in bohr.</span>
+<span class="sd">"""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">._lib</span><span class="w"> </span><span class="kn">import</span> <span class="n">lib</span><span class="p">,</span> <span class="n">ERRORS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">core</span>
+
+<span class="n">DEFAULT_SCREEN</span> <span class="o">=</span> <span class="mf">1e-14</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_charges</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">charges</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">charges</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">charges</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">core</span><span class="o">.</span><span class="n">_need</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"atom_numbers and coords"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">atom_numbers</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="nucleus_nucleus">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.electron.nucleus_nucleus">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nucleus_nucleus</span><span class="p">(</span><span class="n">charges</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""sum_AB Z_A Z_B j0(q R_AB), or with l=2 -sum_AB Z_A Z_B j2(q R_AB) P2(cos theta_AB) (i^2 = -1)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.iam</span><span class="w"> </span><span class="kn">import</span> <span class="n">_j2</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">charges</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">c</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">c</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">qr</span> <span class="o">=</span> <span class="n">q</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">r</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">zz</span> <span class="o">=</span> <span class="n">z</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">z</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">j0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">qr</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">qr</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">qr</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">qr</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ab,abq-&gt;q"</span><span class="p">,</span> <span class="n">zz</span><span class="p">,</span> <span class="n">j0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">r</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">r</span> <span class="o">&gt;</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"ab,ab,abq-&gt;q"</span><span class="p">,</span> <span class="n">zz</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="n">_j2</span><span class="p">(</span><span class="n">qr</span><span class="p">))</span>          <span class="c1"># i^2 = -1 (see core.lsign)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"only l = 0 and l = 2 are implemented"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="electron_nucleus">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.electron.electron_nucleus">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">electron_nucleus</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">dm1</span><span class="p">,</span> <span class="n">charges</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">screen</span><span class="o">=</span><span class="n">DEFAULT_SCREEN</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""sum_A Z_A sum D_mu,nu int chi_mu chi_nu K_l(q, r - R_A) dr, K_0 = j0, K_2 = j2 P2."""</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">q</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"q must be a one-dimensional array of non-negative values"</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">charges</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)))</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">nao</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">dm1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"dm1 must have shape </span><span class="si">{</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s2">"F"</span><span class="p">)</span>
+    <span class="n">ierr</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">lmn</span> <span class="o">=</span> <span class="n">basis</span><span class="o">.</span><span class="n">lmn</span>
+    <span class="n">lib</span><span class="o">.</span><span class="n">pyxscat_electron_nucleus</span><span class="p">(</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">nprim</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">q</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">basis</span><span class="o">.</span><span class="n">xyz</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]),</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">ga</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">lmn</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]),</span>
+        <span class="n">basis</span><span class="o">.</span><span class="n">group</span><span class="p">,</span> <span class="n">basis</span><span class="o">.</span><span class="n">contr</span><span class="p">,</span> <span class="n">basis</span><span class="o">.</span><span class="n">coeff</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">q</span><span class="p">),</span>
+        <span class="n">z</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asfortranarray</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">screen</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">nthreads</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">),</span> <span class="n">res</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">ierr</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">ierr</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"PyXSCAT electron-nucleus kernel: "</span> <span class="o">+</span> <span class="n">ERRORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ierr</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"error </span><span class="si">{</span><span class="n">ierr</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">core</span><span class="o">.</span><span class="n">lsign</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">*</span> <span class="n">res</span></div>
+
+
+
+<div class="viewcode-block" id="decompose">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.electron.decompose">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">charges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""All parts of the electron scattering of a wavefunction (bracket units, see module doc).</span>
+
+<span class="sd">    Returns a dict over q with ``nn``, ``ne``, ``ee_elastic`` (= X-ray elastic) and</span>
+<span class="sd">    ``elastic``; with a 2RDM (or ``hf=True`` for a closed-shell determinant) also ``ee_total``</span>
+<span class="sd">    (= X-ray total), ``inelastic`` and ``total``.</span>
+<span class="sd">    """</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">_charges</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">charges</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">wf</span><span class="o">.</span><span class="n">basis</span>
+    <span class="n">nn</span> <span class="o">=</span> <span class="n">nucleus_nucleus</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">)</span>
+    <span class="n">ne</span> <span class="o">=</span> <span class="n">electron_nucleus</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">)</span>
+    <span class="n">ee_el</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">elastic</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"q"</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span> <span class="s2">"nn"</span><span class="p">:</span> <span class="n">nn</span><span class="p">,</span> <span class="s2">"ne"</span><span class="p">:</span> <span class="n">ne</span><span class="p">,</span> <span class="s2">"ee_elastic"</span><span class="p">:</span> <span class="n">ee_el</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">:</span> <span class="n">nn</span> <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">ne</span> <span class="o">+</span> <span class="n">ee_el</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ee_tot</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">scattering</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="s2">"total"</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">hf</span><span class="p">:</span>
+        <span class="n">ee_tot</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">scattering</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="s2">"hf_total"</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">"ee_total"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ee_tot</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">"inelastic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ee_tot</span> <span class="o">-</span> <span class="n">ee_el</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"elastic"</span><span class="p">]</span> <span class="o">+</span> <span class="n">out</span><span class="p">[</span><span class="s2">"inelastic"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="scattering">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.electron.scattering">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scattering</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"total"</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">charges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Electron scattering of kind ``total``, ``elastic`` or ``inelastic`` (bracket units)."""</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">decompose</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="n">l</span><span class="p">,</span> <span class="n">hf</span><span class="o">=</span><span class="n">hf</span><span class="p">,</span> <span class="n">charges</span><span class="o">=</span><span class="n">charges</span><span class="p">,</span> <span class="n">nthreads</span><span class="o">=</span><span class="n">nthreads</span><span class="p">,</span> <span class="o">**</span><span class="n">cutoffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2"> needs a 2RDM (or hf=True for a closed-shell determinant)"</span>
+                         <span class="k">if</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"total"</span><span class="p">,</span> <span class="s2">"inelastic"</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"unknown kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="cross_section">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.electron.cross_section">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cross_section</span><span class="p">(</span><span class="n">bracket</span><span class="p">,</span> <span class="n">q</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""dsigma/dOmega = 4 [...] / q^4 (bohr^2 per steradian with q in bohr^-1); NaN at q = 0."""</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">q</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">4.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">bracket</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">q</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="aligned">
+<a class="viewcode-back" href="../../api/pyxscat.html#pyxscat.electron.aligned">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">aligned</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="n">hf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">charges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Fixed orientation: ``|Z(q) - F(q)|^2`` (+ inelastic) for qvec (nq, 3) in the molecular frame."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">aligned</span> <span class="k">as</span> <span class="n">al</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">_charges</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">charges</span><span class="p">)</span>
+    <span class="n">qvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">qvec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+    <span class="n">zq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">qvec</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">@</span> <span class="n">z</span>
+    <span class="n">fq</span> <span class="o">=</span> <span class="n">al</span><span class="o">.</span><span class="n">form_factor</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">basis</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm1</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+    <span class="n">amp</span> <span class="o">=</span> <span class="n">zq</span> <span class="o">-</span> <span class="n">fq</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"qvec"</span><span class="p">:</span> <span class="n">qvec</span><span class="p">,</span> <span class="s2">"elastic"</span><span class="p">:</span> <span class="p">(</span><span class="n">amp</span> <span class="o">*</span> <span class="n">amp</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="s2">"ee_elastic"</span><span class="p">:</span> <span class="p">(</span><span class="n">fq</span> <span class="o">*</span> <span class="n">fq</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">.</span><span class="n">real</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">wf</span><span class="o">.</span><span class="n">dm2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ee_tot</span> <span class="o">=</span> <span class="n">al</span><span class="o">.</span><span class="n">scattering</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="s2">"total"</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">hf</span><span class="p">:</span>
+        <span class="n">ee_tot</span> <span class="o">=</span> <span class="n">al</span><span class="o">.</span><span class="n">scattering</span><span class="p">(</span><span class="n">wf</span><span class="p">,</span> <span class="n">qvec</span><span class="p">,</span> <span class="s2">"hf_total"</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">"inelastic"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ee_tot</span> <span class="o">-</span> <span class="n">out</span><span class="p">[</span><span class="s2">"ee_elastic"</span><span class="p">]</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"elastic"</span><span class="p">]</span> <span class="o">+</span> <span class="n">out</span><span class="p">[</span><span class="s2">"inelastic"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+<form class="search" action="../../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../../index.html">THISTLE</a></li>
+      <li>
+        <a href="../index.html">Module code</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

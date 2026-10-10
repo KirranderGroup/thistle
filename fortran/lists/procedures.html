@@ -1,0 +1,467 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="The Fortran kernels of THISTLE, analytic X-ray and electron scattering integrals over Gaussian basis functions.">
+    <meta name="author" content="Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>All Procedures &ndash; PyXSCAT kernels
+</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">PyXSCAT kernels <small>0.2.0.dev0</small></a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12" id='text'>
+			 <h1>Procedures</h1>
+			 <table class="table table-striped">
+			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
+			 <tbody>
+			   <tr>
+                 <td><a href='../proc/add1.html'>add1</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>dm1[p,q] (0-based, C order) += v</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/add2.html'>add2</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>dm2[p,q,r,s] (0-based orbitals, C order) += v</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/apply_op.html'>apply_op</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Function</td>
+                 <td><p>apply a_k (create = .false.) or a+_k (create = .true.) to (wa, wb); returns the sign</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/before.html'>before</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Function</td>
+                 <td><p>sign (-1)^(number of occupied spin-orbitals before (k, spin)) in alpha-first order</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/besselderiv.html'>BesselDeriv</a></td>
+                 <td><a href='../module/bessels_j0.html'>Bessels_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Combines the three coordinate expansions.</p><a href="../proc/besselderiv.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bessels0rr.html'>bessels0rr</a></td>
+                 <td><a href='../module/bessels_j0.html'>Bessels_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Radial sum of the quartet kernel for one pair distance H and every q in mu:</p><a href="../proc/bessels0rr.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/besselsum.html'>BesselSum</a></td>
+                 <td><a href='../module/bessels_j0.html'>Bessels_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Forward recurrence variant of bessels0rr (kept for compatibility).</p><a href="../proc/besselsum.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bits.html'>bits</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>the set spin-orbitals of the alpha and beta strings, as (orbital, spin) lists</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bubble_sort.html'>Bubble_Sort</a></td>
+                 <td><a href='../module/p0_cases.html'>p0_cases</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sorts the integer array a in ascending order (bubble sort, early exit when already sorted).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/combine_j2.html'>combine_j2</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>j2(q r) P2(cos theta) from j0 by the solid-harmonic (Hobson) theorem:</p><a href="../proc/combine_j2.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/coulomb_block.html'>coulomb_block</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Pair-density block of a shell quartet from the Coulomb-paired factored terms,</p><a href="../proc/coulomb_block.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/count_below.html'>count_below</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Function</td>
+                 <td><p>number of set bits of w(1:nw) below spin-orbital k (0-based)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dfact.html'>dfact</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Function</td>
+                 <td><p>Double factorial n!! as a real (1 for n &lt;= 1).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/diagonal.html'>diagonal</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Diagonal pair <code>&lt;I| ... |I&gt;</code>: dm1[k,k] += w; dm2[u,u,v,v] += w over ordered pairs u /= v of occupied
+spin-orbitals, dm2[u,v,v,u] -= w when u and v have the same spin</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/double.html'>double</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>I = Phi a+_p1 a+_p2 a_h2 a_h1 J (two spin-orbitals differ); w = c_I c_J</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/dphrec_opt.html'>dphrec_opt</a></td>
+                 <td><a href='../module/bessels_j0.html'>Bessels_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Right-sized backward recurrence for spherical Bessel functions</p><a href="../proc/dphrec_opt.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/elastic_pairs.html'>elastic_pairs</a></td>
+                 <td><a href='../module/xs_elastic.html'>xs_elastic</a></td>
+                 <td>Subroutine</td>
+                 <td><p>I(q) at every q for the one-particle matrices da, db (elastic for da = db, coherent mixed
+otherwise), K_0 for lorder = 0 and K_2 for lorder = 2, by the pair-of-pairs algorithm of the
+module description.  Pairs whose bound is below screen are dropped; npairs_out returns the
+number of significant pairs and of pairs of pairs evaluated; ierr = 0 on success.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/electron_nucleus.html'>electron_nucleus</a></td>
+                 <td><a href='../module/xs_nuclear.html'>xs_nuclear</a></td>
+                 <td>Subroutine</td>
+                 <td><p>I_ne(q) = sum_A zat(A) sum_mu,nu dm(mu,nu) int chi_mu chi_nu K_lorder(q, r - R_A) dr</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/exchange_pass.html'>exchange_pass</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Exchange-paired factored terms, Z(a,b,c,d) = sum_k Ax_k(I_a, K_c) Bx_k(J_b, L_d), symmetrised
+over the 8 index permutations the canonical quartet loop assumes:</p><a href="../proc/exchange_pass.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/first_bit.html'>first_bit</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Function</td>
+                 <td><p>first set bit of w(1:nw) (-1 if none)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/gemm_tn.html'>gemm_tn</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>z(1:ncol, 1:n) = a(1:nk, 1:ncol)^T b(1:nk, 1:n), by BLAS dgemm when a pointer was given, else matmul</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hermite_pair.html'>hermite_pair</a></td>
+                 <td><a href='../module/xs_pairft.html'>xs_pairft</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Hermite coefficients E(t; i, j) for one primitive pair and one direction (Gaussian
+prefactor excluded, E(0;0,0) = 1).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hermite_radial_coeffs.html'>hermite_radial_coeffs</a></td>
+                 <td><a href='../module/xs_radial.html'>xs_radial</a></td>
+                 <td>Subroutine</td>
+                 <td><p>a(T, i) for T &lt;= lmax, i &lt;= T/2</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hermite_table.html'>hermite_table</a></td>
+                 <td><a href='../module/xs_hermite.html'>xs_hermite</a></td>
+                 <td>Subroutine</td>
+                 <td><p>dd(t+1, i+1, j+1, gb, ga): coefficients for the shell pair (ga, gb),
+i &lt;= lg(ga), j &lt;= lg(gb).  The index order (.., gb, ga) is the one the
+kernel expects.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/j0_derivatives.html'>j0_derivatives</a></td>
+                 <td><a href='../module/xs_nuclear.html'>xs_nuclear</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Hermite derivatives R(k) = d^{t+u+v}/dh_x^t dh_y^u dh_z^v j0(q|h|) for t+u+v &lt;= lmax,
+packed by idx(t,u,v).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/jn_over_xn.html'>jn_over_xn</a></td>
+                 <td><a href='../module/xs_radial.html'>xs_radial</a></td>
+                 <td>Subroutine</td>
+                 <td><p>g(n) = j_n(x) / x^n, n = 0..nmax, accurate for every x &gt;= 0.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/p0_limits.html'>p0_limits</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Limits of the derivatives of j0(q h) at h = 0, any order:</p><a href="../proc/p0_limits.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/p_lmn.html'>P_LMN</a></td>
+                 <td><a href='../module/p0_cases.html'>p0_cases</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One entry (L, M, N) of the j0 table at every q: the closed-form cases.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/p_lmn_j1.html'>P_LMN_j1</a></td>
+                 <td><a href='../module/p0_cases.html'>p0_cases</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One entry (L, M, N) of the j1 table at every q.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/p_lmn_j2.html'>P_LMN_j2</a></td>
+                 <td><a href='../module/p0_cases.html'>p0_cases</a></td>
+                 <td>Subroutine</td>
+                 <td><p>One entry (L, M, N) of the j2 table at every q.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pair_transform.html'>pair_transform</a></td>
+                 <td><a href='../module/xs_pairft.html'>xs_pairft</a></td>
+                 <td>Subroutine</td>
+                 <td><p>F(q, mu, nu) for every scattering vector qv(:, iq) and every pair of contracted functions,
+into the complex array f(nq, nao, nao).  Primitive-shell pairs whose Gaussian prefactor
+(times the largest coefficients) is below screen are skipped; ierr = 0 on success.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_build_info.html'>pyxscat_build_info</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compiler and options the library was built with (for bug reports): copied into buf.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_elastic_pairs.html'>pyxscat_elastic_pairs</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Elastic (and coherent mixed) scattering by density-weighted pairs (l = 0 or 2).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_electron_nucleus.html'>pyxscat_electron_nucleus</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Electron-nucleus term of electron scattering (rotational average, l = 0 or 2).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_hermite_table.html'>pyxscat_hermite_table</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Hermite coefficients for one Cartesian direction (exposed for unit tests).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_max_threads.html'>pyxscat_max_threads</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Function</td>
+                 <td><p>Number of OpenMP threads the library uses when nthreads &lt;= 0 is passed (omp_get_max_threads).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_pair_transform.html'>pyxscat_pair_transform</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fourier transforms of basis-function products, F(q, mu, nu), at fixed scattering vectors.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_radial_series.html'>pyxscat_radial_series</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>sum_b coef(b+1) j_b(q h) (q/h)^b for a list of q (exposed for unit tests).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_rdm12_bitwise.html'>pyxscat_rdm12_bitwise</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Spin-summed 1- and 2-RDMs of a determinant expansion by the bitwise determinant-pair
+algorithm (one 64-bit word per spin).  d1, d2 are C-ordered [p,q] and [p,q,r,s].</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_rdm12_bitwise_groups.html'>pyxscat_rdm12_bitwise_groups</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>rdm12_bitwise restricted to candidate pairs: determinants sorted into ng groups with the
+neighbour lists nb (see xs_rdm); dm2 elements with all four orbitals &gt;= nint are skipped.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pyxscat_two_electron_j0.html'>pyxscat_two_electron_j0</a></td>
+                 <td><a href='../module/xs_capi.html'>xs_capi</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Rotationally averaged two-electron scattering.</p><a href="../proc/pyxscat_two_electron_j0.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/quartet_coincident.html'>quartet_coincident</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Pair centres coincide (h &lt; cutoffcentre): tabulated limits</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/quartet_distant.html'>quartet_distant</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Distinct pair centres: derivatives of j0(q h) through the Bessel module</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/radial_series.html'>radial_series</a></td>
+                 <td><a href='../module/xs_radial.html'>xs_radial</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The radial sum of the quartet kernel,</p><a href="../proc/radial_series.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/rdm12_bitwise.html'>rdm12_bitwise</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Spin-summed d1 and d2 of the expansion with coefficients c over the determinants
+(wa(:, I), wb(:, I)), by the pair loop over all (I, J) on nthreads OpenMP threads.
+ierr = 1 when a determinant has more than maxocc occupied spin-orbitals.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/rdm12_bitwise_groups.html'>rdm12_bitwise_groups</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The same pair loop restricted to candidate pairs: determinants are sorted into groups
+(contiguous, gstart(g):gstart(g+1)-1), and for group g only the groups
+nb(nbstart(g):nbstart(g+1)-1), all &gt;= g, are paired with it (g itself first when it
+is to be included).  Elements of dm2 with all four orbitals &gt;= nint are not accumulated
+(they are formed elsewhere); nint &lt; 0 keeps them.  The (I, J) / (J, I) symmetrisation
+is applied as in rdm12_bitwise, so pairs must be listed once (g &lt;= g').</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/rrdj0.html'>rrdj0</a></td>
+                 <td><a href='../module/bessels_j0.html'>Bessels_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Expansion coefficients for one Cartesian coordinate.</p><a href="../proc/rrdj0.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/set_p0.html'>set_P0</a></td>
+                 <td><a href='../module/p0_cases.html'>p0_cases</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Fills P0(:, L+1, M+1, N+1) = <code>&lt;qx^L qy^M qz^N&gt;</code> (j0 case) for all L, M, N &lt;= lmax4 with L+M+N &lt;= 16.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/set_p0_j1.html'>set_P0_j1</a></td>
+                 <td><a href='../module/p0_cases.html'>p0_cases</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The same table for the j1 term, scaled by sqrt(3/pi).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/set_p0_j2.html'>set_P0_j2</a></td>
+                 <td><a href='../module/p0_cases.html'>p0_cases</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The same table for the j2 P2 term, scaled by sqrt(5/pi).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/single.html'>single</a></td>
+                 <td><a href='../module/xs_rdm.html'>xs_rdm</a></td>
+                 <td>Subroutine</td>
+                 <td><p>I = Phi a+_x a_h J (one spin-orbital differs); w = c_I c_J</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_desc.html'>sort_desc</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>idx = permutation that orders key descending (iterative merge sort, stable)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/two_electron_j0.html'>two_electron_j0</a></td>
+                 <td><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></td>
+                 <td>Subroutine</td>
+                 <td><p>The two-electron term I2(q) at every q of qin (lorder = 0), or its j2 P2 moment (lorder = 2),
+for the density provider selected by mode (see the module description).  tsi receives the
+result, stats the screening counts (shell quartets total/kept, primitive quartets total/kept);
+ierr = 0 on success, 1-8 for an inconsistent input (sizes, modes, l beyond the Bessel tables,
+non-contiguous groups).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/upward_threshold.html'>upward_threshold</a></td>
+                 <td><a href='../module/xs_radial.html'>xs_radial</a></td>
+                 <td>Function</td>
+                 <td><p>The upward recurrence g(m+1) = [(2m+1) g(m) - g(m-1)] / x^2 is stable only while the
+order stays below x (above it the irregular solution y_m takes over, and rounding errors
+grow like (2m-1)!! (2m+1)!! / x^(2m+1)).  It is therefore used only when x &gt; kk + 1, for
+all orders at once; below that, jn_over_xn propagates downward (series + downward
+recurrence for x &lt; 1, Miller's normalised backward recurrence for 1 &lt;= x &lt;= kk + 1).</p></td>
+               </tr>
+			 </tbody></table>
+             
+        </div>
+      </div>
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              PyXSCAT kernels
+ was developed by Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-10-10T12:31:04.207760+0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

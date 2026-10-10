@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>pyxscat: the kernels &#8212; THISTLE 0.2.0.dev0</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/better.css?v=bb9f1030" />
+    <script src="../_static/documentation_options.js?v=130a53a1"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="canonical" href="https://thistle.kirrander.group/api/pyxscat.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pyxscat.interfaces: wavefunction adapters" href="interfaces.html" />
+    <link rel="prev" title="thistle: the simple interface" href="thistle.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  </head><body>
+    <header id="pageheader"><h1><a href="../index.html ">
+        THISTLE 0.2.0.dev0
+    </a></h1></header>
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="thistle.html" title="Previous document">thistle: the simple interface</a>
+        </li>
+        <li>
+          <a href="interfaces.html" title="Next document">pyxscat.interfaces: wavefunction adapters</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../index.html">THISTLE</a></li>
+      <li>
+        <a href="index.html">Python API</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-pyxscat">
+<span id="pyxscat-the-kernels"></span><h1>pyxscat: the kernels<a class="headerlink" href="#module-pyxscat" title="Link to this heading">¶</a></h1>
+<p>PyXSCAT: ab initio X-ray and electron scattering from wavefunctions.</p>
+<blockquote>
+<div><p>import pyxscat as xs
+wf = xs.interfaces.pyscf.from_cc(mycc)
+total = xs.scattering(wf, q, “total”)</p>
+</div></blockquote>
+<p>Authors: Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander.</p>
+<section id="module-pyxscat.core">
+<span id="pyxscat-core"></span><h2>pyxscat.core<a class="headerlink" href="#module-pyxscat.core" title="Link to this heading">¶</a></h2>
+<p>Scattering from a basis set and density matrices.</p>
+<p>Nothing in this module depends on an electronic structure package.  All density matrices are
+expressed in the contracted functions of the <a class="reference internal" href="#pyxscat.basis.Basis" title="pyxscat.basis.Basis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Basis</span></code></a> (atomic units; q in
+inverse bohr).  Conventions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dm1[mu,</span> <span class="pre">nu]</span></code> is the spin-summed one-particle density matrix,
+rho(r) = sum dm1[mu, nu] chi_mu(r) chi_nu(r).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dm2[mu,</span> <span class="pre">nu,</span> <span class="pre">la,</span> <span class="pre">si]</span></code> is the spin-summed two-particle density matrix in chemists’ notation,
+Gamma(r1, r2) = sum dm2[mu, nu, la, si] chi_mu(r1) chi_nu(r1) chi_la(r2) chi_si(r2),
+normalised to N(N-1).  This is the convention of PySCF’s <code class="docutils literal notranslate"><span class="pre">make_rdm2</span></code>.</p></li>
+</ul>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.use_factored">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">use_factored</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">factored</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nao</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#use_factored"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.use_factored" title="Link to this definition">¶</a></dt>
+<dd><p>Resolve a <code class="docutils literal notranslate"><span class="pre">factored</span></code> option (“auto”, True, False) for a basis of <code class="docutils literal notranslate"><span class="pre">nao</span></code> functions.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyxscat.core.FactoredDM2">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">FactoredDM2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ac</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#FactoredDM2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.FactoredDM2" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A two-particle density given as a sum of products of one-particle matrices,</p>
+<blockquote>
+<div><p>Gamma[mu,nu,la,si] = sum_k Ac_k[mu,nu] Bc_k[la,si]  +  sum_k Ax_k[mu,la] Bx_k[nu,si]</p>
+</div></blockquote>
+<p>(Coulomb and exchange pairings).  The kernels symmetrise over the 8 index permutations, so
+only contractions with symmetric kernels are defined.  Memory 2 K n^2 instead of n^4: the
+CCSD density of <a class="reference internal" href="#pyxscat.ccsd.factored_rdm2" title="pyxscat.ccsd.factored_rdm2"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyxscat.ccsd.factored_rdm2()</span></code></a> has K = 7 nocc^2 + 4 terms.  Weights
+are folded into the A matrices.  <code class="docutils literal notranslate"><span class="pre">transform(c)</span></code> changes the basis of every matrix
+(M -&gt; c M c^T); <code class="docutils literal notranslate"><span class="pre">dense()</span></code> builds the four-index array (small systems only).</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="pyxscat.core.FactoredDM2.shape">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">shape</span></span><a class="headerlink" href="#pyxscat.core.FactoredDM2.shape" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyxscat.core.FactoredDM2.nterms">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">nterms</span></span><a class="headerlink" href="#pyxscat.core.FactoredDM2.nterms" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyxscat.core.FactoredDM2.nbytes">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">nbytes</span></span><a class="headerlink" href="#pyxscat.core.FactoredDM2.nbytes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyxscat.core.FactoredDM2.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#FactoredDM2.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.FactoredDM2.transform" title="Link to this definition">¶</a></dt>
+<dd><p>Every matrix M -&gt; c M c^T (e.g. molecular orbitals -&gt; atomic orbitals), in chunks so
+that the temporaries stay small.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyxscat.core.FactoredDM2.dense">
+<span class="sig-name descname"><span class="pre">dense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#FactoredDM2.dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.FactoredDM2.dense" title="Link to this definition">¶</a></dt>
+<dd><p>The four-index array (chemists’ notation, 8-fold symmetrised).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyxscat.core.FactoredDM2.trace">
+<span class="sig-name descname"><span class="pre">trace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#FactoredDM2.trace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.FactoredDM2.trace" title="Link to this definition">¶</a></dt>
+<dd><p>sum_{pq} Gamma[p,p,q,q] (= N(N-1) for a normalised density).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyxscat.core.Wavefunction">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">Wavefunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nelec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom_numbers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#Wavefunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.Wavefunction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Everything the scattering kernels need: a basis, densities and the electron count.
+<code class="docutils literal notranslate"><span class="pre">dm2</span></code> is the four-index array or a <a class="reference internal" href="#pyxscat.core.FactoredDM2" title="pyxscat.core.FactoredDM2"><code class="xref py py-class docutils literal notranslate"><span class="pre">FactoredDM2</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>basis</strong> (<a class="reference internal" href="#pyxscat.basis.Basis" title="pyxscat.basis.Basis"><em>Basis</em></a>)</p></li>
+<li><p><strong>dm1</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>dm2</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><em>object</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>nelec</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>label</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>)</p></li>
+<li><p><strong>atom_numbers</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>coords</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.core.Wavefunction.basis">
+<span class="sig-name descname"><span class="pre">basis</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#pyxscat.basis.Basis" title="pyxscat.basis.Basis"><span class="pre">Basis</span></a></span><a class="headerlink" href="#pyxscat.core.Wavefunction.basis" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.core.Wavefunction.dm1">
+<span class="sig-name descname"><span class="pre">dm1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.core.Wavefunction.dm1" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.core.Wavefunction.dm2">
+<span class="sig-name descname"><span class="pre">dm2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><span class="pre">object</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#pyxscat.core.Wavefunction.dm2" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.core.Wavefunction.nelec">
+<span class="sig-name descname"><span class="pre">nelec</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#pyxscat.core.Wavefunction.nelec" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.core.Wavefunction.label">
+<span class="sig-name descname"><span class="pre">label</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></span><a class="headerlink" href="#pyxscat.core.Wavefunction.label" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.core.Wavefunction.atom_numbers">
+<span class="sig-name descname"><span class="pre">atom_numbers</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#pyxscat.core.Wavefunction.atom_numbers" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.core.Wavefunction.coords">
+<span class="sig-name descname"><span class="pre">coords</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#pyxscat.core.Wavefunction.coords" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.symmetrize_dm2">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">symmetrize_dm2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dm2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#symmetrize_dm2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.symmetrize_dm2" title="Link to this definition">¶</a></dt>
+<dd><p>Average a two-particle density matrix over its 8 index permutations.</p>
+<p>The integrals are invariant under these permutations, so the scattering is unchanged; the
+kernel loops over symmetry-unique quartets and needs the symmetric form.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.transform_dm2">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">transform_dm2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#transform_dm2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.transform_dm2" title="Link to this definition">¶</a></dt>
+<dd><p>g[pqrs] -&gt; sum_pqrs c[a,p] c[b,q] c[c,r] c[d,s] g[pqrs] (e.g. MO -&gt; AO), one index at a time
+(a <a class="reference internal" href="#pyxscat.core.FactoredDM2" title="pyxscat.core.FactoredDM2"><code class="xref py py-class docutils literal notranslate"><span class="pre">FactoredDM2</span></code></a> transforms its matrices instead).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.lsign">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">lsign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#lsign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.lsign" title="Link to this definition">¶</a></dt>
+<dd><p>i^l for even l: the phase of the l-th term of the plane-wave expansion
+exp(i q.r) = sum_l (2l+1) i^l j_l(qr) P_l(q^.r^).  Every l-moment returned by pyxscat includes
+it, so S2 = -sum Gamma &lt;j2 P2&gt;, and the moments add up with plus signs:
+I(q, theta_q) = sum_l (2l+1) &lt;P_l(cos beta)&gt; P_l(cos theta_q) S_l(q).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.two_electron">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">two_electron</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetrize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#two_electron"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.two_electron" title="Link to this definition">¶</a></dt>
+<dd><p>Two-electron part of the total scattering, <code class="docutils literal notranslate"><span class="pre">sum</span> <span class="pre">Gamma</span> <span class="pre">&lt;ij|j0(q</span> <span class="pre">r12)|kr&gt;</span></code>.</p>
+<p>Tends to N(N-1) at q = 0 and to zero at large q.  Set <code class="docutils literal notranslate"><span class="pre">symmetrize=False</span></code> only if <code class="docutils literal notranslate"><span class="pre">dm2</span></code>
+already has the full 8-fold permutational symmetry (saves one copy of the array).</p>
+<p><code class="docutils literal notranslate"><span class="pre">l=2</span></code> gives the second Legendre moment about the molecular z axis,
+<code class="docutils literal notranslate"><span class="pre">sum</span> <span class="pre">Gamma</span> <span class="pre">&lt;ij|</span> <span class="pre">j2(q</span> <span class="pre">r12)</span> <span class="pre">P2(cos</span> <span class="pre">theta_12)</span> <span class="pre">|kr&gt;</span></code> (see <a class="reference internal" href="#pyxscat.core.scattering" title="pyxscat.core.scattering"><code class="xref py py-func docutils literal notranslate"><span class="pre">scattering()</span></code></a>).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.elastic">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">elastic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pairs'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#elastic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.elastic" title="Link to this definition">¶</a></dt>
+<dd><p>Rotationally averaged elastic scattering, <code class="docutils literal notranslate"><span class="pre">&lt;|F(q)|^2&gt;</span></code>, from a one-particle density matrix.</p>
+<p>With two different matrices this is the rotational average of F_a(q) F_b(q)^*, the building
+block of coherent mixed and inelastic terms from transition densities.</p>
+<dl class="simple">
+<dt>method</dt><dd><p><code class="docutils literal notranslate"><span class="pre">&quot;pairs&quot;</span></code> (default): the elastic pair density is a product, so the density is folded
+into every primitive pair first and pairs of Hermite charge distributions are combined
+(<code class="docutils literal notranslate"><span class="pre">xs_elastic.f90</span></code>).  Exact at coincident pair centres, rigorous q-dependent screening.
+<code class="docutils literal notranslate"><span class="pre">&quot;quartets&quot;</span></code>: the general shell-quartet kernel with the pair density built on the fly
+(the one-loop algorithm; kept for comparison).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.exchange">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">exchange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#exchange"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.exchange" title="Link to this definition">¶</a></dt>
+<dd><p>Exchange part of the two-electron scattering of a closed-shell single determinant,
+built from -1/2 D(1,2) D(2,1) without forming a four-index array.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.mean_field">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">mean_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#mean_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.mean_field" title="Link to this definition">¶</a></dt>
+<dd><p>Two-electron scattering of the mean-field pair density D D - 1/2 D D (exact for
+closed-shell Hartree-Fock), without forming a four-index array.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.scattering">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">scattering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.scattering" title="Link to this definition">¶</a></dt>
+<dd><p>Rotationally averaged X-ray scattering of a <a class="reference internal" href="#pyxscat.core.Wavefunction" title="pyxscat.core.Wavefunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">Wavefunction</span></code></a>.</p>
+<dl>
+<dt>kind</dt><dd><p><code class="docutils literal notranslate"><span class="pre">&quot;total&quot;</span></code>         N + two-electron term (needs <code class="docutils literal notranslate"><span class="pre">wf.dm2</span></code> and <code class="docutils literal notranslate"><span class="pre">wf.nelec</span></code>)
+<code class="docutils literal notranslate"><span class="pre">&quot;elastic&quot;</span></code>       <code class="docutils literal notranslate"><span class="pre">&lt;|F(q)|^2&gt;</span></code> from <code class="docutils literal notranslate"><span class="pre">wf.dm1</span></code>
+<code class="docutils literal notranslate"><span class="pre">&quot;inelastic&quot;</span></code>     total - elastic
+<code class="docutils literal notranslate"><span class="pre">&quot;two_electron&quot;</span></code>  the two-electron term alone
+<code class="docutils literal notranslate"><span class="pre">&quot;hf_total&quot;</span></code>      N + mean-field two-electron term from <code class="docutils literal notranslate"><span class="pre">wf.dm1</span></code> only</p>
+</dd>
+<dt>l</dt><dd><p><code class="docutils literal notranslate"><span class="pre">0</span></code> (default): the isotropic signal, the average over all orientations.
+<code class="docutils literal notranslate"><span class="pre">2</span></code>: the second Legendre moment about the molecular z axis,
+S2(q) = -sum Gamma &lt;j2(q r12) P2(cos theta_12)&gt; (the i^2 = -1 of the plane-wave expansion
+included, see <a class="reference internal" href="#pyxscat.core.lsign" title="pyxscat.core.lsign"><code class="xref py py-func docutils literal notranslate"><span class="pre">lsign()</span></code></a>; S2 = &lt;I(q) P2(cos theta_q)&gt; for perfect alignment).  For molecules whose z axis is aligned
+along a laboratory axis (free rotation about it), the signal at a scattering vector
+making the angle theta_q with that axis is</p>
+<blockquote>
+<div><p>I(q, theta_q) = I0(q) + 5 &lt;P2(cos beta)&gt; P2(cos theta_q) S2(q) + (l = 4, …)</p>
+</div></blockquote>
+<p>with &lt;P2(cos beta)&gt; the degree of alignment (1 for perfect alignment).  The isotropic
+one-electron term N does not contribute at l = 2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.core.decompose">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.core.</span></span><span class="sig-name descname"><span class="pre">decompose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/core.html#decompose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.core.decompose" title="Link to this definition">¶</a></dt>
+<dd><p>Split the total scattering into mean-field and correlation contributions.</p>
+<p>Gamma = D D  -  1/2 D D (exchange)  +  Lambda (cumulant), so that</p>
+<blockquote>
+<div><p>total = N + hartree + exchange + cumulant,     elastic = hartree.</p>
+</div></blockquote>
+<p>Returns a dict of arrays over q.  The mean-field parts are built from the 1RDM on the fly;
+only the full two-electron term uses the four-index array.  <code class="docutils literal notranslate"><span class="pre">l=2</span></code>: the same split of the
+second Legendre moment (see <a class="reference internal" href="#pyxscat.core.scattering" title="pyxscat.core.scattering"><code class="xref py py-func docutils literal notranslate"><span class="pre">scattering()</span></code></a>); its self term is zero.</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.basis">
+<span id="pyxscat-basis"></span><h2>pyxscat.basis<a class="headerlink" href="#module-pyxscat.basis" title="Link to this heading">¶</a></h2>
+<p>Package-independent description of a Gaussian basis set.</p>
+<p>The scattering kernels only ever see this object.  Every contracted basis function is a
+linear combination of primitive Cartesian Gaussians:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chi_mu</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">=</span> <span class="n">sum_p</span>  <span class="n">coeff_p</span> <span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">X</span><span class="p">)</span><span class="o">^</span><span class="n">l</span> <span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">Y</span><span class="p">)</span><span class="o">^</span><span class="n">m</span> <span class="p">(</span><span class="n">z</span><span class="o">-</span><span class="n">Z</span><span class="p">)</span><span class="o">^</span><span class="n">n</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">ga</span> <span class="o">|</span><span class="n">r</span><span class="o">-</span><span class="n">R</span><span class="o">|^</span><span class="mi">2</span><span class="p">),</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">coeff</span></code> already contains the contraction coefficient and all normalisation factors of
+the electronic structure package the basis came from.  Density matrices handed to the kernels
+must be expressed in the functions chi_mu, whatever their normalisation.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.basis.cartesian_powers">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.basis.</span></span><span class="sig-name descname"><span class="pre">cartesian_powers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">l</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/basis.html#cartesian_powers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.basis.cartesian_powers" title="Link to this definition">¶</a></dt>
+<dd><p>Cartesian powers (lx, ly, lz) of a shell, in the usual order xx, xy, xz, yy, yz, zz, …</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pyxscat.basis.</span></span><span class="sig-name descname"><span class="pre">Basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xyz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ga</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coeff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nao</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/basis.html#Basis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.basis.Basis" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Primitive Cartesian Gaussians grouped into primitive shells (every array has one entry
+per primitive Cartesian function).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xyz</strong> (<em>ndarray</em><em>, </em><a class="reference internal" href="#pyxscat.core.FactoredDM2.shape" title="pyxscat.core.FactoredDM2.shape"><em>shape</em></a><em> (</em><a class="reference internal" href="#pyxscat.basis.Basis.nprim" title="pyxscat.basis.Basis.nprim"><em>nprim</em></a><em>, </em><em>3</em><em>)</em>) – Centres in bohr.</p></li>
+<li><p><strong>ga</strong> (<em>ndarray</em>) – Exponents.</p></li>
+<li><p><strong>lmn</strong> (<em>ndarray</em><em>, </em><a class="reference internal" href="#pyxscat.core.FactoredDM2.shape" title="pyxscat.core.FactoredDM2.shape"><em>shape</em></a><em> (</em><a class="reference internal" href="#pyxscat.basis.Basis.nprim" title="pyxscat.basis.Basis.nprim"><em>nprim</em></a><em>, </em><em>3</em><em>)</em>) – Cartesian powers.</p></li>
+<li><p><strong>group</strong> (<em>ndarray</em>) – Primitive shell index, 1-based, contiguous.  A primitive shell collects all functions
+that share centre, exponent and l+m+n.</p></li>
+<li><p><strong>contr</strong> (<em>ndarray</em>) – Index (1-based) of the contracted function the primitive belongs to.</p></li>
+<li><p><strong>coeff</strong> (<em>ndarray</em>) – Contraction coefficient times normalisation.</p></li>
+<li><p><strong>nao</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of contracted functions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>xyz</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>ga</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>lmn</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>group</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>contr</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>coeff</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>)</p></li>
+<li><p><strong>nao</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.xyz">
+<span class="sig-name descname"><span class="pre">xyz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.basis.Basis.xyz" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.ga">
+<span class="sig-name descname"><span class="pre">ga</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.basis.Basis.ga" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.lmn">
+<span class="sig-name descname"><span class="pre">lmn</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.basis.Basis.lmn" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.group">
+<span class="sig-name descname"><span class="pre">group</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.basis.Basis.group" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.contr">
+<span class="sig-name descname"><span class="pre">contr</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.basis.Basis.contr" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.coeff">
+<span class="sig-name descname"><span class="pre">coeff</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#pyxscat.basis.Basis.coeff" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.nao">
+<span class="sig-name descname"><span class="pre">nao</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><a class="headerlink" href="#pyxscat.basis.Basis.nao" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.nprim">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">nprim</span></span><a class="headerlink" href="#pyxscat.basis.Basis.nprim" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.lmax">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">lmax</span></span><a class="headerlink" href="#pyxscat.basis.Basis.lmax" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.from_shells">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_shells</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shells</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/basis.html#Basis.from_shells"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.basis.Basis.from_shells" title="Link to this definition">¶</a></dt>
+<dd><p>Build a basis from a list of shells.</p>
+<p>Each shell is a tuple <code class="docutils literal notranslate"><span class="pre">(centre,</span> <span class="pre">l,</span> <span class="pre">exponents,</span> <span class="pre">coefficients)</span></code> with <code class="docutils literal notranslate"><span class="pre">centre</span></code> in bohr and
+<code class="docutils literal notranslate"><span class="pre">coefficients</span></code> of shape (nprim, nctr) (or (nprim,) for a single contraction).  The
+coefficients must multiply the <em>bare</em> primitives x^l y^m z^n exp(-a r^2), i.e. they
+include every normalisation factor.  An optional fifth element gives per-component
+factors of length (l+1)(l+2)/2 for packages that normalise Cartesian components
+individually.  Contracted functions are numbered shell by shell, contraction by
+contraction, Cartesian component by Cartesian component.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyxscat.basis.Basis.eval">
+<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/basis.html#Basis.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.basis.Basis.eval" title="Link to this definition">¶</a></dt>
+<dd><p>Values of the contracted functions at <code class="docutils literal notranslate"><span class="pre">points</span></code> (npts, 3); returns (npts, nao).</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.aligned">
+<span id="pyxscat-aligned"></span><h2>pyxscat.aligned<a class="headerlink" href="#module-pyxscat.aligned" title="Link to this heading">¶</a></h2>
+<p>Scattering from molecules with a fixed orientation (aligned or oriented molecules, single
+detector images), at arbitrary scattering vectors q = (qx, qy, qz) in the molecular frame.</p>
+<p>Because exp(i q.(r1 - r2)) = exp(i q.r1) exp(-i q.r2), every quantity follows from the Fourier
+transforms of basis-function products:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">F_mu</span><span class="p">,</span><span class="n">nu</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">=</span> <span class="nb">int</span> <span class="n">chi_mu</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="n">chi_nu</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="n">exp</span><span class="p">(</span><span class="n">i</span> <span class="n">q</span><span class="o">.</span><span class="n">r</span><span class="p">)</span> <span class="n">dr</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>computed analytically (<code class="docutils literal notranslate"><span class="pre">pair_transform</span></code>) and contracted with the density matrices:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">form</span> <span class="n">factor</span>     <span class="n">F</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>   <span class="o">=</span> <span class="nb">sum</span> <span class="n">D_mu</span><span class="p">,</span><span class="n">nu</span> <span class="n">F_mu</span><span class="p">,</span><span class="n">nu</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>                  <span class="n">elastic</span> <span class="o">=</span> <span class="o">|</span><span class="n">F</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">|^</span><span class="mi">2</span>
+<span class="n">two</span><span class="o">-</span><span class="n">electron</span>    <span class="n">I2</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>  <span class="o">=</span> <span class="nb">sum</span> <span class="n">Gamma_</span><span class="p">{</span><span class="n">mu</span> <span class="n">nu</span><span class="p">,</span> <span class="n">la</span> <span class="n">si</span><span class="p">}</span> <span class="n">F_mu</span><span class="p">,</span><span class="n">nu</span> <span class="n">F_la</span><span class="p">,</span><span class="n">si</span><span class="o">^*</span>
+<span class="n">total</span>           <span class="n">I</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>   <span class="o">=</span> <span class="n">N</span> <span class="o">+</span> <span class="n">I2</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The cost is one pass over primitive pairs plus dense linear algebra; there is no Bessel
+expansion, so close pair centres need no special treatment.</p>
+<p>Detector geometry: <code class="docutils literal notranslate"><span class="pre">ewald_q</span></code> gives the scattering vectors for given scattering and azimuthal
+angles, and <code class="docutils literal notranslate"><span class="pre">rotate_q</span></code> turns laboratory-frame vectors into the molecular frame for a given
+molecular orientation.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.pair_transform">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">pair_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#pair_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.pair_transform" title="Link to this definition">¶</a></dt>
+<dd><p>F[q, mu, nu] = int chi_mu chi_nu exp(i q.r) dr for qvec of shape (nq, 3) (bohr^-1).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.form_factor">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">form_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#form_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.form_factor" title="Link to this definition">¶</a></dt>
+<dd><p>Complex form factor F(q) = sum D F_mu,nu(q) (exp(+i q.r) convention).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.elastic">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">elastic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#elastic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.elastic" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">|F(q)|^2</span></code>, or <code class="docutils literal notranslate"><span class="pre">Re[F_a(q)</span> <span class="pre">F_b(q)^*]</span></code> for two one-particle matrices (transition/mixed terms).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.two_electron">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">two_electron</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm2</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#two_electron"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.two_electron" title="Link to this definition">¶</a></dt>
+<dd><p>Two-electron term sum Gamma F F^* at fixed q (tends to N(N-1) at q = 0).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.exchange">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">exchange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#exchange"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.exchange" title="Link to this definition">¶</a></dt>
+<dd><p>Exchange term of the mean-field pair density, -1/2 sum D_ps D_rq F_pq F_rs^*.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.mean_field">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">mean_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#mean_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.mean_field" title="Link to this definition">¶</a></dt>
+<dd><p>Two-electron term of D D - 1/2 D D (closed-shell Hartree-Fock) without a 2RDM.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.scattering">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">scattering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.scattering" title="Link to this definition">¶</a></dt>
+<dd><p>Fixed-orientation counterpart of <code class="xref py py-func docutils literal notranslate"><span class="pre">pyxscat.scattering()</span></code> (same <code class="docutils literal notranslate"><span class="pre">kind</span></code> values).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.decompose">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">decompose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#decompose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.decompose" title="Link to this definition">¶</a></dt>
+<dd><p>Fixed-orientation counterpart of <code class="xref py py-func docutils literal notranslate"><span class="pre">pyxscat.decompose()</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.ewald_q">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">ewald_q</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">two_theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#ewald_q"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.ewald_q" title="Link to this definition">¶</a></dt>
+<dd><p>Scattering vectors q = k_out - k_in on the Ewald sphere, incident beam along +z.</p>
+<p>k0 = 2 pi / wavelength (bohr^-1); two_theta = scattering angle, phi = azimuth (radians,
+broadcast against each other).  Returns an array (…, 3); <code class="docutils literal notranslate"><span class="pre">|q|</span> <span class="pre">=</span> <span class="pre">2</span> <span class="pre">k0</span> <span class="pre">sin(two_theta</span> <span class="pre">/</span> <span class="pre">2)</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.detector_q">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">detector_q</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">npix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#detector_q"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.detector_q" title="Link to this definition">¶</a></dt>
+<dd><p>A square detector image in q space: (npix x npix) pixels covering <code class="docutils literal notranslate"><span class="pre">|q_perp|</span> <span class="pre">&lt;=</span> <span class="pre">qmax</span></code> on the
+Ewald sphere, beam along +z.  Returns (qvec (npix*npix, 3), mask of pixels with q &lt;= 2 k0).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.rotation_matrix">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">rotation_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#rotation_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.rotation_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>Rotation R(alpha, beta, gamma) = Rz(alpha) Ry(beta) Rz(gamma) (active, radians).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.aligned.rotate_q">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.aligned.</span></span><span class="sig-name descname"><span class="pre">rotate_q</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qvec_lab</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/aligned.html#rotate_q"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.aligned.rotate_q" title="Link to this definition">¶</a></dt>
+<dd><p>Laboratory-frame q vectors -&gt; molecular frame, for a molecule rotated by <code class="docutils literal notranslate"><span class="pre">rotation</span></code>
+(3x3, active) from its input orientation: q_mol = R^T q_lab.</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.grids">
+<span id="pyxscat-grids"></span><h2>pyxscat.grids<a class="headerlink" href="#module-pyxscat.grids" title="Link to this heading">¶</a></h2>
+<p>Scattering-vector grids for fixed-orientation and partially aligned calculations.</p>
+<p>The polar detector grid is the one of <code class="docutils literal notranslate"><span class="pre">qgrid3d.f90</span></code> (<code class="docutils literal notranslate"><span class="pre">qcoord3</span></code>) of the earlier code, kept
+point for point so that results line up with existing files:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_rings</span></code> rings of equally spaced transverse momentum q_perp = i * qxymax / n_rings,
+i = 1 .. n_rings, with qxymax = k0 sin(theta_max) (theta_max = largest scattering angle);</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_azimuth</span></code> equally spaced azimuths per ring, phi_j = 2 pi j / n_azimuth, measured from the
+y axis: q_x = q_perp sin(phi), q_y = q_perp cos(phi);</p></li>
+<li><p>q_z = k0 [1 - sqrt(1 - q_perp^2 / k0^2)] on the Ewald sphere (beam along z);</p></li>
+<li><p>the point q = 0 first, then ring by ring, azimuth fastest:
+npts = n_rings * n_azimuth + 1  (in qcoord3’s arguments: n1 = n_rings, n2 = n_azimuth + 1).</p></li>
+</ul>
+<p>Its sign convention is q = k_in - k_out (q_z &gt;= 0); THISTLE’s square detector uses k_out - k_in.
+Scattering intensities are the same at q and -q (I(-q) = I(q) for real wavefunctions), and the
+P2 weight of an aligned ensemble is even, so the two conventions give identical patterns.</p>
+<p>All q in bohr^-1 (atomic units).</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.grids.photon_k0">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.grids.</span></span><span class="sig-name descname"><span class="pre">photon_k0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy_kev</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/grids.html#photon_k0"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.grids.photon_k0" title="Link to this definition">¶</a></dt>
+<dd><p>Wavenumber of a photon of energy E (keV), bohr^-1.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.grids.electron_k0">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.grids.</span></span><span class="sig-name descname"><span class="pre">electron_k0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy_kev</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/grids.html#electron_k0"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.grids.electron_k0" title="Link to this definition">¶</a></dt>
+<dd><p>Wavenumber of an electron of kinetic energy E (keV), relativistic, bohr^-1.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.grids.polar_grid">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.grids.</span></span><span class="sig-name descname"><span class="pre">polar_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_max_deg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_azimuth</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/grids.html#polar_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.grids.polar_grid" title="Link to this definition">¶</a></dt>
+<dd><p>The qcoord3 polar detector grid (see module doc).  Returns qvec (npts, 3).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.grids.qcoord3">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.grids.</span></span><span class="sig-name descname"><span class="pre">qcoord3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">e0_kev</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thsmax_deg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/grids.html#qcoord3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.grids.qcoord3" title="Link to this definition">¶</a></dt>
+<dd><p>Exactly <code class="docutils literal notranslate"><span class="pre">call</span> <span class="pre">qcoord3(e0,</span> <span class="pre">thsmax,</span> <span class="pre">n1,</span> <span class="pre">n2,</span> <span class="pre">qxyz)</span></code> of qgrid3d.f90 (photons of e0 keV).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.grids.read_qgrid">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.grids.</span></span><span class="sig-name descname"><span class="pre">read_qgrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/grids.html#read_qgrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.grids.read_qgrid" title="Link to this definition">¶</a></dt>
+<dd><p>A q grid from a text file with columns qx qy qz (bohr^-1), e.g. qgrid.dat; extra columns
+(such as <code class="docutils literal notranslate"><span class="pre">|q|</span></code>) are ignored.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.grids.write_qgrid">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.grids.</span></span><span class="sig-name descname"><span class="pre">write_qgrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/grids.html#write_qgrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.grids.write_qgrid" title="Link to this definition">¶</a></dt>
+<dd><p>Write qx qy qz in the format of grid.f90 (qgrid.dat, 3f19.12).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.grids.unique_norms">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.grids.</span></span><span class="sig-name descname"><span class="pre">unique_norms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/grids.html#unique_norms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.grids.unique_norms" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">|q|</span></code> of every point, the distinct values, and the index of each point into them (so that
+rotationally averaged quantities are computed once per ring).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.grids.aligned_ensemble">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.grids.</span></span><span class="sig-name descname"><span class="pre">aligned_ensemble</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/grids.html#aligned_ensemble"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.grids.aligned_ensemble" title="Link to this definition">¶</a></dt>
+<dd><p>Partially aligned ensemble from the isotropic signal and the j2 moment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">I</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">=</span> <span class="n">I0</span><span class="p">(</span><span class="o">|</span><span class="n">q</span><span class="o">|</span><span class="p">)</span> <span class="o">+</span> <span class="mi">5</span> <span class="o">&lt;</span><span class="n">P2</span><span class="p">(</span><span class="n">cos</span> <span class="n">beta</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">P2</span><span class="p">(</span><span class="n">q</span><span class="o">^</span> <span class="o">.</span> <span class="n">a</span><span class="o">^</span><span class="p">)</span> <span class="n">S2</span><span class="p">(</span><span class="o">|</span><span class="n">q</span><span class="o">|</span><span class="p">)</span>        <span class="p">(</span><span class="o">+</span> <span class="n">l</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="o">...</span> <span class="n">neglected</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">axis</span></code>: alignment axis in the laboratory frame (e.g. the laser polarisation); <code class="docutils literal notranslate"><span class="pre">p2</span></code>: the
+degree of alignment &lt;P2(cos beta)&gt; (1 = perfect); <code class="docutils literal notranslate"><span class="pre">i0</span></code>, <code class="docutils literal notranslate"><span class="pre">s2</span></code>: values at every point.
+The molecular axis that aligns is the z axis of the molecular frame in which S2 was computed.</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.electron">
+<span id="pyxscat-electron"></span><h2>pyxscat.electron<a class="headerlink" href="#module-pyxscat.electron" title="Link to this heading">¶</a></h2>
+<p>Electron scattering (ultrafast electron diffraction, gas electron diffraction).</p>
+<p>In the first Born approximation a fast electron is scattered by the whole charge distribution
+of the molecule.  With Z(q) = sum_A Z_A exp(i q.R_A) the nuclear and F(q) the electronic form
+factor, the differential cross section is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dsigma</span><span class="o">/</span><span class="n">dOmega</span> <span class="o">=</span> <span class="p">(</span><span class="mi">4</span> <span class="o">/</span> <span class="n">a0</span><span class="o">^</span><span class="mi">2</span> <span class="n">q</span><span class="o">^</span><span class="mi">4</span><span class="p">)</span> <span class="p">[</span> <span class="o">&lt;|</span><span class="n">Z</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">-</span> <span class="n">F</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">|^</span><span class="mi">2</span><span class="o">&gt;</span> <span class="o">+</span> <span class="n">S_inel</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="p">]</span>
+              <span class="o">=</span> <span class="p">(</span><span class="mi">4</span> <span class="o">/</span> <span class="n">a0</span><span class="o">^</span><span class="mi">2</span> <span class="n">q</span><span class="o">^</span><span class="mi">4</span><span class="p">)</span> <span class="p">[</span> <span class="n">I_nn</span> <span class="o">-</span> <span class="mi">2</span> <span class="n">I_ne</span> <span class="o">+</span> <span class="n">I_ee</span> <span class="p">],</span>
+</pre></div>
+</div>
+<p>where I_ee is the total X-ray scattering (N + two-electron term) and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">I_nn</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">=</span> <span class="n">sum_AB</span> <span class="n">Z_A</span> <span class="n">Z_B</span> <span class="n">j0</span><span class="p">(</span><span class="n">q</span> <span class="n">R_AB</span><span class="p">)</span>                               <span class="n">nucleus</span><span class="o">-</span><span class="n">nucleus</span>
+<span class="n">I_ne</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">=</span> <span class="n">sum_A</span> <span class="n">Z_A</span> <span class="nb">int</span> <span class="n">rho</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="n">j0</span><span class="p">(</span><span class="n">q</span> <span class="o">|</span><span class="n">r</span> <span class="o">-</span> <span class="n">R_A</span><span class="o">|</span><span class="p">)</span> <span class="n">dr</span>                 <span class="n">electron</span><span class="o">-</span><span class="n">nucleus</span>
+<span class="n">elastic</span>   <span class="n">I_nn</span> <span class="o">-</span> <span class="mi">2</span> <span class="n">I_ne</span> <span class="o">+</span> <span class="o">&lt;|</span><span class="n">F</span><span class="o">|^</span><span class="mi">2</span><span class="o">&gt;</span>
+<span class="n">inelastic</span> <span class="n">I_ee</span> <span class="o">-</span> <span class="o">&lt;|</span><span class="n">F</span><span class="o">|^</span><span class="mi">2</span><span class="o">&gt;</span>  <span class="p">(</span><span class="n">the</span> <span class="n">same</span> <span class="k">as</span> <span class="k">for</span> <span class="n">X</span><span class="o">-</span><span class="n">rays</span><span class="p">:</span> <span class="n">the</span> <span class="n">nuclei</span> <span class="n">do</span> <span class="ow">not</span> <span class="n">scatter</span> <span class="n">inelastically</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The functions here return the bracket […] (“scattering in electron units”, the quantity of the
+earlier code, 0 at q = 0 for a neutral molecule); <a class="reference internal" href="#pyxscat.electron.cross_section" title="pyxscat.electron.cross_section"><code class="xref py py-func docutils literal notranslate"><span class="pre">cross_section()</span></code></a> multiplies by 4/q^4.
+Relativistic beam electrons: multiply by gamma^2 = (1 + E/mc^2)^2.</p>
+<p>The electron-nucleus integrals are analytic (McMurchie-Davidson with the auxiliary functions
+(1/h d/dh)^n j0(qh)), in Fortran.  <code class="docutils literal notranslate"><span class="pre">l=2</span></code> gives the second Legendre moment about z, for
+aligned molecules: I(q, theta_q) = I0 + 5 &lt;P2&gt; P2(cos theta_q) I2, as for X-rays.</p>
+<p>q in bohr^-1, coordinates in bohr.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.electron.nucleus_nucleus">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.electron.</span></span><span class="sig-name descname"><span class="pre">nucleus_nucleus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">charges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/electron.html#nucleus_nucleus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.electron.nucleus_nucleus" title="Link to this definition">¶</a></dt>
+<dd><p>sum_AB Z_A Z_B j0(q R_AB), or with l=2 -sum_AB Z_A Z_B j2(q R_AB) P2(cos theta_AB) (i^2 = -1).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.electron.electron_nucleus">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.electron.</span></span><span class="sig-name descname"><span class="pre">electron_nucleus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-14</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/electron.html#electron_nucleus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.electron.electron_nucleus" title="Link to this definition">¶</a></dt>
+<dd><p>sum_A Z_A sum D_mu,nu int chi_mu chi_nu K_l(q, r - R_A) dr, K_0 = j0, K_2 = j2 P2.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.electron.decompose">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.electron.</span></span><span class="sig-name descname"><span class="pre">decompose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/electron.html#decompose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.electron.decompose" title="Link to this definition">¶</a></dt>
+<dd><p>All parts of the electron scattering of a wavefunction (bracket units, see module doc).</p>
+<p>Returns a dict over q with <code class="docutils literal notranslate"><span class="pre">nn</span></code>, <code class="docutils literal notranslate"><span class="pre">ne</span></code>, <code class="docutils literal notranslate"><span class="pre">ee_elastic</span></code> (= X-ray elastic) and
+<code class="docutils literal notranslate"><span class="pre">elastic</span></code>; with a 2RDM (or <code class="docutils literal notranslate"><span class="pre">hf=True</span></code> for a closed-shell determinant) also <code class="docutils literal notranslate"><span class="pre">ee_total</span></code>
+(= X-ray total), <code class="docutils literal notranslate"><span class="pre">inelastic</span></code> and <code class="docutils literal notranslate"><span class="pre">total</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.electron.scattering">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.electron.</span></span><span class="sig-name descname"><span class="pre">scattering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/electron.html#scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.electron.scattering" title="Link to this definition">¶</a></dt>
+<dd><p>Electron scattering of kind <code class="docutils literal notranslate"><span class="pre">total</span></code>, <code class="docutils literal notranslate"><span class="pre">elastic</span></code> or <code class="docutils literal notranslate"><span class="pre">inelastic</span></code> (bracket units).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.electron.cross_section">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.electron.</span></span><span class="sig-name descname"><span class="pre">cross_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bracket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/electron.html#cross_section"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.electron.cross_section" title="Link to this definition">¶</a></dt>
+<dd><p>dsigma/dOmega = 4 […] / q^4 (bohr^2 per steradian with q in bohr^-1); NaN at q = 0.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.electron.aligned">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.electron.</span></span><span class="sig-name descname"><span class="pre">aligned</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/electron.html#aligned"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.electron.aligned" title="Link to this definition">¶</a></dt>
+<dd><p>Fixed orientation: <code class="docutils literal notranslate"><span class="pre">|Z(q)</span> <span class="pre">-</span> <span class="pre">F(q)|^2</span></code> (+ inelastic) for qvec (nq, 3) in the molecular frame.</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.iam">
+<span id="pyxscat-iam"></span><h2>pyxscat.iam<a class="headerlink" href="#module-pyxscat.iam" title="Link to this heading">¶</a></h2>
+<p>Independent atom model (IAM), for X-rays and electrons: the reference against which molecular (bonding, correlation)
+effects are measured.</p>
+<p>The molecule is modelled as free, spherically averaged atoms at the nuclear positions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">elastic</span>     <span class="n">I_el</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>  <span class="o">=</span> <span class="n">sum_AB</span> <span class="n">f_A</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="n">f_B</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="n">j0</span><span class="p">(</span><span class="n">q</span> <span class="n">R_AB</span><span class="p">)</span>                 <span class="p">(</span><span class="n">rotational</span> <span class="n">average</span><span class="p">)</span>
+                     <span class="o">=</span> <span class="o">|</span><span class="n">sum_A</span> <span class="n">f_A</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="n">exp</span><span class="p">(</span><span class="n">i</span> <span class="n">q</span><span class="o">.</span><span class="n">R_A</span><span class="p">)</span><span class="o">|^</span><span class="mi">2</span>                   <span class="p">(</span><span class="n">fixed</span> <span class="n">orientation</span><span class="p">)</span>
+<span class="n">total</span>       <span class="n">I_tot</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">=</span> <span class="n">sum_A</span> <span class="n">S_A</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">+</span> <span class="n">sum_</span><span class="p">{</span><span class="n">A</span> <span class="o">!=</span> <span class="n">B</span><span class="p">}</span> <span class="n">f_A</span> <span class="n">f_B</span> <span class="n">j0</span><span class="p">(</span><span class="n">q</span> <span class="n">R_AB</span><span class="p">)</span>   <span class="p">(</span><span class="ow">or</span> <span class="n">cos</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">R_AB</span><span class="p">))</span>
+<span class="n">inelastic</span>   <span class="n">I_tot</span> <span class="o">-</span> <span class="n">I_el</span> <span class="o">=</span> <span class="n">sum_A</span> <span class="p">[</span><span class="n">S_A</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">-</span> <span class="n">f_A</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>f_A is the form factor of the spherically averaged atomic density and S_A = N_A + I2_A the total
+(elastic + inelastic) scattering of the free atom.  Two sources:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">source=&quot;ab</span> <span class="pre">initio&quot;</span></code> (default): free-atom calculations (<code class="docutils literal notranslate"><span class="pre">basis</span></code> is a PySCF basis name, or
+a dict element -&gt; basis name) with PySCF at a chosen level
+(UHF by default, or CCSD for closed-shell atoms) and basis, through the same kernels as the
+molecule.  Elastic and total.  With the molecule’s own method and basis, molecule minus IAM
+isolates the effect of bonding.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">source=&quot;tables&quot;</span></code>: Waasmaier-Kirfel form factors (through the <code class="docutils literal notranslate"><span class="pre">xraydb</span></code> package).  Elastic
+only; the tables give no incoherent scattering.</p></li>
+</ul>
+<p>q is in inverse bohr throughout.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.atomic_form_factor">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">atomic_form_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ab</span> <span class="pre">initio'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'aug-cc-pvtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hf'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#atomic_form_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.atomic_form_factor" title="Link to this definition">¶</a></dt>
+<dd><p>Form factor f(q) of the spherically averaged free atom (q in bohr^-1).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.atomic_total">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">atomic_total</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'aug-cc-pvtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hf'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#atomic_total"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.atomic_total" title="Link to this definition">¶</a></dt>
+<dd><p>Total (elastic + inelastic) rotationally averaged scattering S(q) = N + I2(q) of a free atom.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.scattering">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">scattering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ab</span> <span class="pre">initio'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'aug-cc-pvtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.scattering" title="Link to this definition">¶</a></dt>
+<dd><p>Rotationally averaged IAM (Debye formula).  <code class="docutils literal notranslate"><span class="pre">coords</span></code> in bohr.</p>
+<p>Returns a dict over q: elastic, and with <code class="docutils literal notranslate"><span class="pre">total=True</span></code> also total, inelastic and the atomic
+and interference parts.</p>
+<p><code class="docutils literal notranslate"><span class="pre">l=2</span></code>: the second Legendre moment about the z axis (the IAM counterpart of
+<code class="docutils literal notranslate"><span class="pre">pyxscat.scattering(...,</span> <span class="pre">l=2)</span></code>),</p>
+<blockquote>
+<div><p>S2(q) = -sum_{A != B} f_A f_B j2(q R_AB) P2(cos theta_AB)   (i^2 = -1, see core.lsign),</p>
+</div></blockquote>
+<p>where theta_AB is the angle of R_A - R_B with z.  Free atoms are spherical, so their own
+elastic and inelastic scattering is isotropic: atomic and inelastic parts vanish at l = 2.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.electron_scattering">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">electron_scattering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ab</span> <span class="pre">initio'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'aug-cc-pvtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#electron_scattering"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.electron_scattering" title="Link to this definition">¶</a></dt>
+<dd><p>Electron scattering of independent atoms (rotational average), in the bracket units of
+<a class="reference internal" href="#module-pyxscat.electron" title="pyxscat.electron"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyxscat.electron</span></code></a> (multiply by 4/q^4 for the cross section).</p>
+<p>Each atom scatters with the Mott-Bethe amplitude Z_A - f_A(q):</p>
+<blockquote>
+<div><p>elastic    sum_AB (Z_A - f_A)(Z_B - f_B) j0(q R_AB)
+atomic     sum_A  (Z_A - f_A)^2  (+ inelastic sum_A [S_A - f_A^2] with <code class="docutils literal notranslate"><span class="pre">total</span></code>)
+molecular  elastic - sum_A (Z_A - f_A)^2      (the interference, as in sM(s))</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">l=2</span></code>: -sum_{A != B} (Z_A - f_A)(Z_B - f_B) j2(q R_AB) P2(cos theta_AB)  (i^2 = -1).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.electron_for_wavefunction">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">electron_for_wavefunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aligned</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#electron_for_wavefunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.electron_for_wavefunction" title="Link to this definition">¶</a></dt>
+<dd><p>Electron IAM for the geometry of a <code class="xref py py-class docutils literal notranslate"><span class="pre">Wavefunction</span></code> (<code class="docutils literal notranslate"><span class="pre">aligned=True</span></code>: q
+vectors in the molecular frame).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.scattering_aligned">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">scattering_aligned</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ab</span> <span class="pre">initio'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'aug-cc-pvtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#scattering_aligned"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.scattering_aligned" title="Link to this definition">¶</a></dt>
+<dd><p>IAM at fixed orientation; <code class="docutils literal notranslate"><span class="pre">qvec</span></code> (nq, 3) in the molecular frame (bohr^-1).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.electron_scattering_aligned">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">electron_scattering_aligned</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom_numbers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coords</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ab</span> <span class="pre">initio'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'aug-cc-pvtz'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">cutoffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#electron_scattering_aligned"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.electron_scattering_aligned" title="Link to this definition">¶</a></dt>
+<dd><p>Electron IAM at fixed orientation (bracket units; multiply by 4/q^4 for the cross section):
+elastic <code class="docutils literal notranslate"><span class="pre">|sum_A</span> <span class="pre">(Z_A</span> <span class="pre">-</span> <span class="pre">f_A)</span> <span class="pre">exp(i</span> <span class="pre">q.R_A)|^2</span></code>, plus the atomic inelastic <code class="docutils literal notranslate"><span class="pre">sum_A</span> <span class="pre">[S_A</span> <span class="pre">-</span> <span class="pre">f_A^2]</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.for_wavefunction">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">for_wavefunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aligned</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#for_wavefunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.for_wavefunction" title="Link to this definition">¶</a></dt>
+<dd><p>IAM for the geometry of a <code class="xref py py-class docutils literal notranslate"><span class="pre">Wavefunction</span></code> (atoms taken from the adapter).
+<code class="docutils literal notranslate"><span class="pre">l=2</span></code> gives the second Legendre moment (rotational form only).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.iam.percent_difference">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.iam.</span></span><span class="sig-name descname"><span class="pre">percent_difference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">molecular</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/iam.html#percent_difference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.iam.percent_difference" title="Link to this definition">¶</a></dt>
+<dd><p>100 (I_molecule - I_IAM) / I_IAM, the usual way of showing molecular effects.</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.ci">
+<span id="pyxscat-ci"></span><h2>pyxscat.ci<a class="headerlink" href="#module-pyxscat.ci" title="Link to this heading">¶</a></h2>
+<p>Reduced density matrices from configuration-interaction vectors.</p>
+<p>Pure numpy and independent of any electronic structure package.  A CI wavefunction is given
+as Slater determinants over <code class="docutils literal notranslate"><span class="pre">norb</span></code> active orbitals, each as a pair of occupation bit
+strings (bit k set = orbital k occupied), with the determinant defined as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">|</span><span class="n">alpha</span> <span class="n">string</span><span class="p">,</span> <span class="n">beta</span> <span class="n">string</span><span class="o">&gt;</span> <span class="o">=</span> <span class="n">a</span><span class="o">+</span><span class="n">_</span><span class="p">{</span><span class="n">a1</span> <span class="n">alpha</span><span class="p">}</span> <span class="n">a</span><span class="o">+</span><span class="n">_</span><span class="p">{</span><span class="n">a2</span> <span class="n">alpha</span><span class="p">}</span> <span class="o">...</span> <span class="n">a</span><span class="o">+</span><span class="n">_</span><span class="p">{</span><span class="n">b1</span> <span class="n">beta</span><span class="p">}</span> <span class="n">a</span><span class="o">+</span><span class="n">_</span><span class="p">{</span><span class="n">b2</span> <span class="n">beta</span><span class="p">}</span> <span class="o">...</span> <span class="o">|</span><span class="mi">0</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>(all alpha creation operators first, each set in ascending orbital order; PySCF’s convention).</p>
+<p>Spin-summed densities follow PySCF:  dm1[p, q] = &lt;E_pq&gt;,  dm2[p, q, r, s] = &lt;p+ r+ s q&gt;
+(chemists’ notation, trace N(N-1)), with E_pq = sum_sigma a+_{p sigma} a_{q sigma}.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.ci_matrix">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">ci_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">norb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nalpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbeta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coeffs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#ci_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.ci_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>Arrange determinant coefficients in the alpha x beta string matrix (full active space).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.make_rdm12">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">make_rdm12</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">norb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nalpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbeta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coeffs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#make_rdm12"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.make_rdm12" title="Link to this definition">¶</a></dt>
+<dd><p>Spin-summed 1- and 2-particle density matrices of a determinant expansion.</p>
+<p><code class="docutils literal notranslate"><span class="pre">dets</span></code> is a sequence of (alpha_bits, beta_bits) integers, <code class="docutils literal notranslate"><span class="pre">coeffs</span></code> the CI coefficients.
+Returns dm1 (norb, norb) and dm2 (norb, norb, norb, norb).</p>
+<p>Three exact builders (they agree to 1e-15):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">"dense"</span>    <span class="n">dm2</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">q</span><span class="p">,</span><span class="n">r</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">E_qp</span> <span class="n">Psi</span><span class="o">|</span><span class="n">E_rs</span> <span class="n">Psi</span><span class="o">&gt;</span> <span class="o">-</span> <span class="n">delta_qr</span> <span class="n">dm1</span><span class="p">[</span><span class="n">p</span><span class="p">,</span><span class="n">s</span><span class="p">]</span> <span class="k">with</span> <span class="n">the</span> <span class="n">intermediates</span>
+               <span class="n">x_rs</span> <span class="o">=</span> <span class="n">E_rs</span><span class="o">|</span><span class="n">Psi</span><span class="o">&gt;</span> <span class="n">over</span> <span class="n">the</span> <span class="n">complete</span> <span class="n">active</span> <span class="n">space</span> <span class="p">(</span><span class="n">alpha</span> <span class="n">x</span> <span class="n">beta</span> <span class="n">strings</span><span class="p">,</span> <span class="ow">in</span>
+               <span class="n">blocks</span><span class="p">);</span> <span class="n">cost</span> <span class="o">~</span> <span class="n">norb</span><span class="o">^</span><span class="mi">4</span> <span class="n">N_FCI</span> <span class="ow">in</span> <span class="n">BLAS</span><span class="o">.</span>  <span class="n">Best</span> <span class="k">for</span> <span class="n">CASSCF</span><span class="o">/</span><span class="n">CASCI</span> <span class="n">vectors</span><span class="o">.</span>
+<span class="s2">"bitwise"</span>  <span class="n">the</span> <span class="n">determinant</span><span class="o">-</span><span class="n">pair</span> <span class="n">algorithm</span> <span class="n">of</span> <span class="n">the</span> <span class="n">earlier</span> <span class="n">code</span> <span class="p">(</span><span class="n">Fortran</span><span class="p">,</span> <span class="n">OpenMP</span><span class="p">):</span> <span class="n">pairs</span>
+               <span class="n">screened</span> <span class="k">with</span> <span class="n">popcnt</span><span class="p">(</span><span class="n">ieor</span><span class="p">),</span> <span class="n">Slater</span><span class="o">-</span><span class="n">Condon</span> <span class="n">rules</span> <span class="k">for</span> <span class="n">those</span> <span class="n">differing</span> <span class="n">by</span> <span class="n">at</span>
+               <span class="n">most</span> <span class="n">two</span> <span class="n">spin</span><span class="o">-</span><span class="n">orbitals</span><span class="p">;</span> <span class="n">cost</span> <span class="o">~</span> <span class="n">N_det</span><span class="o">^</span><span class="mi">2</span> <span class="p">(</span><span class="n">a</span> <span class="n">few</span> <span class="n">instructions</span> <span class="n">per</span> <span class="n">pair</span><span class="p">),</span>
+               <span class="n">independent</span> <span class="n">of</span> <span class="n">N_FCI</span><span class="o">.</span>  <span class="n">Best</span> <span class="k">for</span> <span class="n">truncated</span> <span class="ow">or</span> <span class="n">selected</span> <span class="n">expansions</span> <span class="p">(</span><span class="n">MCCI</span><span class="p">,</span> <span class="n">a</span>
+               <span class="nb">print</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">RAS</span><span class="p">)</span> <span class="ow">in</span> <span class="n">large</span> <span class="n">orbital</span> <span class="n">spaces</span><span class="o">.</span>  <span class="n">Any</span> <span class="n">number</span> <span class="n">of</span> <span class="n">orbitals</span>
+               <span class="p">(</span><span class="n">the</span> <span class="n">only</span> <span class="n">builder</span> <span class="n">beyond</span> <span class="mi">64</span><span class="p">:</span> <span class="n">multiword</span> <span class="n">bit</span> <span class="n">strings</span><span class="p">)</span><span class="o">.</span>
+<span class="s2">"sparse"</span>   <span class="n">the</span> <span class="n">x_rs</span> <span class="n">intermediates</span> <span class="n">only</span> <span class="n">on</span> <span class="n">the</span> <span class="n">determinants</span> <span class="n">reached</span> <span class="kn">from</span><span class="w"> </span><span class="nn">the</span> <span class="n">given</span> <span class="n">ones</span>
+               <span class="p">(</span><span class="n">sparse</span> <span class="n">product</span><span class="p">,</span> <span class="n">SciPy</span><span class="p">);</span> <span class="n">cost</span> <span class="o">~</span> <span class="n">N_det</span> <span class="n">norb</span> <span class="n">N_el</span><span class="o">.</span>  <span class="n">Linear</span> <span class="ow">in</span> <span class="n">N_det</span><span class="p">:</span> <span class="k">for</span>
+               <span class="n">very</span> <span class="n">long</span> <span class="n">expansions</span> <span class="n">on</span> <span class="n">few</span> <span class="n">cores</span><span class="o">.</span>
+<span class="s2">"auto"</span>     <span class="n">the</span> <span class="n">cheapest</span> <span class="n">by</span> <span class="n">an</span> <span class="n">estimate</span> <span class="n">of</span> <span class="n">the</span> <span class="n">three</span> <span class="n">costs</span><span class="o">.</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.make_rdm12_external">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">make_rdm12_external</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">norb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coeffs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nthreads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_external</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#make_rdm12_external"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.make_rdm12_external" title="Link to this definition">¶</a></dt>
+<dd><p>RDMs of an expansion in which at most <code class="docutils literal notranslate"><span class="pre">max_external</span></code> (2) electrons occupy the
+“external” orbitals <code class="docutils literal notranslate"><span class="pre">nint,</span> <span class="pre">...,</span> <span class="pre">norb</span> <span class="pre">-</span> <span class="pre">1</span></code> (uncontracted MRCI, CISD-like expansions):
+the pair loop is restricted to determinant pairs that can couple, and the block of the
+2RDM with four external indices is formed by matrix products instead.</p>
+<p>Determinants are grouped by their external label (the set of external spin-orbitals).
+Two determinants couple only if the labels differ by at most four spin-orbitals; with
+exactly four the internal parts are identical and only the external-external-external-
+external block of dm2 receives a contribution,</p>
+<blockquote>
+<div><p>Gamma[c,a,d,b] = sum_K sum_{sigma tau} T_K^{sigma tau}[c,d] T_K^{sigma tau}[a,b],</p>
+</div></blockquote>
+<p>where T_K^{sigma tau}[a,b] is the (signed) coefficient of the determinant with internal
+part K and externals (a sigma, b tau).  So the kernel runs over pairs whose labels differ
+by at most three spin-orbitals (orders of magnitude fewer than all pairs) and skips that
+block, which is then added from the products.  Exact; any number of orbitals.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.make_transition_rdm1">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">make_transition_rdm1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">norb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nalpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbeta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dets_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coeffs_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dets_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coeffs_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#make_transition_rdm1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.make_transition_rdm1" title="Link to this definition">¶</a></dt>
+<dd><p>Spin-summed transition density matrix t[p, q] = &lt;A|E_pq|B&gt; between two determinant
+expansions in the same orbitals (the transpose of PySCF’s <code class="docutils literal notranslate"><span class="pre">trans_rdm1</span></code> convention).
+<code class="docutils literal notranslate"><span class="pre">method</span></code> as in <a class="reference internal" href="#pyxscat.ci.make_rdm12" title="pyxscat.ci.make_rdm12"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_rdm12()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.factor_active">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">factor_active</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dm2_act</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#factor_active"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.factor_active" title="Link to this definition">¶</a></dt>
+<dd><p>Active 2RDM as a sum of products, Gamma[p,q,r,s] = sum_k w_k V_k[p,q] V_k[r,s].</p>
+<p>Gamma is averaged over its 8 index permutations (the scattering only sees that part) and
+diagonalised as a symmetric (pq) x (rs) matrix; eigenvalues below <code class="docutils literal notranslate"><span class="pre">tol</span></code> x the largest are
+dropped.  At most n_act (n_act + 1) / 2 terms.  Returns (w, V) with V of shape (K, na, na).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.embed_core">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">embed_core</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dm1_act</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm2_act</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncore</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nmo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factored</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-12</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#embed_core"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.embed_core" title="Link to this definition">¶</a></dt>
+<dd><p>Add <code class="docutils literal notranslate"><span class="pre">ncore</span></code> doubly occupied orbitals in front of an active space; optionally pad with
+empty orbitals up to <code class="docutils literal notranslate"><span class="pre">nmo</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">factored=True</span></code> returns the 2RDM as a <a class="reference internal" href="#pyxscat.core.FactoredDM2" title="pyxscat.core.FactoredDM2"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxscat.core.FactoredDM2</span></code></a> instead of the
+n^4 array: core-core and core-active blocks as products of the core and active 1RDMs
+(3 Coulomb + 3 exchange terms) and the active block from <a class="reference internal" href="#pyxscat.ci.factor_active" title="pyxscat.ci.factor_active"><code class="xref py py-func docutils literal notranslate"><span class="pre">factor_active()</span></code></a>.  Its
+basis transformation to AOs then costs K n_AO^2 memory instead of n_AO^4, and the kernels
+contract it directly (mode 3), as for CCSD.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.csf_to_determinants">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">csf_to_determinants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ms2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#csf_to_determinants"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.csf_to_determinants" title="Link to this definition">¶</a></dt>
+<dd><p>Expand a spin-adapted configuration (GUGA step string such as <code class="docutils literal notranslate"><span class="pre">&quot;22ud00&quot;</span></code>, as printed by
+Molcas/OpenMolcas) in Slater determinants.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ms2</span></code> is 2 M_S of the determinants (default: the lowest non-negative value).  Returns a
+list of (coefficient, alpha_bits, beta_bits) in the determinant convention of this module.
+The coupling coefficients follow Shavitt’s graphical unitary group approach (the convention
+of the Molcas CI printout); the reordering phase into alpha-first order is included.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.interleaved_phase">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">interleaved_phase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">abits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bbits</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#interleaved_phase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.interleaved_phase" title="Link to this definition">¶</a></dt>
+<dd><p>Phase that converts a determinant written in orbital order (a+_1alpha a+_1beta
+a+_2alpha …; Molpro’s convention) into the alpha-first order used here.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ci.csfs_to_determinants">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ci.</span></span><span class="sig-name descname"><span class="pre">csfs_to_determinants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">csfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coeffs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ms2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ci.html#csfs_to_determinants"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ci.csfs_to_determinants" title="Link to this definition">¶</a></dt>
+<dd><p>Convert a CSF expansion to a determinant expansion (dets, coeffs).</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.ccsd">
+<span id="pyxscat-ccsd"></span><h2>pyxscat.ccsd<a class="headerlink" href="#module-pyxscat.ccsd" title="Link to this heading">¶</a></h2>
+<p>The CCSD two-particle density as a sum of products, without the four-index array.</p>
+<p>PySCF’s <code class="docutils literal notranslate"><span class="pre">make_rdm2</span></code> builds the full nmo^4 (then nao^4) tensor, several copies of it: a
+molecule of 114 basis functions already needs 6 GB.  The density has structure, though: every
+block of the cumulant carries occupied indices except the virtual-virtual-virtual-virtual
+one, and that one is exactly a sum over occupied pairs of products,</p>
+<blockquote>
+<div><p>Gamma_abcd (vvvv) = sum_ij lambda2_ij,ac tau_ij,bd  (+ permutations),  tau = t2 + t1 t1,</p>
+</div></blockquote>
+<p>so the whole density can be written as <a class="reference internal" href="#pyxscat.core.FactoredDM2" title="pyxscat.core.FactoredDM2"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyxscat.core.FactoredDM2</span></code></a>,</p>
+<blockquote>
+<div><p>Gamma[mu,nu,la,si] = sum_k Ac_k[mu,nu] Bc_k[la,si] + sum_k Ax_k[mu,la] Bx_k[nu,si],</p>
+</div></blockquote>
+<p>with K = 7 nocc^2 + 4 terms: memory 2 K nao^2 instead of nao^4 (benzene/cc-pVDZ: 0.6 GB
+against 1.35 GB for the array alone; 500 functions, 40 occupied: 45 GB against 360 GB).  The
+scattering kernels contract such a density directly (kernel mode 3).</p>
+<p>The terms reproduce PySCF’s <code class="docutils literal notranslate"><span class="pre">ccsd_rdm._make_rdm2</span></code> (with the one-particle terms, in
+chemists’ notation, trace N(N-1)) exactly when contracted with any kernel that is symmetric
+under the 8 index permutations, which all scattering kernels are; the intermediates of
+passes 1 and 2 of PySCF’s <code class="docutils literal notranslate"><span class="pre">_gamma2_outcore</span></code> (BSD licence, Q. Sun et al.) are built here in
+memory (they are at most nocc^2 nvir^2), its pass 3 (the nvir^4 and nocc nvir^3 blocks) is
+replaced by the factorisation.  Checked against <code class="docutils literal notranslate"><span class="pre">make_rdm2</span></code> to 1e-13 (tests/test_ccsd_factored.py).</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ccsd.factored_rdm2">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ccsd.</span></span><span class="sig-name descname"><span class="pre">factored_rdm2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mycc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ccsd.html#factored_rdm2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ccsd.factored_rdm2" title="Link to this definition">¶</a></dt>
+<dd><p>CCSD spin-summed two-particle density as a <a class="reference internal" href="#pyxscat.core.FactoredDM2" title="pyxscat.core.FactoredDM2"><code class="xref py py-class docutils literal notranslate"><span class="pre">FactoredDM2</span></code></a> in the
+molecular-orbital basis of <code class="docutils literal notranslate"><span class="pre">mycc</span></code> (all orbitals, frozen ones included; chemists’
+notation, trace N(N-1), the same contraction values as <code class="docutils literal notranslate"><span class="pre">mycc.make_rdm2()</span></code>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">dm1</span></code>: the MO one-particle density (<code class="docutils literal notranslate"><span class="pre">mycc.make_rdm1()</span></code> by default).  The amplitudes
+default to those stored in <code class="docutils literal notranslate"><span class="pre">mycc</span></code> (<code class="docutils literal notranslate"><span class="pre">solve_lambda</span></code> is run if needed).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ccsd.contract_dense">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ccsd.</span></span><span class="sig-name descname"><span class="pre">contract_dense</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k4</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ccsd.html#contract_dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ccsd.contract_dense" title="Link to this definition">¶</a></dt>
+<dd><p>sum Gamma K for a four-index or factored density (tests).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.ccsd.factored_rdm2_cisd">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.ccsd.</span></span><span class="sig-name descname"><span class="pre">factored_rdm2_cisd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">myci</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">civec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/ccsd.html#factored_rdm2_cisd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.ccsd.factored_rdm2_cisd" title="Link to this definition">¶</a></dt>
+<dd><p>CISD spin-summed two-particle density as a <a class="reference internal" href="#pyxscat.core.FactoredDM2" title="pyxscat.core.FactoredDM2"><code class="xref py py-class docutils literal notranslate"><span class="pre">FactoredDM2</span></code></a> in the MO
+basis of <code class="docutils literal notranslate"><span class="pre">myci</span></code> (all orbitals, frozen ones included; same contraction values as
+<code class="docutils literal notranslate"><span class="pre">myci.make_rdm2()</span></code>).  The structure is that of the CCSD density with lambda2 = tau = c2:</p>
+<blockquote>
+<div><p>Gamma_abcd (vvvv) = sum_ij c2_ij,ac (c2_ij,bd - 1/2 c2_ij,db),
+Gamma_iabc (ovvv) from 2 sum_j c1_ja c2_ji,bc,</p>
+</div></blockquote>
+<p>K = 4 nocc^2 + 2 terms (with nocc active occupied orbitals).</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.transforms">
+<span id="pyxscat-transforms"></span><h2>pyxscat.transforms<a class="headerlink" href="#module-pyxscat.transforms" title="Link to this heading">¶</a></h2>
+<p>Real-space transforms of scattering curves.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.transforms.sine_transform">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.transforms.</span></span><span class="sig-name descname"><span class="pre">sine_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/transforms.html#sine_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.transforms.sine_transform" title="Link to this definition">¶</a></dt>
+<dd><p>(2/pi) int q S(q) sin(q r) dq, by the trapezoidal rule on the given q grid.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.transforms.to_real_space">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.transforms.</span></span><span class="sig-name descname"><span class="pre">to_real_space</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/transforms.html#to_real_space"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.transforms.to_real_space" title="Link to this definition">¶</a></dt>
+<dd><p>r times the sine transform: the radial pair-distribution-like function.</p>
+</dd></dl>
+
+</section>
+<section id="module-pyxscat.cli">
+<span id="pyxscat-cli"></span><h2>pyxscat.cli<a class="headerlink" href="#module-pyxscat.cli" title="Link to this heading">¶</a></h2>
+<p>Command-line driver (for batch and cluster jobs).</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pyxscat</span> <span class="o">--</span><span class="n">molden</span> <span class="n">scf</span><span class="o">.</span><span class="n">molden</span> <span class="o">--</span><span class="n">kind</span> <span class="n">elastic</span> <span class="o">--</span><span class="n">qmax</span> <span class="mi">10</span> <span class="o">--</span><span class="n">npoints</span> <span class="mi">201</span> <span class="o">-</span><span class="n">o</span> <span class="n">elastic</span><span class="o">.</span><span class="n">dat</span>
+<span class="n">pyxscat</span> <span class="o">--</span><span class="n">molcas</span><span class="o">-</span><span class="n">log</span> <span class="n">casscf</span><span class="o">.</span><span class="n">log</span> <span class="o">--</span><span class="n">molden</span> <span class="n">casscf</span><span class="o">.</span><span class="n">rasscf</span><span class="o">.</span><span class="n">molden</span> <span class="o">--</span><span class="n">root</span> <span class="mi">1</span> <span class="o">--</span><span class="n">kind</span> <span class="n">decompose</span> <span class="o">-</span><span class="n">o</span> <span class="n">water</span><span class="o">.</span><span class="n">dat</span>
+</pre></div>
+</div>
+<p>Output: plain text, first column q (inverse bohr), then the requested quantities.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.cli.build_parser">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.cli.</span></span><span class="sig-name descname"><span class="pre">build_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/cli.html#build_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.cli.build_parser" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.cli.main">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.cli.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/cli.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.cli.main" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-pyxscat.selftest">
+<span id="pyxscat-selftest"></span><h2>pyxscat.selftest<a class="headerlink" href="#module-pyxscat.selftest" title="Link to this heading">¶</a></h2>
+<p>A one-minute check of an installation: every kernel against exact sum rules and against an
+independent route, on water/6-31G (PySCF), plus the build information needed in a bug report.</p>
+<blockquote>
+<div><p>thistle selftest            (or: python -m pyxscat.selftest)</p>
+</div></blockquote>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.selftest.build_info">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.selftest.</span></span><span class="sig-name descname"><span class="pre">build_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/selftest.html#build_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.selftest.build_info" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat.selftest.main">
+<span class="sig-prename descclassname"><span class="pre">pyxscat.selftest.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/selftest.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat.selftest.main" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="pyxscat-lib">
+<h2>pyxscat._lib<a class="headerlink" href="#pyxscat-lib" title="Link to this heading">¶</a></h2>
+<p>The ctypes bridge to the compiled Fortran library.  The Fortran side of every entry point is
+documented in the <a class="reference external" href="../fortran/module/xs_capi.html">Fortran API reference</a>.</p>
+<p id="module-pyxscat._lib">Loading of the compiled PyXSCAT library and the raw ctypes signatures.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyxscat._lib.blas_dgemm_pointer">
+<span class="sig-prename descclassname"><span class="pre">pyxscat._lib.</span></span><span class="sig-name descname"><span class="pre">blas_dgemm_pointer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyxscat/_lib.html#blas_dgemm_pointer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyxscat._lib.blas_dgemm_pointer" title="Link to this definition">¶</a></dt>
+<dd><p>Address of the BLAS <code class="docutils literal notranslate"><span class="pre">dgemm</span></code> SciPy ships (Fortran calling convention, 32-bit integers),
+for the factored-density kernel; None when unavailable or when a quick check fails.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Using THISTLE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../QUICKSTART.html">THISTLE quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../FOR_TESTERS.html">Testing THISTLE 0.2.0.dev0</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../THEORY.html">THISTLE: what is computed, and how</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Python API</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="thistle.html">thistle: the simple interface</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">pyxscat: the kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="interfaces.html">pyxscat.interfaces: wavefunction adapters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../kernels.html">Fortran kernels</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../STATUS.html">Status of the refactoring</a></li>
+</ul>
+
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">pyxscat: the kernels</a><ul>
+<li><a class="reference internal" href="#module-pyxscat.core">pyxscat.core</a><ul>
+<li><a class="reference internal" href="#pyxscat.core.use_factored"><code class="docutils literal notranslate"><span class="pre">use_factored()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.FactoredDM2"><code class="docutils literal notranslate"><span class="pre">FactoredDM2</span></code></a><ul>
+<li><a class="reference internal" href="#pyxscat.core.FactoredDM2.shape"><code class="docutils literal notranslate"><span class="pre">FactoredDM2.shape</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.FactoredDM2.nterms"><code class="docutils literal notranslate"><span class="pre">FactoredDM2.nterms</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.FactoredDM2.nbytes"><code class="docutils literal notranslate"><span class="pre">FactoredDM2.nbytes</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.FactoredDM2.transform"><code class="docutils literal notranslate"><span class="pre">FactoredDM2.transform()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.FactoredDM2.dense"><code class="docutils literal notranslate"><span class="pre">FactoredDM2.dense()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.FactoredDM2.trace"><code class="docutils literal notranslate"><span class="pre">FactoredDM2.trace()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyxscat.core.Wavefunction"><code class="docutils literal notranslate"><span class="pre">Wavefunction</span></code></a><ul>
+<li><a class="reference internal" href="#pyxscat.core.Wavefunction.basis"><code class="docutils literal notranslate"><span class="pre">Wavefunction.basis</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.Wavefunction.dm1"><code class="docutils literal notranslate"><span class="pre">Wavefunction.dm1</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.Wavefunction.dm2"><code class="docutils literal notranslate"><span class="pre">Wavefunction.dm2</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.Wavefunction.nelec"><code class="docutils literal notranslate"><span class="pre">Wavefunction.nelec</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.Wavefunction.label"><code class="docutils literal notranslate"><span class="pre">Wavefunction.label</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.Wavefunction.atom_numbers"><code class="docutils literal notranslate"><span class="pre">Wavefunction.atom_numbers</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.Wavefunction.coords"><code class="docutils literal notranslate"><span class="pre">Wavefunction.coords</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyxscat.core.symmetrize_dm2"><code class="docutils literal notranslate"><span class="pre">symmetrize_dm2()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.transform_dm2"><code class="docutils literal notranslate"><span class="pre">transform_dm2()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.lsign"><code class="docutils literal notranslate"><span class="pre">lsign()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.two_electron"><code class="docutils literal notranslate"><span class="pre">two_electron()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.elastic"><code class="docutils literal notranslate"><span class="pre">elastic()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.exchange"><code class="docutils literal notranslate"><span class="pre">exchange()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.mean_field"><code class="docutils literal notranslate"><span class="pre">mean_field()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.scattering"><code class="docutils literal notranslate"><span class="pre">scattering()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.core.decompose"><code class="docutils literal notranslate"><span class="pre">decompose()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.basis">pyxscat.basis</a><ul>
+<li><a class="reference internal" href="#pyxscat.basis.cartesian_powers"><code class="docutils literal notranslate"><span class="pre">cartesian_powers()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis"><code class="docutils literal notranslate"><span class="pre">Basis</span></code></a><ul>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.xyz"><code class="docutils literal notranslate"><span class="pre">Basis.xyz</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.ga"><code class="docutils literal notranslate"><span class="pre">Basis.ga</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.lmn"><code class="docutils literal notranslate"><span class="pre">Basis.lmn</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.group"><code class="docutils literal notranslate"><span class="pre">Basis.group</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.contr"><code class="docutils literal notranslate"><span class="pre">Basis.contr</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.coeff"><code class="docutils literal notranslate"><span class="pre">Basis.coeff</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.nao"><code class="docutils literal notranslate"><span class="pre">Basis.nao</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.nprim"><code class="docutils literal notranslate"><span class="pre">Basis.nprim</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.lmax"><code class="docutils literal notranslate"><span class="pre">Basis.lmax</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.from_shells"><code class="docutils literal notranslate"><span class="pre">Basis.from_shells()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.basis.Basis.eval"><code class="docutils literal notranslate"><span class="pre">Basis.eval()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.aligned">pyxscat.aligned</a><ul>
+<li><a class="reference internal" href="#pyxscat.aligned.pair_transform"><code class="docutils literal notranslate"><span class="pre">pair_transform()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.form_factor"><code class="docutils literal notranslate"><span class="pre">form_factor()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.elastic"><code class="docutils literal notranslate"><span class="pre">elastic()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.two_electron"><code class="docutils literal notranslate"><span class="pre">two_electron()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.exchange"><code class="docutils literal notranslate"><span class="pre">exchange()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.mean_field"><code class="docutils literal notranslate"><span class="pre">mean_field()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.scattering"><code class="docutils literal notranslate"><span class="pre">scattering()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.decompose"><code class="docutils literal notranslate"><span class="pre">decompose()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.ewald_q"><code class="docutils literal notranslate"><span class="pre">ewald_q()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.detector_q"><code class="docutils literal notranslate"><span class="pre">detector_q()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.rotation_matrix"><code class="docutils literal notranslate"><span class="pre">rotation_matrix()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.aligned.rotate_q"><code class="docutils literal notranslate"><span class="pre">rotate_q()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.grids">pyxscat.grids</a><ul>
+<li><a class="reference internal" href="#pyxscat.grids.photon_k0"><code class="docutils literal notranslate"><span class="pre">photon_k0()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.grids.electron_k0"><code class="docutils literal notranslate"><span class="pre">electron_k0()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.grids.polar_grid"><code class="docutils literal notranslate"><span class="pre">polar_grid()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.grids.qcoord3"><code class="docutils literal notranslate"><span class="pre">qcoord3()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.grids.read_qgrid"><code class="docutils literal notranslate"><span class="pre">read_qgrid()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.grids.write_qgrid"><code class="docutils literal notranslate"><span class="pre">write_qgrid()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.grids.unique_norms"><code class="docutils literal notranslate"><span class="pre">unique_norms()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.grids.aligned_ensemble"><code class="docutils literal notranslate"><span class="pre">aligned_ensemble()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.electron">pyxscat.electron</a><ul>
+<li><a class="reference internal" href="#pyxscat.electron.nucleus_nucleus"><code class="docutils literal notranslate"><span class="pre">nucleus_nucleus()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.electron.electron_nucleus"><code class="docutils literal notranslate"><span class="pre">electron_nucleus()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.electron.decompose"><code class="docutils literal notranslate"><span class="pre">decompose()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.electron.scattering"><code class="docutils literal notranslate"><span class="pre">scattering()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.electron.cross_section"><code class="docutils literal notranslate"><span class="pre">cross_section()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.electron.aligned"><code class="docutils literal notranslate"><span class="pre">aligned()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.iam">pyxscat.iam</a><ul>
+<li><a class="reference internal" href="#pyxscat.iam.atomic_form_factor"><code class="docutils literal notranslate"><span class="pre">atomic_form_factor()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.iam.atomic_total"><code class="docutils literal notranslate"><span class="pre">atomic_total()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.iam.scattering"><code class="docutils literal notranslate"><span class="pre">scattering()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.iam.electron_scattering"><code class="docutils literal notranslate"><span class="pre">electron_scattering()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.iam.electron_for_wavefunction"><code class="docutils literal notranslate"><span class="pre">electron_for_wavefunction()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.iam.scattering_aligned"><code class="docutils literal notranslate"><span class="pre">scattering_aligned()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.iam.electron_scattering_aligned"><code class="docutils literal notranslate"><span class="pre">electron_scattering_aligned()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.iam.for_wavefunction"><code class="docutils literal notranslate"><span class="pre">for_wavefunction()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.iam.percent_difference"><code class="docutils literal notranslate"><span class="pre">percent_difference()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.ci">pyxscat.ci</a><ul>
+<li><a class="reference internal" href="#pyxscat.ci.ci_matrix"><code class="docutils literal notranslate"><span class="pre">ci_matrix()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ci.make_rdm12"><code class="docutils literal notranslate"><span class="pre">make_rdm12()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ci.make_rdm12_external"><code class="docutils literal notranslate"><span class="pre">make_rdm12_external()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ci.make_transition_rdm1"><code class="docutils literal notranslate"><span class="pre">make_transition_rdm1()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ci.factor_active"><code class="docutils literal notranslate"><span class="pre">factor_active()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ci.embed_core"><code class="docutils literal notranslate"><span class="pre">embed_core()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ci.csf_to_determinants"><code class="docutils literal notranslate"><span class="pre">csf_to_determinants()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ci.interleaved_phase"><code class="docutils literal notranslate"><span class="pre">interleaved_phase()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ci.csfs_to_determinants"><code class="docutils literal notranslate"><span class="pre">csfs_to_determinants()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.ccsd">pyxscat.ccsd</a><ul>
+<li><a class="reference internal" href="#pyxscat.ccsd.factored_rdm2"><code class="docutils literal notranslate"><span class="pre">factored_rdm2()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ccsd.contract_dense"><code class="docutils literal notranslate"><span class="pre">contract_dense()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.ccsd.factored_rdm2_cisd"><code class="docutils literal notranslate"><span class="pre">factored_rdm2_cisd()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.transforms">pyxscat.transforms</a><ul>
+<li><a class="reference internal" href="#pyxscat.transforms.sine_transform"><code class="docutils literal notranslate"><span class="pre">sine_transform()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.transforms.to_real_space"><code class="docutils literal notranslate"><span class="pre">to_real_space()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.cli">pyxscat.cli</a><ul>
+<li><a class="reference internal" href="#pyxscat.cli.build_parser"><code class="docutils literal notranslate"><span class="pre">build_parser()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-pyxscat.selftest">pyxscat.selftest</a><ul>
+<li><a class="reference internal" href="#pyxscat.selftest.build_info"><code class="docutils literal notranslate"><span class="pre">build_info()</span></code></a></li>
+<li><a class="reference internal" href="#pyxscat.selftest.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyxscat-lib">pyxscat._lib</a><ul>
+<li><a class="reference internal" href="#pyxscat._lib.blas_dgemm_pointer"><code class="docutils literal notranslate"><span class="pre">blas_dgemm_pointer()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+<form class="search" action="../search.html" method="get">
+  <input type="text" name="q"
+   placeholder="type to search" />
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="thistle.html" title="Previous document">thistle: the simple interface</a>
+        </li>
+        <li>
+          <a href="interfaces.html" title="Next document">pyxscat.interfaces: wavefunction adapters</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="../index.html">THISTLE</a></li>
+      <li>
+        <a href="index.html">Python API</a>
+      </li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2026, Andrés Moreno Carrascosa, Patrick Y. Wang.Last updated on 2026-10-10.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      9.1.0.
+
+  </footer>
+
+  
+  </body>
+</html>

@@ -1,0 +1,2765 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="The Fortran kernels of THISTLE, analytic X-ray and electron scattering integrals over Gaussian basis functions.">
+    <meta name="author" content="Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>exchange_pass &ndash; PyXSCAT kernels</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">PyXSCAT kernels <small>0.2.0.dev0</small></a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/absint.html">Abstract Interfaces</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>exchange_pass
+      <small>Subroutine</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 5.1% of total for procedures.">193 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/xs_kernel_j0.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/xs_kernel_j0.f90.html'>xs_kernel_j0.f90</a></li>
+                <li class="breadcrumb-item"><a href='../module/xs_kernel_j0.html'>xs_kernel_j0</a></li>
+            <li class="breadcrumb-item active" aria-current="page">exchange_pass</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-batch">batch</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ntask">ntask</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-it">it</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-sk~2">sk</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-s0">s0</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-s1">s1</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-si~2">si</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-sj~2">sj</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-sr~2">sr</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-nci">nci</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ci0">ci0</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-spi~2">spi</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-spj~2">spj</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-spk~2">spk</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-spr~2">spr</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-mjl">mjl</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-mjk">mjk</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-mik">mik</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-mil">mil</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-i~11">i</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-j~7">j</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-k~8">k</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-r~2">r</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ij~2">ij</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-kr~2">kr</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-a~8">a</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-b~6">b</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-c~7">c</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-d~2">d</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-sij~2">sij</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-skr~2">skr</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-nb~2">nb</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-t0">t0</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-t1">t1</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ncj">ncj</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-cj0">cj0</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-tsk">tsk</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ts0">ts0</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ts1">ts1</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-cstart">cstart</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-posi~2">posI</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-posj~2">posJ</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-posk~2">posK</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-posr~2">posR</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-posb">posB</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-jstart">jstart</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-posc">posC</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-aik">aik</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-bik">bik</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-atik">atik</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-btik">btik</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ail">ail</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-bil">bil</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-atil">atil</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-btil">btil</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ajk">ajk</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-bjk">bjk</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-ajl">ajl</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-bjl">bjl</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-atjk">atjk</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-btjk">btjk</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-atjl">atjl</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-btjl">btjl</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-y1">y1</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-y2">y2</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-y3">y3</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-y4">y4</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-y5">y5</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-y6">y6</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-y7">y7</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-y8">y8</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-zc~2">zc</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-c1~2">c1</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-c2~2">c2</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-c3~2">c3</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-c4~2">c4</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-hpre~2">hpre</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-f~4">f</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-bnd~2">bnd</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-zblock~2">zblock</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-sym_factor~2">sym_factor</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-hx~2">hx</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-hy~2">hy</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-hz~2">hz</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-h~4">h</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-e12ij~2">e12ij</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-dx1~2">dx1</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-dy1~2">dy1</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-dz1~2">dz1</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-dx2~2">dx2</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-dy2~2">dy2</a>
+            <a class="list-group-item" href="../proc/exchange_pass.html#variable-dz2~2">dz2</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
+      <div class="list-group">
+        <a class="list-group-item" href="../proc/exchange_pass.html#src">exchange_pass</a>
+      </div>
+    </div>
+
+
+  </div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <h2>public  subroutine exchange_pass(nq, q, nkx, ncontr, ax, bx, dgemm, nshell, shell_start, shell_end, gstart, gcount, contr, coeff, max_gc, n4, lorder, l, m, n, p0matrix, ddx, ddy, ddz, px, py, pz, e12, e12s, e12max, cmaxg, ng, dmaxx, cutoffcentre, cutoffz, cutoffmd, screen_tol, tsi, nshq_tot, nshq_done, nquart_tot, nquart_done)  
+</h2>
+    
+
+    <p>Exchange-paired factored terms, Z(a,b,c,d) = sum_k Ax_k(I_a, K_c) Bx_k(J_b, L_d), symmetrised
+over the 8 index permutations the canonical quartet loop assumes:</p>
+<div class="codehilite"><pre><span></span><code> 1/8 [A(I,K)B(J,L) + A(J,K)B(I,L) + A(I,L)B(J,K) + A(J,L)B(I,K) + the same with A, B transposed].
+</code></pre></div>
+
+<p>The shell quartets are the canonical ones (si &lt;= sj, sk &lt;= sr, (si,sj) &gt;= (sk,sr)), visited
+with sk outside and a batch of si next, so that every factor block carries either batch
+indices (gathered once per batch or per sr) or inner indices (gathered once per sj and
+shared by the batch); each image is one matrix product over k (BLAS dgemm when given).</p>
+
+
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nq~11"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nq</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-q~13"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>q</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nkx~3"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nkx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ncontr~3"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ncontr</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ax~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ax</strong>(nkx,ncontr,ncontr)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bx~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bx</strong>(nkx,ncontr,ncontr)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dgemm~2"></span>
+              procedure(<a href='../interface/dgemm_iface.html'>dgemm_iface</a>),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>dgemm</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nshell~2"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nshell</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shell_start~2"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>shell_start</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shell_end~2"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>shell_end</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gstart~4"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gstart</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-gcount~3"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>gcount</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-contr~7"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>contr</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-coeff~8"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>coeff</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max_gc~2"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max_gc</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n4~2"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n4</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-lorder~5"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>lorder</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-l~8"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>l</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-m~8"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>m</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~10"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-p0matrix~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>p0matrix</strong>(:,:,:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ddx~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>ddx</strong>(:,:,:,:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ddy~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>ddy</strong>(:,:,:,:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ddz~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>ddz</strong>(:,:,:,:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-px~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>px</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-py~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>py</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pz~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>pz</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e12~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>e12</strong>(:,:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e12s~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>e12s</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e12max~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>e12max</strong>(:,:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cmaxg~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cmaxg</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ng~5"></span>
+              integer(kind=ikind),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ng</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dmaxx~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dmaxx</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cutoffcentre~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cutoffcentre</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cutoffz~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cutoffz</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cutoffmd~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cutoffmd</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-screen_tol~3"></span>
+              real(kind=dp),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>screen_tol</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tsi~2"></span>
+              real(kind=dp),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tsi</strong>(:)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nshq_tot~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nshq_tot</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nshq_done~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nshq_done</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nquart_tot~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nquart_tot</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nquart_done~2"></span>
+              integer(kind=int64),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nquart_done</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <br>
+
+
+    <section>    
+      <h2>Variables</h2>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-batch"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>batch</strong></td>
+<td> =</td>
+                <td>12</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ntask"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ntask</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-it"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>it</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sk~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sk</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s0"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>s0</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-s1"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>s1</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-si~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>si</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sj~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sr~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nci"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nci</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ci0"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ci0</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-spi~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>spi</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-spj~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>spj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-spk~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>spk</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-spr~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>spr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mjl"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mjl</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mjk"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mjk</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mik"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mik</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mil"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mil</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~11"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-j~7"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>j</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-k~8"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>k</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-r~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>r</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ij~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ij</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kr~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-a~8"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>a</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-b~6"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>b</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c~7"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>c</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-d~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>d</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sij~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sij</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-skr~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>skr</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nb~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nb</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-t0"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>t0</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-t1"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>t1</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ncj"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ncj</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cj0"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cj0</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tsk"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>tsk</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ts0"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ts0</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ts1"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ts1</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cstart"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>cstart</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-posi~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>posI</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-posj~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>posJ</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-posk~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>posK</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-posr~2"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>posR</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-posb"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>posB</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-jstart"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>jstart</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-posc"></span>
+              integer(kind=ikind),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>posC</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-aik"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>aik</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bik"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>bik</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atik"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atik</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-btik"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>btik</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ail"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ail</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bil"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>bil</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atil"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atil</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-btil"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>btil</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ajk"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ajk</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bjk"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>bjk</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ajl"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>ajl</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bjl"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>bjl</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atjk"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atjk</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-btjk"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>btjk</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-atjl"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>atjl</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-btjl"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>btjl</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y1"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>y1</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>y2</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y3"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>y3</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y4"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>y4</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y5"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>y5</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y6"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>y6</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y7"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>y7</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y8"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>y8</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-zc~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>zc</strong>(:,:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c1~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>c1</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c2~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>c2</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c3~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>c3</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c4~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>c4</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hpre~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>hpre</strong>(:,:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-f~4"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>f</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-bnd~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>bnd</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-zblock~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>zblock</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-sym_factor~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>sym_factor</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hx~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hx</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hy~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hy</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-hz~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>hz</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-h~4"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>h</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-e12ij~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>e12ij</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dx1~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>dx1</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dy1~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>dy1</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dz1~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>dz1</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dx2~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>dx2</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dy2~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>dy2</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dz2~2"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              pointer
+            </td>
+            <td>::</td>
+            <td><strong>dz2</strong>(:,:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    
+
+
+
+    
+    <section>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl codehilite"><pre><span></span><span class="w">    </span><span class="k">subroutine </span><span class="n">exchange_pass</span><span class="p">(</span><span class="n">nq</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">ncontr</span><span class="p">,</span><span class="w"> </span><span class="n">ax</span><span class="p">,</span><span class="w"> </span><span class="n">bx</span><span class="p">,</span><span class="w"> </span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nshell</span><span class="p">,</span><span class="w"> </span><span class="n">shell_start</span><span class="p">,</span><span class="w"> </span><span class="n">shell_end</span><span class="p">,</span><span class="w"> </span><span class="n">gstart</span><span class="p">,</span><span class="w"> </span><span class="n">gcount</span><span class="p">,</span><span class="w"> </span><span class="n">contr</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="n">coeff</span><span class="p">,</span><span class="w"> </span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">n4</span><span class="p">,</span><span class="w"> </span><span class="n">lorder</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">p0matrix</span><span class="p">,</span><span class="w"> </span><span class="n">ddx</span><span class="p">,</span><span class="w"> </span><span class="n">ddy</span><span class="p">,</span><span class="w"> </span><span class="n">ddz</span><span class="p">,</span><span class="w"> </span><span class="n">px</span><span class="p">,</span><span class="w"> </span><span class="n">py</span><span class="p">,</span><span class="w"> </span><span class="n">pz</span><span class="p">,</span><span class="w"> </span><span class="n">e12</span><span class="p">,</span><span class="w"> </span><span class="n">e12s</span><span class="p">,</span><span class="w"> </span><span class="n">e12max</span><span class="p">,</span><span class="w"> </span><span class="n">cmaxg</span><span class="p">,</span><span class="w"> </span><span class="n">ng</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">            </span><span class="n">dmaxx</span><span class="p">,</span><span class="w"> </span><span class="n">cutoffcentre</span><span class="p">,</span><span class="w"> </span><span class="n">cutoffz</span><span class="p">,</span><span class="w"> </span><span class="n">cutoffmd</span><span class="p">,</span><span class="w"> </span><span class="n">screen_tol</span><span class="p">,</span><span class="w"> </span><span class="n">tsi</span><span class="p">,</span><span class="w"> </span><span class="n">nshq_tot</span><span class="p">,</span><span class="w"> </span><span class="n">nshq_done</span><span class="p">,</span><span class="w"> </span><span class="n">nquart_tot</span><span class="p">,</span><span class="w"> </span><span class="n">nquart_done</span><span class="p">)</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nq</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">ncontr</span><span class="p">,</span><span class="w"> </span><span class="n">nshell</span><span class="p">,</span><span class="w"> </span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">n4</span><span class="p">,</span><span class="w"> </span><span class="n">lorder</span><span class="p">,</span><span class="w"> </span><span class="n">ng</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">q</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ax</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">ncontr</span><span class="p">,</span><span class="w"> </span><span class="n">ncontr</span><span class="p">),</span><span class="w"> </span><span class="n">bx</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">ncontr</span><span class="p">,</span><span class="w"> </span><span class="n">ncontr</span><span class="p">)</span>
+<span class="w">        </span><span class="k">procedure</span><span class="p">(</span><span class="n">dgemm_iface</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="p">,</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dgemm</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">shell_start</span><span class="p">(:),</span><span class="w"> </span><span class="n">shell_end</span><span class="p">(:),</span><span class="w"> </span><span class="n">gstart</span><span class="p">(:),</span><span class="w"> </span><span class="n">gcount</span><span class="p">(:),</span><span class="w"> </span><span class="n">contr</span><span class="p">(:),</span><span class="w"> </span><span class="n">l</span><span class="p">(:),</span><span class="w"> </span><span class="n">m</span><span class="p">(:),</span><span class="w"> </span><span class="n">n</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">coeff</span><span class="p">(:),</span><span class="w"> </span><span class="n">p0matrix</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">target</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ddx</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">ddy</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">ddz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">px</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">py</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">pz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">e12</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">e12s</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">e12max</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">cmaxg</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dmaxx</span><span class="p">,</span><span class="w"> </span><span class="n">cutoffcentre</span><span class="p">,</span><span class="w"> </span><span class="n">cutoffz</span><span class="p">,</span><span class="w"> </span><span class="n">cutoffmd</span><span class="p">,</span><span class="w"> </span><span class="n">screen_tol</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tsi</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">int64</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nshq_tot</span><span class="p">,</span><span class="w"> </span><span class="n">nshq_done</span><span class="p">,</span><span class="w"> </span><span class="n">nquart_tot</span><span class="p">,</span><span class="w"> </span><span class="n">nquart_done</span>
+
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">12</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ntask</span><span class="p">,</span><span class="w"> </span><span class="n">it</span><span class="p">,</span><span class="w"> </span><span class="n">sk</span><span class="p">,</span><span class="w"> </span><span class="n">s0</span><span class="p">,</span><span class="w"> </span><span class="n">s1</span><span class="p">,</span><span class="w"> </span><span class="n">si</span><span class="p">,</span><span class="w"> </span><span class="n">sj</span><span class="p">,</span><span class="w"> </span><span class="n">sr</span><span class="p">,</span><span class="w"> </span><span class="n">nci</span><span class="p">,</span><span class="w"> </span><span class="n">ci0</span><span class="p">,</span><span class="w"> </span><span class="n">spi</span><span class="p">,</span><span class="w"> </span><span class="n">spj</span><span class="p">,</span><span class="w"> </span><span class="n">spk</span><span class="p">,</span><span class="w"> </span><span class="n">spr</span><span class="p">,</span><span class="w"> </span><span class="n">mjl</span><span class="p">,</span><span class="w"> </span><span class="n">mjk</span><span class="p">,</span><span class="w"> </span><span class="n">mik</span><span class="p">,</span><span class="w"> </span><span class="n">mil</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">ij</span><span class="p">,</span><span class="w"> </span><span class="n">kr</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">sij</span><span class="p">,</span><span class="w"> </span><span class="n">skr</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="p">,</span><span class="w"> </span><span class="n">t0</span><span class="p">,</span><span class="w"> </span><span class="n">t1</span><span class="p">,</span><span class="w"> </span><span class="n">ncj</span><span class="p">,</span><span class="w"> </span><span class="n">cj0</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">tsk</span><span class="p">(:),</span><span class="w"> </span><span class="n">ts0</span><span class="p">(:),</span><span class="w"> </span><span class="n">ts1</span><span class="p">(:),</span><span class="w"> </span><span class="n">cstart</span><span class="p">(:),</span><span class="w"> </span><span class="n">posI</span><span class="p">(:),</span><span class="w"> </span><span class="n">posJ</span><span class="p">(:),</span><span class="w"> </span><span class="n">posK</span><span class="p">(:),</span><span class="w"> </span><span class="n">posR</span><span class="p">(:),</span><span class="w"> </span><span class="n">posB</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">ikind</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">jstart</span><span class="p">(:),</span><span class="w"> </span><span class="n">posC</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">aik</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">bik</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">atik</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">btik</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">         </span><span class="c">! per batch (I, K)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ail</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">bil</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">atil</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">btil</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span><span class="w">         </span><span class="c">! per sr    (I, L)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ajk</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">bjk</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">ajl</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">bjl</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">atjk</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">btjk</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">atjl</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">btjl</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">y1</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">y2</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">y3</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">y4</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">y5</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">y6</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">y7</span><span class="p">(:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">y8</span><span class="p">(:,</span><span class="w"> </span><span class="p">:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">zc</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">c1</span><span class="p">(:),</span><span class="w"> </span><span class="n">c2</span><span class="p">(:),</span><span class="w"> </span><span class="n">c3</span><span class="p">(:),</span><span class="w"> </span><span class="n">c4</span><span class="p">(:),</span><span class="w"> </span><span class="n">hpre</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">f</span><span class="p">(:)</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">bnd</span><span class="p">,</span><span class="w"> </span><span class="n">zblock</span><span class="p">,</span><span class="w"> </span><span class="n">sym_factor</span><span class="p">,</span><span class="w"> </span><span class="n">hx</span><span class="p">,</span><span class="w"> </span><span class="n">hy</span><span class="p">,</span><span class="w"> </span><span class="n">hz</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">e12ij</span>
+<span class="w">        </span><span class="kt">real</span><span class="p">(</span><span class="nb">kind</span><span class="o">=</span><span class="n">dp</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dx1</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">dy1</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">dz1</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">dx2</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">dy2</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:),</span><span class="w"> </span><span class="n">dz2</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:)</span>
+
+<span class="w">        </span><span class="c">! tasks: (sk, batch of si &gt;= sk)</span>
+<span class="w">        </span><span class="n">ntask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">        </span><span class="k">do </span><span class="n">sk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nshell</span>
+<span class="w">            </span><span class="n">ntask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ntask</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">nshell</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">sk</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">batch</span><span class="p">)</span><span class="o">/</span><span class="n">batch</span>
+<span class="w">        </span><span class="k">end do</span>
+<span class="k">        allocate</span><span class="p">(</span><span class="n">tsk</span><span class="p">(</span><span class="n">ntask</span><span class="p">),</span><span class="w"> </span><span class="n">ts0</span><span class="p">(</span><span class="n">ntask</span><span class="p">),</span><span class="w"> </span><span class="n">ts1</span><span class="p">(</span><span class="n">ntask</span><span class="p">))</span>
+<span class="w">        </span><span class="n">it</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">        </span><span class="k">do </span><span class="n">sk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nshell</span>
+<span class="w">            </span><span class="k">do </span><span class="n">s0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sk</span><span class="p">,</span><span class="w"> </span><span class="n">nshell</span><span class="p">,</span><span class="w"> </span><span class="n">batch</span>
+<span class="w">                </span><span class="n">it</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                </span><span class="n">tsk</span><span class="p">(</span><span class="n">it</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sk</span><span class="p">;</span><span class="w"> </span><span class="n">ts0</span><span class="p">(</span><span class="n">it</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s0</span><span class="p">;</span><span class="w"> </span><span class="n">ts1</span><span class="p">(</span><span class="n">it</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">nshell</span><span class="p">,</span><span class="w"> </span><span class="n">s0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">        end do</span>
+
+<span class="w">        </span><span class="c">!$OMP PARALLEL default(shared) private(it, sk, s0, s1, si, sj, sr, nci, ci0, spi, spj, spk, spr, mjl, mjk, mik, mil, &amp;</span>
+<span class="w">        </span><span class="c">!$OMP&amp; i, j, k, r, ij, kr, a, b, c, d, sij, skr, nb, t0, t1, ncj, cj0, cstart, posI, posJ, posK, posR, posB, &amp;</span>
+<span class="w">        </span><span class="c">!$OMP&amp; jstart, posC, aik, bik, atik, btik, ail, bil, atil, btil, ajk, bjk, ajl, bjl, atjk, btjk, atjl, btjl, &amp;</span>
+<span class="w">        </span><span class="c">!$OMP&amp; y1, y2, y3, y4, y5, y6, y7, y8, zc, c1, c2, c3, c4, hpre, f, bnd, zblock, sym_factor, hx, hy, hz, h, e12ij, &amp;</span>
+<span class="w">        </span><span class="c">!$OMP&amp; dx1, dy1, dz1, dx2, dy2, dz2) reduction(+:tsi, nshq_tot, nshq_done, nquart_tot, nquart_done)</span>
+<span class="w">        </span><span class="n">nb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch</span><span class="o">*</span><span class="n">max_gc</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">cstart</span><span class="p">(</span><span class="n">batch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">jstart</span><span class="p">(</span><span class="n">batch</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">posI</span><span class="p">(</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">posJ</span><span class="p">(</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">nb</span><span class="p">),</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">nb</span><span class="p">))</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">zc</span><span class="p">(</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">c1</span><span class="p">(</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">c2</span><span class="p">(</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">c3</span><span class="p">(</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">c4</span><span class="p">(</span><span class="n">max_gc</span><span class="p">))</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">hpre</span><span class="p">(</span><span class="n">bdim</span><span class="p">,</span><span class="w"> </span><span class="n">n4</span><span class="p">,</span><span class="w"> </span><span class="n">n4</span><span class="p">,</span><span class="w"> </span><span class="n">n4</span><span class="p">),</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">nq</span><span class="p">))</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">aik</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">bik</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">atik</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">btik</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">))</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">ail</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">bil</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">atil</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">btil</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">))</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">ajk</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">bjk</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">ajl</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">bjl</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                 </span><span class="n">atjk</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">btjk</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">atjl</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">btjl</span><span class="p">(</span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">))</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">y1</span><span class="p">(</span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">y2</span><span class="p">(</span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">y3</span><span class="p">(</span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">y4</span><span class="p">(</span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                 </span><span class="n">y5</span><span class="p">(</span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">y6</span><span class="p">(</span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">y7</span><span class="p">(</span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">),</span><span class="w"> </span><span class="n">y8</span><span class="p">(</span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">,</span><span class="w"> </span><span class="n">nb</span><span class="o">*</span><span class="n">max_gc</span><span class="p">))</span>
+
+<span class="w">        </span><span class="c">!$OMP DO schedule(dynamic)</span>
+<span class="w">        </span><span class="k">do </span><span class="n">it</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ntask</span>
+<span class="w">            </span><span class="n">sk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tsk</span><span class="p">(</span><span class="n">it</span><span class="p">);</span><span class="w"> </span><span class="n">s0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ts0</span><span class="p">(</span><span class="n">it</span><span class="p">);</span><span class="w"> </span><span class="n">s1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ts1</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+<span class="w">            </span><span class="n">spk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sk</span><span class="p">))</span>
+<span class="w">            </span><span class="n">posK</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spk</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">contr</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sk</span><span class="p">)):</span><span class="n">gstart</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sk</span><span class="p">))</span><span class="o">+</span><span class="n">spk</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">            </span><span class="n">nci</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w">                                            </span><span class="c">! functions of the si batch, one list</span>
+<span class="w">            </span><span class="k">do </span><span class="n">si</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s0</span><span class="p">,</span><span class="w"> </span><span class="n">s1</span>
+<span class="w">                </span><span class="n">cstart</span><span class="p">(</span><span class="n">si</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">s0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nci</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                </span><span class="n">spi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">si</span><span class="p">))</span>
+<span class="w">                </span><span class="n">posB</span><span class="p">(</span><span class="n">nci</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">nci</span><span class="o">+</span><span class="n">spi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">contr</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">si</span><span class="p">)):</span><span class="n">gstart</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">si</span><span class="p">))</span><span class="o">+</span><span class="n">spi</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                </span><span class="n">nci</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nci</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">spi</span>
+<span class="w">            </span><span class="k">end do</span>
+<span class="k">            </span><span class="n">cstart</span><span class="p">(</span><span class="n">s1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">s0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nci</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">maxval</span><span class="p">(</span><span class="n">e12s</span><span class="p">(</span><span class="n">s0</span><span class="p">:</span><span class="n">s1</span><span class="p">,</span><span class="w"> </span><span class="p">:))</span><span class="o">*</span><span class="nb">maxval</span><span class="p">(</span><span class="n">e12s</span><span class="p">(</span><span class="n">sk</span><span class="p">,</span><span class="w"> </span><span class="p">:))</span><span class="o">*</span><span class="n">dmaxx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">screen_tol</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">            </span><span class="n">mik</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nci</span><span class="o">*</span><span class="n">spk</span>
+<span class="w">            </span><span class="k">do </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">spk</span>
+<span class="w">                </span><span class="k">do </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nci</span>
+<span class="w">                    </span><span class="n">aik</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="p">(:,</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+<span class="w">                    </span><span class="n">bik</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bx</span><span class="p">(:,</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+<span class="w">                    </span><span class="n">atik</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="p">(:,</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">c</span><span class="p">),</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+<span class="w">                    </span><span class="n">btik</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bx</span><span class="p">(:,</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">c</span><span class="p">),</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+<span class="w">                </span><span class="k">end do</span>
+<span class="k">            end do</span>
+<span class="k">            do </span><span class="n">sr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sk</span><span class="p">,</span><span class="w"> </span><span class="n">nshell</span>
+<span class="w">                </span><span class="n">spr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sr</span><span class="p">))</span>
+<span class="w">                </span><span class="n">skr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sk</span><span class="o">*</span><span class="n">nshell</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">sr</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">maxval</span><span class="p">(</span><span class="n">e12s</span><span class="p">(</span><span class="n">s0</span><span class="p">:</span><span class="n">s1</span><span class="p">,</span><span class="w"> </span><span class="p">:))</span><span class="o">*</span><span class="n">e12s</span><span class="p">(</span><span class="n">sk</span><span class="p">,</span><span class="w"> </span><span class="n">sr</span><span class="p">)</span><span class="o">*</span><span class="n">dmaxx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">screen_tol</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">                </span><span class="n">posR</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">contr</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sr</span><span class="p">)):</span><span class="n">gstart</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sr</span><span class="p">))</span><span class="o">+</span><span class="n">spr</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                </span><span class="n">mil</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nci</span><span class="o">*</span><span class="n">spr</span>
+<span class="w">                </span><span class="k">do </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">spr</span>
+<span class="w">                    </span><span class="k">do </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">nci</span>
+<span class="w">                        </span><span class="n">ail</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="p">(:,</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+<span class="w">                        </span><span class="n">bil</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bx</span><span class="p">(:,</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">a</span><span class="p">),</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+<span class="w">                        </span><span class="n">atil</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="p">(:,</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">d</span><span class="p">),</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+<span class="w">                        </span><span class="n">btil</span><span class="p">(:,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bx</span><span class="p">(:,</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">d</span><span class="p">),</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">a</span><span class="p">))</span>
+<span class="w">                    </span><span class="k">end do</span>
+<span class="k">                end do</span>
+<span class="k">                do </span><span class="n">t0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s0</span><span class="p">,</span><span class="w"> </span><span class="n">nshell</span><span class="p">,</span><span class="w"> </span><span class="n">batch</span><span class="w">                      </span><span class="c">! batches of sj (sj &gt;= si for some si)</span>
+<span class="w">                    </span><span class="n">t1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">nshell</span><span class="p">,</span><span class="w"> </span><span class="n">t0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nb">maxval</span><span class="p">(</span><span class="n">e12s</span><span class="p">(</span><span class="n">s0</span><span class="p">:</span><span class="n">s1</span><span class="p">,</span><span class="w"> </span><span class="n">t0</span><span class="p">:</span><span class="n">t1</span><span class="p">))</span><span class="o">*</span><span class="n">e12s</span><span class="p">(</span><span class="n">sk</span><span class="p">,</span><span class="w"> </span><span class="n">sr</span><span class="p">)</span><span class="o">*</span><span class="n">dmaxx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">screen_tol</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">                    </span><span class="n">ncj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">                    </span><span class="k">do </span><span class="n">sj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t0</span><span class="p">,</span><span class="w"> </span><span class="n">t1</span>
+<span class="w">                        </span><span class="n">jstart</span><span class="p">(</span><span class="n">sj</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncj</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                        </span><span class="n">spj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sj</span><span class="p">))</span>
+<span class="w">                        </span><span class="n">posC</span><span class="p">(</span><span class="n">ncj</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">ncj</span><span class="o">+</span><span class="n">spj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">contr</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sj</span><span class="p">)):</span><span class="n">gstart</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sj</span><span class="p">))</span><span class="o">+</span><span class="n">spj</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                        </span><span class="n">ncj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncj</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">spj</span>
+<span class="w">                    </span><span class="k">end do</span>
+<span class="k">                    </span><span class="n">jstart</span><span class="p">(</span><span class="n">t1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncj</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                    </span><span class="n">mjl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncj</span><span class="o">*</span><span class="n">spr</span><span class="p">;</span><span class="w"> </span><span class="n">mjk</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ncj</span><span class="o">*</span><span class="n">spk</span>
+<span class="w">                    </span><span class="k">do </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">spr</span>
+<span class="w">                        </span><span class="k">do </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ncj</span>
+<span class="w">                            </span><span class="n">ajl</span><span class="p">(:,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="p">(:,</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+<span class="w">                            </span><span class="n">bjl</span><span class="p">(:,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bx</span><span class="p">(:,</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+<span class="w">                            </span><span class="n">atjl</span><span class="p">(:,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="p">(:,</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">d</span><span class="p">),</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+<span class="w">                            </span><span class="n">btjl</span><span class="p">(:,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bx</span><span class="p">(:,</span><span class="w"> </span><span class="n">posR</span><span class="p">(</span><span class="n">d</span><span class="p">),</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+<span class="w">                        </span><span class="k">end do</span>
+<span class="k">                    end do</span>
+<span class="k">                    do </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">spk</span>
+<span class="w">                        </span><span class="k">do </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">ncj</span>
+<span class="w">                            </span><span class="n">ajk</span><span class="p">(:,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="p">(:,</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+<span class="w">                            </span><span class="n">bjk</span><span class="p">(:,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bx</span><span class="p">(:,</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">b</span><span class="p">),</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+<span class="w">                            </span><span class="n">atjk</span><span class="p">(:,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="p">(:,</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">c</span><span class="p">),</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+<span class="w">                            </span><span class="n">btjk</span><span class="p">(:,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bx</span><span class="p">(:,</span><span class="w"> </span><span class="n">posK</span><span class="p">(</span><span class="n">c</span><span class="p">),</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+<span class="w">                        </span><span class="k">end do</span>
+<span class="k">                    end do</span>
+<span class="w">                    </span><span class="c">! the eight images for the whole (si batch) x (sj batch), one matrix product each</span>
+<span class="w">                    </span><span class="k">call </span><span class="n">gemm_tn</span><span class="p">(</span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">mik</span><span class="p">,</span><span class="w"> </span><span class="n">mjl</span><span class="p">,</span><span class="w"> </span><span class="n">aik</span><span class="p">,</span><span class="w"> </span><span class="n">bjl</span><span class="p">,</span><span class="w"> </span><span class="n">y1</span><span class="p">)</span><span class="w">        </span><span class="c">! y1[(I,K),(J,L)] = A(I,K) B(J,L)</span>
+<span class="w">                    </span><span class="k">call </span><span class="n">gemm_tn</span><span class="p">(</span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">mjk</span><span class="p">,</span><span class="w"> </span><span class="n">mil</span><span class="p">,</span><span class="w"> </span><span class="n">ajk</span><span class="p">,</span><span class="w"> </span><span class="n">bil</span><span class="p">,</span><span class="w"> </span><span class="n">y2</span><span class="p">)</span><span class="w">        </span><span class="c">! y2[(J,K),(I,L)] = A(J,K) B(I,L)</span>
+<span class="w">                    </span><span class="k">call </span><span class="n">gemm_tn</span><span class="p">(</span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">mil</span><span class="p">,</span><span class="w"> </span><span class="n">mjk</span><span class="p">,</span><span class="w"> </span><span class="n">ail</span><span class="p">,</span><span class="w"> </span><span class="n">bjk</span><span class="p">,</span><span class="w"> </span><span class="n">y3</span><span class="p">)</span><span class="w">        </span><span class="c">! y3[(I,L),(J,K)] = A(I,L) B(J,K)</span>
+<span class="w">                    </span><span class="k">call </span><span class="n">gemm_tn</span><span class="p">(</span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">mjl</span><span class="p">,</span><span class="w"> </span><span class="n">mik</span><span class="p">,</span><span class="w"> </span><span class="n">ajl</span><span class="p">,</span><span class="w"> </span><span class="n">bik</span><span class="p">,</span><span class="w"> </span><span class="n">y4</span><span class="p">)</span><span class="w">        </span><span class="c">! y4[(J,L),(I,K)] = A(J,L) B(I,K)</span>
+<span class="w">                    </span><span class="k">call </span><span class="n">gemm_tn</span><span class="p">(</span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">mik</span><span class="p">,</span><span class="w"> </span><span class="n">mjl</span><span class="p">,</span><span class="w"> </span><span class="n">atik</span><span class="p">,</span><span class="w"> </span><span class="n">btjl</span><span class="p">,</span><span class="w"> </span><span class="n">y5</span><span class="p">)</span><span class="w">      </span><span class="c">! transposed factors</span>
+<span class="w">                    </span><span class="k">call </span><span class="n">gemm_tn</span><span class="p">(</span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">mjk</span><span class="p">,</span><span class="w"> </span><span class="n">mil</span><span class="p">,</span><span class="w"> </span><span class="n">atjk</span><span class="p">,</span><span class="w"> </span><span class="n">btil</span><span class="p">,</span><span class="w"> </span><span class="n">y6</span><span class="p">)</span>
+<span class="w">                    </span><span class="k">call </span><span class="n">gemm_tn</span><span class="p">(</span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">mil</span><span class="p">,</span><span class="w"> </span><span class="n">mjk</span><span class="p">,</span><span class="w"> </span><span class="n">atil</span><span class="p">,</span><span class="w"> </span><span class="n">btjk</span><span class="p">,</span><span class="w"> </span><span class="n">y7</span><span class="p">)</span>
+<span class="w">                    </span><span class="k">call </span><span class="n">gemm_tn</span><span class="p">(</span><span class="n">dgemm</span><span class="p">,</span><span class="w"> </span><span class="n">nkx</span><span class="p">,</span><span class="w"> </span><span class="n">mjl</span><span class="p">,</span><span class="w"> </span><span class="n">mik</span><span class="p">,</span><span class="w"> </span><span class="n">atjl</span><span class="p">,</span><span class="w"> </span><span class="n">btik</span><span class="p">,</span><span class="w"> </span><span class="n">y8</span><span class="p">)</span>
+
+<span class="w">                    </span><span class="k">do </span><span class="n">sj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t0</span><span class="p">,</span><span class="w"> </span><span class="n">t1</span>
+<span class="w">                        </span><span class="n">spj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">sj</span><span class="p">))</span>
+<span class="w">                        </span><span class="n">cj0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">jstart</span><span class="p">(</span><span class="n">sj</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                        </span><span class="n">posJ</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">posC</span><span class="p">(</span><span class="n">cj0</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">cj0</span><span class="o">+</span><span class="n">spj</span><span class="p">)</span>
+<span class="w">                        </span><span class="k">do </span><span class="n">si</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="n">s0</span><span class="p">,</span><span class="w"> </span><span class="n">sk</span><span class="p">),</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span><span class="w"> </span><span class="n">sj</span><span class="p">)</span><span class="w">               </span><span class="c">! canonical: si &lt;= sj, (si,sj) &gt;= (sk,sr)</span>
+<span class="w">                            </span><span class="n">sij</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">si</span><span class="o">*</span><span class="n">nshell</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">sj</span>
+<span class="w">                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sij</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">skr</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">                            </span><span class="n">nshq_tot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nshq_tot</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                            </span><span class="n">bnd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e12s</span><span class="p">(</span><span class="n">si</span><span class="p">,</span><span class="w"> </span><span class="n">sj</span><span class="p">)</span><span class="o">*</span><span class="n">e12s</span><span class="p">(</span><span class="n">sk</span><span class="p">,</span><span class="w"> </span><span class="n">sr</span><span class="p">)</span>
+<span class="w">                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">bnd</span><span class="o">*</span><span class="n">dmaxx</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">screen_tol</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">                            </span><span class="n">spi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gcount</span><span class="p">(</span><span class="n">shell_start</span><span class="p">(</span><span class="n">si</span><span class="p">))</span>
+<span class="w">                            </span><span class="n">ci0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cstart</span><span class="p">(</span><span class="n">si</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">s0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                            </span><span class="n">posI</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">posB</span><span class="p">(</span><span class="n">ci0</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">ci0</span><span class="o">+</span><span class="n">spi</span><span class="p">)</span>
+<span class="w">                            </span><span class="k">do </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">spr</span>
+<span class="w">                                </span><span class="k">do </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">spk</span>
+<span class="w">                                    </span><span class="k">do </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">spj</span>
+<span class="w">                                        </span><span class="k">do </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">spi</span>
+<span class="w">                                            </span><span class="n">zc</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.125_dp</span><span class="o">*</span><span class="p">(</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                  </span><span class="n">y1</span><span class="p">(</span><span class="n">ci0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">,</span><span class="w"> </span><span class="n">cj0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                </span><span class="o">+</span><span class="w"> </span><span class="n">y5</span><span class="p">(</span><span class="n">ci0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">,</span><span class="w"> </span><span class="n">cj0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                </span><span class="o">+</span><span class="w"> </span><span class="n">y2</span><span class="p">(</span><span class="n">cj0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">,</span><span class="w"> </span><span class="n">ci0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                </span><span class="o">+</span><span class="w"> </span><span class="n">y6</span><span class="p">(</span><span class="n">cj0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">,</span><span class="w"> </span><span class="n">ci0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                </span><span class="o">+</span><span class="w"> </span><span class="n">y3</span><span class="p">(</span><span class="n">ci0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">,</span><span class="w"> </span><span class="n">cj0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                </span><span class="o">+</span><span class="w"> </span><span class="n">y7</span><span class="p">(</span><span class="n">ci0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">,</span><span class="w"> </span><span class="n">cj0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                </span><span class="o">+</span><span class="w"> </span><span class="n">y4</span><span class="p">(</span><span class="n">cj0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">,</span><span class="w"> </span><span class="n">ci0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">)</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                </span><span class="o">+</span><span class="w"> </span><span class="n">y8</span><span class="p">(</span><span class="n">cj0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ncj</span><span class="p">,</span><span class="w"> </span><span class="n">ci0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">nci</span><span class="p">))</span>
+<span class="w">                                        </span><span class="k">end do</span>
+<span class="k">                                    end do</span>
+<span class="k">                                end do</span>
+<span class="k">                            end do</span>
+<span class="k">                            </span><span class="n">zblock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">maxval</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">zc</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spi</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">spj</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">spk</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="n">spr</span><span class="p">)))</span>
+<span class="w">                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">zblock</span><span class="o">*</span><span class="n">bnd</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">screen_tol</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">                            </span><span class="n">nshq_done</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nshq_done</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="w">                            </span><span class="c">! --- canonical primitive quartets, as in the main loop ---</span>
+<span class="w">                            </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">shell_start</span><span class="p">(</span><span class="n">si</span><span class="p">),</span><span class="w"> </span><span class="n">shell_end</span><span class="p">(</span><span class="n">si</span><span class="p">)</span>
+<span class="w">                                </span><span class="n">c1</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spi</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coeff</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">i</span><span class="p">):</span><span class="n">gstart</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="n">spi</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                                </span><span class="k">do </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">shell_start</span><span class="p">(</span><span class="n">sj</span><span class="p">)),</span><span class="w"> </span><span class="n">shell_end</span><span class="p">(</span><span class="n">sj</span><span class="p">)</span>
+<span class="w">                                    </span><span class="n">ij</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="o">*</span><span class="n">ng</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">j</span>
+<span class="w">                                    </span><span class="n">c2</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spj</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coeff</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">j</span><span class="p">):</span><span class="n">gstart</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">+</span><span class="n">spj</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                                    </span><span class="n">e12ij</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e12max</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="o">*</span><span class="n">cmaxg</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">cmaxg</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="o">*</span><span class="n">zblock</span>
+<span class="w">                                    </span><span class="k">do </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">shell_start</span><span class="p">(</span><span class="n">sk</span><span class="p">),</span><span class="w"> </span><span class="n">shell_end</span><span class="p">(</span><span class="n">sk</span><span class="p">)</span>
+<span class="w">                                        </span><span class="n">c3</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spk</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coeff</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">k</span><span class="p">):</span><span class="n">gstart</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">+</span><span class="n">spk</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                                        </span><span class="k">do </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">shell_start</span><span class="p">(</span><span class="n">sr</span><span class="p">)),</span><span class="w"> </span><span class="n">shell_end</span><span class="p">(</span><span class="n">sr</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">kr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">k</span><span class="o">*</span><span class="n">ng</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r</span>
+<span class="w">                                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sij</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">skr</span><span class="w"> </span><span class="p">.</span><span class="nb">and</span><span class="p">.</span><span class="w"> </span><span class="n">kr</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">ij</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">                                            </span><span class="n">nquart_tot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nquart_tot</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">e12ij</span><span class="o">*</span><span class="n">e12max</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="o">*</span><span class="n">cmaxg</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">*</span><span class="n">cmaxg</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">screen_tol</span><span class="p">)</span><span class="w"> </span><span class="k">cycle</span>
+<span class="k">                                            </span><span class="n">c4</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="n">spr</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">coeff</span><span class="p">(</span><span class="n">gstart</span><span class="p">(</span><span class="n">r</span><span class="p">):</span><span class="n">gstart</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="o">+</span><span class="n">spr</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">sym_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">                                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="w"> </span><span class="n">sym_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sym_factor</span><span class="o">*</span><span class="mf">2.0_dp</span>
+<span class="w">                                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">k</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="n">sym_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sym_factor</span><span class="o">*</span><span class="mf">2.0_dp</span>
+<span class="w">                                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ij</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="n">kr</span><span class="p">)</span><span class="w"> </span><span class="n">sym_factor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sym_factor</span><span class="o">*</span><span class="mf">2.0_dp</span>
+<span class="w">                                            </span><span class="n">hx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">px</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">px</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">hy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">py</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">py</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">hz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pz</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">pz</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="n">hx</span><span class="o">*</span><span class="n">hx</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hy</span><span class="o">*</span><span class="n">hy</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">hz</span><span class="o">*</span><span class="n">hz</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">dx1</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ddx</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span><span class="w"> </span><span class="n">dy1</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ddy</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span><span class="w"> </span><span class="n">dz1</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ddz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
+<span class="w">                                            </span><span class="n">dx2</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ddx</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">);</span><span class="w"> </span><span class="n">dy2</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ddy</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">);</span><span class="w"> </span><span class="n">dz2</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ddz</span><span class="p">(:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="p">:,</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">)</span>
+<span class="w">                                            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">h</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">cutoffcentre</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">                                                call </span><span class="n">quartet_coincident</span><span class="p">(</span><span class="n">nq</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">lorder</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">gstart</span><span class="p">,</span><span class="w"> </span><span class="n">gcount</span><span class="p">,</span><span class="w"> </span><span class="n">p0matrix</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                        </span><span class="n">dx1</span><span class="p">,</span><span class="w"> </span><span class="n">dy1</span><span class="p">,</span><span class="w"> </span><span class="n">dz1</span><span class="p">,</span><span class="w"> </span><span class="n">dx2</span><span class="p">,</span><span class="w"> </span><span class="n">dy2</span><span class="p">,</span><span class="w"> </span><span class="n">dz2</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">zc</span><span class="p">,</span><span class="w"> </span><span class="n">c1</span><span class="p">,</span><span class="w"> </span><span class="n">c2</span><span class="p">,</span><span class="w"> </span><span class="n">c3</span><span class="p">,</span><span class="w"> </span><span class="n">c4</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                        </span><span class="n">cutoffz</span><span class="p">,</span><span class="w"> </span><span class="n">cutoffmd</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">)</span>
+<span class="w">                                            </span><span class="k">else</span>
+<span class="k">                                                call </span><span class="n">quartet_distant</span><span class="p">(</span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">lorder</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">gstart</span><span class="p">,</span><span class="w"> </span><span class="n">gcount</span><span class="p">,</span><span class="w"> </span><span class="n">hx</span><span class="p">,</span><span class="w"> </span><span class="n">hy</span><span class="p">,</span><span class="w"> </span><span class="n">hz</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                        </span><span class="n">dx1</span><span class="p">,</span><span class="w"> </span><span class="n">dy1</span><span class="p">,</span><span class="w"> </span><span class="n">dz1</span><span class="p">,</span><span class="w"> </span><span class="n">dx2</span><span class="p">,</span><span class="w"> </span><span class="n">dy2</span><span class="p">,</span><span class="w"> </span><span class="n">dz2</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">zc</span><span class="p">,</span><span class="w"> </span><span class="n">c1</span><span class="p">,</span><span class="w"> </span><span class="n">c2</span><span class="p">,</span><span class="w"> </span><span class="n">c3</span><span class="p">,</span><span class="w"> </span><span class="n">c4</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                                                        </span><span class="n">cutoffz</span><span class="p">,</span><span class="w"> </span><span class="n">cutoffmd</span><span class="p">,</span><span class="w"> </span><span class="n">hpre</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">)</span>
+<span class="w">                                            </span><span class="k">end if</span>
+<span class="k">                                            </span><span class="n">nquart_done</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nquart_done</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">                                            </span><span class="n">tsi</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tsi</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">sym_factor</span><span class="o">*</span><span class="n">f</span><span class="o">*</span><span class="n">e12</span><span class="p">(:,</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span><span class="o">*</span><span class="n">e12</span><span class="p">(:,</span><span class="w"> </span><span class="n">k</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+<span class="w">                                        </span><span class="k">end do</span>
+<span class="k">                                    end do</span>
+<span class="k">                                end do</span>
+<span class="k">                            end do</span>
+<span class="k">                        end do</span>
+<span class="k">                    end do</span>
+<span class="k">                end do</span>
+<span class="k">            end do</span>
+<span class="k">        end do</span>
+<span class="w">        </span><span class="c">!$OMP END DO</span>
+<span class="w">        </span><span class="k">deallocate</span><span class="p">(</span><span class="n">cstart</span><span class="p">,</span><span class="w"> </span><span class="n">jstart</span><span class="p">,</span><span class="w"> </span><span class="n">posI</span><span class="p">,</span><span class="w"> </span><span class="n">posJ</span><span class="p">,</span><span class="w"> </span><span class="n">posK</span><span class="p">,</span><span class="w"> </span><span class="n">posR</span><span class="p">,</span><span class="w"> </span><span class="n">posB</span><span class="p">,</span><span class="w"> </span><span class="n">posC</span><span class="p">,</span><span class="w"> </span><span class="n">zc</span><span class="p">,</span><span class="w"> </span><span class="n">c1</span><span class="p">,</span><span class="w"> </span><span class="n">c2</span><span class="p">,</span><span class="w"> </span><span class="n">c3</span><span class="p">,</span><span class="w"> </span><span class="n">c4</span><span class="p">,</span><span class="w"> </span><span class="n">hpre</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">aik</span><span class="p">,</span><span class="w"> </span><span class="n">bik</span><span class="p">,</span><span class="w"> </span><span class="n">atik</span><span class="p">,</span><span class="w"> </span><span class="n">btik</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                   </span><span class="n">ail</span><span class="p">,</span><span class="w"> </span><span class="n">bil</span><span class="p">,</span><span class="w"> </span><span class="n">atil</span><span class="p">,</span><span class="w"> </span><span class="n">btil</span><span class="p">,</span><span class="w"> </span><span class="n">ajk</span><span class="p">,</span><span class="w"> </span><span class="n">bjk</span><span class="p">,</span><span class="w"> </span><span class="n">ajl</span><span class="p">,</span><span class="w"> </span><span class="n">bjl</span><span class="p">,</span><span class="w"> </span><span class="n">atjk</span><span class="p">,</span><span class="w"> </span><span class="n">btjk</span><span class="p">,</span><span class="w"> </span><span class="n">atjl</span><span class="p">,</span><span class="w"> </span><span class="n">btjl</span><span class="p">,</span><span class="w"> </span><span class="n">y1</span><span class="p">,</span><span class="w"> </span><span class="n">y2</span><span class="p">,</span><span class="w"> </span><span class="n">y3</span><span class="p">,</span><span class="w"> </span><span class="n">y4</span><span class="p">,</span><span class="w"> </span><span class="n">y5</span><span class="p">,</span><span class="w"> </span><span class="n">y6</span><span class="p">,</span><span class="w"> </span><span class="n">y7</span><span class="p">,</span><span class="w"> </span><span class="n">y8</span><span class="p">)</span>
+<span class="w">        </span><span class="c">!$OMP END PARALLEL</span>
+<span class="w">        </span><span class="k">deallocate</span><span class="p">(</span><span class="n">tsk</span><span class="p">,</span><span class="w"> </span><span class="n">ts0</span><span class="p">,</span><span class="w"> </span><span class="n">ts1</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end subroutine </span><span class="n">exchange_pass</span>
+</pre></div>
+
+    </section>
+    <br>
+    
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              PyXSCAT kernels
+ was developed by Andrés Moreno Carrascosa, Mats Simmermacher, Patrick Yuheng Wang, Eirik Moen Liane, Joseph Cooper, Nikola Zotev, Thomas Northey and Adam Kirrander<br>              &copy; 2026 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+ on 2026-10-10T12:31:04.207760+0000             </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
