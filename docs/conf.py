@@ -29,7 +29,7 @@ with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:
 # ------------------------------------------------------------------------------ project
 project = "THISTLE"
 author = ", ".join(a["name"] for a in _meta["authors"])
-copyright = "2026, Andrés Moreno Carrascosa"
+copyright = "2026, Andrés Moreno Carrascosa, Patrick Y. Wang"
 release = _meta["version"]
 version = release
 
