@@ -1,6 +1,9 @@
 # Builds the documentation (Sphinx + FORD) and publishes the static site to the `site` branch.
 # Plesk pulls that branch into the web space of thistle.kirrander.group (Git repository with
-# automatic deployment; its webhook is registered on this GitHub repository).
+# automatic deployment).  After the branch is pushed, the last step calls Plesk's deployment
+# webhook so that the pull happens straight away.  The webhook URL is the repository secret
+# PLESK_WEBHOOK_URL (Settings > Secrets and variables > Actions); it is taken from the
+# repository's page in Plesk (Websites & Domains > Git > repository settings > Webhook URL).
 #
 # Pull requests only build, as a check; pushes to main also publish.  "Run workflow" in the
 # Actions tab republishes by hand.
@@ -58,3 +61,15 @@ jobs:
           publish_dir: docs/_build/html
           force_orphan: true           # the branch keeps only the latest build, no history
           commit_message: "docs: ${{ github.sha }}"
+
+      - name: Tell Plesk to pull the site branch
+        if: github.event_name != 'pull_request'
+        env:
+          PLESK_WEBHOOK_URL: ${{ secrets.PLESK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$PLESK_WEBHOOK_URL" ]; then
+            echo "::warning::PLESK_WEBHOOK_URL is not set; Plesk was not told to pull the site branch"
+            exit 0
+          fi
+          curl --fail --silent --show-error --retry 3 --retry-delay 10 \
+               --request POST "$PLESK_WEBHOOK_URL"
